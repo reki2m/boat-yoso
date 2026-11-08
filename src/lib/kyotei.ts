@@ -1,12 +1,19 @@
 import { STADIUMS, jstDateKey } from "./stadiums";
 import { SAMPLE_RACE } from "./sample";
 import type { RacePayload, RacerRow } from "./types";
+import {
+  evaluateExhibition,
+  parseKyoteiExhibitionRow,
+  parseOpenApiPreviewRacer,
+  type ExhibitionBoat,
+  type ExhibitionStatus,
+} from "./exhibition";
 
 export type { RacePayload, RacerRow };
 
-type CacheEntry = { at: number; payload: RacePayload };
+type CacheEntry = { at: number; payload: RacePayload; exhibition: ExhibitionStatus };
 const cache = new Map<string, CacheEntry>();
-const CACHE_MS = 5 * 60 * 1000;
+const CACHE_MS = 30 * 1000;
 
 const CLASS_NAME: Record<number, string> = {
   1: "A1",
@@ -55,11 +62,16 @@ export async function fetchTodayStadiums(): Promise<number[]> {
   }
 }
 
+export type RaceBundle = {
+  payload: RacePayload;
+  exhibition: ExhibitionStatus;
+};
+
 async function fetchOpenApiRace(
   placeNo: number,
   raceNo: number,
   date: string,
-): Promise<RacePayload | null> {
+): Promise<RaceBundle | null> {
   const yyyy = date.slice(0, 4);
   const urls = [
     `https://boatraceopenapi.github.io/api/v1/${yyyy}/${date}.json`,
@@ -67,7 +79,7 @@ async function fetchOpenApiRace(
   ];
   for (const url of urls) {
     try {
-      const res = await fetch(url, { next: { revalidate: 60 } });
+      const res = await fetch(url, { next: { revalidate: 30 } });
       if (!res.ok) continue;
       const data = (await res.json()) as {
         programs?: {
@@ -80,6 +92,11 @@ async function fetchOpenApiRace(
                   title?: string;
                   grade_number?: number;
                   racers?: Record<string, Record<string, unknown>>;
+                  preview?: {
+                    wind_speed?: number;
+                    wave_height?: number;
+                    racers?: Record<string, Record<string, unknown>>;
+                  };
                 }
               >;
             }
@@ -88,11 +105,31 @@ async function fetchOpenApiRace(
       };
       const race = data.programs?.stadiums?.[String(placeNo)]?.races?.[String(raceNo)];
       if (!race?.racers) continue;
+      const previewRacers = race.preview?.racers ?? {};
+      const boats: ExhibitionBoat[] = [];
       const racers: RacerRow[] = Object.values(race.racers)
         .map((r) => {
           const rank = num(r.rank_number, 4);
+          const entry = num(r.entry_number);
+          const prev = previewRacers[String(entry)] ?? Object.values(previewRacers).find(
+            (p) => num(p.entry_number) === entry,
+          );
+          const ex = prev
+            ? parseOpenApiPreviewRacer(prev, entry)
+            : { course: null, slit: null, lapTime: null, entryChanged: false };
+          boats.push({
+            boat: entry,
+            name: String(r.name ?? ""),
+            playerNo: num(r.number),
+            entry,
+            course: ex.course,
+            slit: ex.slit,
+            lapTime: ex.lapTime,
+            entryChanged: ex.entryChanged,
+          });
           return {
-            course: num(r.entry_number),
+            course: entry,
+            entry,
             playerNo: num(r.number),
             name: String(r.name ?? ""),
             className: CLASS_NAME[rank] ?? String(r.rank_number_source ?? "B1"),
@@ -108,22 +145,34 @@ async function fetchOpenApiRace(
             avgStart: parseAvgStart(r.average_start_timing),
             motorNo: num(r.motor_number),
             boatNo: num(r.boat_number),
+            exhibitionCourse: ex.course,
+            exhibitionSlit: ex.slit,
+            exhibitionLap: ex.lapTime,
           };
         })
         .filter((r) => r.course >= 1 && r.course <= 6)
         .sort((a, b) => a.course - b.course);
       if (racers.length < 6) continue;
+      const exhibition = evaluateExhibition(boats, {
+        windSpeed: race.preview?.wind_speed ?? null,
+        wave: race.preview?.wave_height ?? null,
+      });
       return {
-        source: "openapi",
-        date,
-        placeNo,
-        placeName: STADIUMS[placeNo] ?? `場${placeNo}`,
-        raceNo,
-        raceName: String(race.title ?? ""),
-        raceRank: `G${race.grade_number ?? 5}`,
-        racers,
-        fetchedAt: new Date().toISOString(),
-        note: "OpenAPI出走表（ボートレース日和不通時フォールバック）",
+        payload: {
+          source: "openapi",
+          date,
+          placeNo,
+          placeName: STADIUMS[placeNo] ?? `場${placeNo}`,
+          raceNo,
+          raceName: String(race.title ?? ""),
+          raceRank: `G${race.grade_number ?? 5}`,
+          racers,
+          fetchedAt: new Date().toISOString(),
+          note: "OpenAPI出走表（ボートレース日和不通時フォールバック）",
+          windSpeed: race.preview?.wind_speed ?? null,
+          wave: race.preview?.wave_height ?? null,
+        },
+        exhibition,
       };
     } catch {
       // try next
@@ -132,14 +181,17 @@ async function fetchOpenApiRace(
   return null;
 }
 
-export async function fetchKyoteiRace(
+export async function fetchKyoteiRaceBundle(
   placeNo: number,
   raceNo: number,
   date = jstDateKey(),
-): Promise<RacePayload> {
-  const key = `${date}:${placeNo}:${raceNo}`;
+  opts?: { forceSampleExhibition?: boolean },
+): Promise<RaceBundle> {
+  const key = `${date}:${placeNo}:${raceNo}:${opts?.forceSampleExhibition ? "demo" : "live"}`;
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.payload;
+  if (hit && Date.now() - hit.at < CACHE_MS) {
+    return { payload: hit.payload, exhibition: hit.exhibition };
+  }
 
   try {
     const body = new URLSearchParams({
@@ -171,26 +223,54 @@ export async function fetchKyoteiRace(
     if (!list.length) throw new Error("empty race_list");
 
     const first = list[0];
+    const boats: ExhibitionBoat[] = [];
+    let windSpeed: number | null = null;
+    let wave: number | null = null;
     const racers: RacerRow[] = list
-      .map((row) => ({
-        course: num(row.course),
-        playerNo: num(row.player_no),
-        name: String(row.player_name ?? ""),
-        className: String(row.kyubetsu ?? ""),
-        branch: String(row.shibu ?? row.shusshin ?? ""),
-        age: num(row.age),
-        weightKg: num(row.taiju) >= 100 ? num(row.taiju) / 10 : num(row.taiju),
-        nationalWin: num(row.zenkoku_shoritsu),
-        nationalTop2: num(row.zenkoku_niren),
-        localWin: num(row.touchi_shoritsu),
-        localTop2: num(row.touchi_niren),
-        motorTop2: num(row.motor_niren),
-        boatTop2: num(row.boat_niren),
-        avgStart: parseAvgStart(row.ave_start),
-        motorNo: num(row.motor),
-        boatNo: num(row.boat),
-      }))
+      .map((row) => {
+        const entry = num(row.course);
+        const ex = parseKyoteiExhibitionRow(row, entry);
+        if (ex.windSpeed != null) windSpeed = ex.windSpeed;
+        if (ex.wave != null) wave = ex.wave;
+        boats.push({
+          boat: entry,
+          name: String(row.player_name ?? ""),
+          playerNo: num(row.player_no),
+          entry,
+          course: ex.course,
+          slit: ex.slit,
+          lapTime: ex.lapTime,
+          entryChanged: ex.entryChanged,
+        });
+        return {
+          course: entry,
+          entry,
+          playerNo: num(row.player_no),
+          name: String(row.player_name ?? ""),
+          className: String(row.kyubetsu ?? ""),
+          branch: String(row.shibu ?? row.shusshin ?? ""),
+          age: num(row.age),
+          weightKg: num(row.taiju) >= 100 ? num(row.taiju) / 10 : num(row.taiju),
+          nationalWin: num(row.zenkoku_shoritsu),
+          nationalTop2: num(row.zenkoku_niren),
+          localWin: num(row.touchi_shoritsu),
+          localTop2: num(row.touchi_niren),
+          motorTop2: num(row.motor_niren),
+          boatTop2: num(row.boat_niren),
+          avgStart: parseAvgStart(row.ave_start),
+          motorNo: num(row.motor),
+          boatNo: num(row.boat),
+          exhibitionCourse: ex.course,
+          exhibitionSlit: ex.slit,
+          exhibitionLap: ex.lapTime,
+        };
+      })
       .sort((a, b) => a.course - b.course);
+
+    let exhibition = evaluateExhibition(boats, { windSpeed, wave });
+    if (opts?.forceSampleExhibition && !exhibition.ready) {
+      exhibition = demoExhibitionFromRacers(racers, windSpeed ?? 5, wave ?? 3);
+    }
 
     const payload: RacePayload = {
       source: "kyoteibiyori",
@@ -202,16 +282,29 @@ export async function fetchKyoteiRace(
       raceRank: String(first.race_rank ?? ""),
       racers,
       fetchedAt: new Date().toISOString(),
+      windSpeed,
+      wave,
     };
-    cache.set(key, { at: Date.now(), payload });
-    return payload;
+    cache.set(key, { at: Date.now(), payload, exhibition });
+    return { payload, exhibition };
   } catch {
     const openapi = await fetchOpenApiRace(placeNo, raceNo, date);
     if (openapi) {
-      cache.set(key, { at: Date.now(), payload: openapi });
+      if (opts?.forceSampleExhibition && !openapi.exhibition.ready) {
+        openapi.exhibition = demoExhibitionFromRacers(
+          openapi.payload.racers,
+          openapi.payload.windSpeed ?? 5,
+          openapi.payload.wave ?? 3,
+        );
+      }
+      cache.set(key, {
+        at: Date.now(),
+        payload: openapi.payload,
+        exhibition: openapi.exhibition,
+      });
       return openapi;
     }
-    const sample = {
+    const samplePayload = {
       ...SAMPLE_RACE,
       date,
       placeNo,
@@ -219,7 +312,46 @@ export async function fetchKyoteiRace(
       raceNo,
       note: "ボートレース日和/OpenAPIから取得できないためサンプルデータを表示しています",
       fetchedAt: new Date().toISOString(),
+      windSpeed: 5,
+      wave: 3,
     };
-    return sample;
+    const exhibition = demoExhibitionFromRacers(samplePayload.racers, 5, 3);
+    cache.set(key, { at: Date.now(), payload: samplePayload, exhibition });
+    return { payload: samplePayload, exhibition };
   }
+}
+
+/** 互換: 旧API */
+export async function fetchKyoteiRace(
+  placeNo: number,
+  raceNo: number,
+  date = jstDateKey(),
+): Promise<RacePayload> {
+  const { payload } = await fetchKyoteiRaceBundle(placeNo, raceNo, date);
+  return payload;
+}
+
+function demoExhibitionFromRacers(
+  racers: RacerRow[],
+  windSpeed: number,
+  wave: number,
+): ExhibitionStatus {
+  // 進入変更デモ: 2と3を入れ替え
+  const boats: ExhibitionBoat[] = racers.map((r, idx) => {
+    const entry = r.entry ?? r.course;
+    let course = entry;
+    if (entry === 2) course = 3;
+    else if (entry === 3) course = 2;
+    return {
+      boat: entry,
+      name: r.name,
+      playerNo: r.playerNo,
+      entry,
+      course,
+      slit: Number((0.12 + idx * 0.01).toFixed(2)),
+      lapTime: Number((6.7 + idx * 0.03).toFixed(2)),
+      entryChanged: course !== entry,
+    };
+  });
+  return evaluateExhibition(boats, { windSpeed, wave });
 }

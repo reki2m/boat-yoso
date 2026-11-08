@@ -4,6 +4,7 @@ import stadium from "@/data/stadium_innige_rates.json";
 import locked from "@/data/locked_honmei_rule.json";
 import lockedTriple from "@/data/locked_triple_rules.json";
 import backtest from "@/data/honmei_backtest.json";
+import equity from "@/data/equity_10k.json";
 import { TICKET_LABEL } from "@/lib/honmeiRule";
 import { BAND_TICKET_LABEL } from "@/lib/tripleSystem";
 
@@ -69,5 +70,6 @@ export async function GET() {
       money_concentrate_threshold: 0.55,
       note: "買われすぎ・大口集中を検知し、本命/押し目を回避してイン戦買い目を出す。",
     },
+    equity10k: equity,
   });
 }

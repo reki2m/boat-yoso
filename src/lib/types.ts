@@ -15,6 +15,11 @@ export type RacerRow = {
   avgStart: number;
   motorNo: number;
   boatNo: number;
+  /** 番組枠（艇番）。進入変更後も不変 */
+  entry?: number;
+  exhibitionCourse?: number | null;
+  exhibitionSlit?: number | null;
+  exhibitionLap?: number | null;
 };
 
 export type RacePayload = {
@@ -28,4 +33,6 @@ export type RacePayload = {
   racers: RacerRow[];
   fetchedAt: string;
   note?: string;
+  windSpeed?: number | null;
+  wave?: number | null;
 };

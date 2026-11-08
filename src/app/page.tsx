@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 type Stadium = { id: number; name: string };
 
@@ -41,6 +41,18 @@ type Band = {
   blockedByOdds?: boolean;
 };
 
+type EquityBand = {
+  selected: number;
+  hits: number;
+  hit_rate: number;
+  bets: number;
+  pay: number;
+  pnl: number;
+  roi: number;
+  final_equity: number;
+  curve: Array<{ n: number; equity: number; hit: boolean; date: string }>;
+};
+
 type RaceResponse = {
   source: "kyoteibiyori" | "openapi" | "sample";
   date: string;
@@ -59,6 +71,21 @@ type RaceResponse = {
     sanrentan: string;
     confidence: string;
     summary: string;
+  };
+  exhibition?: {
+    ready: boolean;
+    reason: string;
+    entryChanged: boolean;
+    changes: Array<{ boat: number; name: string; from: number; to: number }>;
+    boats: Array<{
+      boat: number;
+      name: string;
+      entry: number;
+      course: number | null;
+      slit: number | null;
+      lapTime: number | null;
+      entryChanged: boolean;
+    }>;
   };
   odds?: {
     source: string;
@@ -92,6 +119,14 @@ type RaceResponse = {
     portfolioTickets: string[];
     focus: string;
     disclaimer: string;
+    ticketsLocked?: boolean;
+    liveUrls?: {
+      mediaTop: string;
+      raceIndex: string;
+      raceList: string;
+      beforeInfo: string;
+      placeName: string;
+    };
   };
 };
 
@@ -101,9 +136,6 @@ type Research = {
     validated_test_roi: number;
     validated_test_selected: number;
     stadium_whitelist: number[];
-    min_c1_nat: number;
-    max_c1_st: number;
-    min_motor2: number;
   };
   lockedTriple?: {
     oshi?: {
@@ -111,14 +143,12 @@ type Research = {
       validated_test_roi?: number;
       validated_test_hit_rate?: number;
       meets_target?: boolean;
-      ticket?: string;
     } | null;
     ana?: {
       ticketLabel?: string;
       validated_test_roi?: number;
       validated_test_hit_rate?: number;
       meets_target?: boolean;
-      ticket?: string;
     } | null;
   };
   stadiumInnige: Record<string, { rate: number; stadium: number }>;
@@ -136,7 +166,43 @@ type Research = {
   sources: Record<string, string>;
   exhibition: { note: string };
   oddsAnomaly?: { note: string };
+  equity10k?: {
+    stake_per_race: number;
+    period: string;
+    note: string;
+    bands: Record<string, EquityBand>;
+    portfolio: EquityBand & { rule?: string };
+  };
 };
+
+function EquityMiniChart({
+  curve,
+  color,
+}: {
+  curve: Array<{ n: number; equity: number }>;
+  color: string;
+}) {
+  const points = useMemo(() => {
+    if (!curve.length) return "";
+    const xs = curve.map((c) => c.n);
+    const ys = curve.map((c) => c.equity);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys, 0);
+    const maxY = Math.max(...ys, 0);
+    const w = 320;
+    const h = 90;
+    const sx = (x: number) => ((x - minX) / Math.max(maxX - minX, 1)) * (w - 8) + 4;
+    const sy = (y: number) => h - ((y - minY) / Math.max(maxY - minY, 1)) * (h - 8) - 4;
+    return curve.map((c, i) => `${i ? "L" : "M"}${sx(c.n).toFixed(1)},${sy(c.equity).toFixed(1)}`).join(" ");
+  }, [curve]);
+  if (!curve.length) return null;
+  return (
+    <svg viewBox="0 0 320 90" className="equity-svg" aria-hidden>
+      <path d={points} fill="none" stroke={color} strokeWidth="2.5" />
+    </svg>
+  );
+}
 
 export default function Home() {
   const [stadiums, setStadiums] = useState<Stadium[]>([]);
@@ -148,15 +214,18 @@ export default function Home() {
   const [research, setResearch] = useState<Research | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [purchased, setPurchased] = useState(false);
+  const [demoExhibition, setDemoExhibition] = useState(false);
 
   useEffect(() => {
     fetch("/api/schedule")
       .then((r) => r.json())
       .then((json) => {
         setStadiums(json.stadiums ?? []);
-        setRaces(json.races ?? []);
+        setRaces(json.races ?? Array.from({ length: 12 }, (_, i) => i + 1));
         setDateLabel(json.dateLabel ?? "");
         if (json.stadiums?.[0]?.id) setPlace(json.stadiums[0].id);
+        setRace(1);
       })
       .catch(() => setError("開催場の取得に失敗しました"));
     fetch("/api/research")
@@ -165,11 +234,18 @@ export default function Home() {
       .catch(() => undefined);
   }, []);
 
-  function load() {
+  function load(opts?: { demo?: boolean }) {
     setError("");
+    setPurchased(false);
+    const useDemo = opts?.demo ?? demoExhibition;
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/race?place=${place}&race=${race}`);
+        const qs = new URLSearchParams({
+          place: String(place),
+          race: String(race),
+        });
+        if (useDemo) qs.set("demoExhibition", "1");
+        const res = await fetch(`/api/race?${qs.toString()}`);
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "取得失敗");
         setData(json);
@@ -184,31 +260,42 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stadiums]);
 
+  // 展示待ちなら自動再取得（朝1Rから監視）
+  useEffect(() => {
+    if (!data?.tripleSystem?.ticketsLocked) return;
+    const t = setInterval(() => load(), 45000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.tripleSystem?.ticketsLocked, place, race]);
+
   const maxScore = data
     ? Math.max(...data.prediction.rankings.map((r) => r.score ?? 0), 1)
     : 1;
   const triple = data?.tripleSystem;
   const activeBand = triple?.active?.[0];
+  const liveUrls = triple?.liveUrls;
 
   return (
     <main className="shell">
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          本命・押し目・穴の3段システム。得意コースと異常オッズ回避のうえで、イン戦からの買い目を出す。
+          朝1Rから監視。進入・スリット・周回タイムが出てから本命/押し目/穴の買い目を出す。
         </p>
         <div className="cta-row">
-          <button className="btn" onClick={load} disabled={pending}>
+          <button className="btn" onClick={() => load()} disabled={pending}>
             {pending ? "読み込み中…" : "今日のレースを読む"}
           </button>
-          <a
+          <button
             className="btn ghost"
-            href="https://kyoteibiyori.com/"
-            target="_blank"
-            rel="noreferrer"
+            onClick={() => {
+              setDemoExhibition(true);
+              load({ demo: true });
+            }}
+            disabled={pending}
           >
-            ボートレース日和
-          </a>
+            展示デモで確認
+          </button>
         </div>
       </section>
 
@@ -235,7 +322,7 @@ export default function Home() {
               value={race}
               onChange={(e) => setRace(Number(e.target.value))}
             >
-              {races.map((n) => (
+              {(races.length ? races : Array.from({ length: 12 }, (_, i) => i + 1)).map((n) => (
                 <option key={n} value={n}>
                   {n}R
                 </option>
@@ -248,7 +335,7 @@ export default function Home() {
               <option value="today">{dateLabel || "Asia/Tokyo 今日"}</option>
             </select>
           </div>
-          <button className="btn" onClick={load} disabled={pending}>
+          <button className="btn" onClick={() => load()} disabled={pending}>
             予想する
           </button>
         </div>
@@ -263,40 +350,88 @@ export default function Home() {
                 {data.placeName} {data.raceNo}R
               </span>
               <span className="badge">{data.raceName || "番組"}</span>
-              <span className="badge">{data.raceRank || "一般"}</span>
-              <span className="badge">
-                データ:{" "}
-                {data.source === "kyoteibiyori"
-                  ? "ボートレース日和"
-                  : data.source === "openapi"
-                    ? "OpenAPI"
-                    : "サンプル"}
+              <span className={`badge ${data.exhibition?.ready ? "" : "warn"}`}>
+                展示: {data.exhibition?.ready ? "確定" : "待ち"}
               </span>
-              <span className="badge">信頼度 {data.prediction.confidence}</span>
               <span className={`badge ${triple?.anomaly.ok ? "" : "warn"}`}>
                 オッズ: {triple?.anomaly.ok ? "妥当" : "要注意"}
               </span>
+            </div>
+
+            <div className={`anomaly ${data.exhibition?.ready ? "ok" : "bad"}`}>
+              <strong>展示ゲート</strong>
+              <p>{data.exhibition?.reason ?? triple?.focus}</p>
+              {data.exhibition?.entryChanged ? (
+                <div className="note" style={{ margin: 0 }}>
+                  進入変更を検知 → 実コースで買い目を再計算します。
+                  {data.exhibition.changes
+                    .map((c) => `${c.boat}号 ${c.from}→${c.to}`)
+                    .join(" / ")}
+                </div>
+              ) : null}
+              {data.exhibition?.boats?.length ? (
+                <div className="table-wrap" style={{ marginTop: "0.75rem" }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>枠</th>
+                        <th>選手</th>
+                        <th>進入</th>
+                        <th>スリット</th>
+                        <th>周回</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.exhibition.boats.map((b) => (
+                        <tr key={b.boat}>
+                          <td>{b.entry}</td>
+                          <td>{b.name}</td>
+                          <td>{b.course ?? "—"}{b.entryChanged ? " ※変更" : ""}</td>
+                          <td>{b.slit ?? "—"}</td>
+                          <td>{b.lapTime ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
             </div>
 
             <div className="pick">
               <div className="pick-main">
                 <span className="badge">{triple?.focus ?? "参考スコア"}</span>
                 <h2>
-                  {activeBand
-                    ? `${activeBand.label}採用`
-                    : `${data.prediction.honmei.course}号 ${data.prediction.honmei.name}`}
+                  {triple?.ticketsLocked
+                    ? "買い目ロック中"
+                    : activeBand
+                      ? `${activeBand.label}採用`
+                      : "見送り"}
                 </h2>
                 <p>
-                  {activeBand
-                    ? `${activeBand.ticketLabel} / ${(activeBand.tickets || []).join(" · ") || "見送り"}`
-                    : data.prediction.summary}
+                  {triple?.ticketsLocked
+                    ? "進入状況・スリット・周回タイムの確定後に買い目を出します。"
+                    : activeBand
+                      ? `${activeBand.ticketLabel} / ${activeBand.tickets.join(" · ")}`
+                      : data.prediction.summary}
                 </p>
                 <div className="sanren">
-                  {(activeBand?.tickets?.length
-                    ? activeBand.tickets
-                    : [data.prediction.sanrentan]
-                  ).join(" / ")}
+                  {triple?.ticketsLocked
+                    ? "WAIT"
+                    : (activeBand?.tickets?.length
+                        ? activeBand.tickets
+                        : ["見送り"]
+                      ).join(" / ")}
                 </div>
+                {!triple?.ticketsLocked && (triple?.portfolioTickets?.length ?? 0) > 0 ? (
+                  <div className="cta-row" style={{ marginTop: "1rem" }}>
+                    <button
+                      className="btn"
+                      onClick={() => setPurchased(true)}
+                    >
+                      購入した
+                    </button>
+                  </div>
+                ) : null}
                 <p className="note" style={{ marginTop: "0.4rem" }}>
                   {triple?.disclaimer}
                 </p>
@@ -307,14 +442,11 @@ export default function Home() {
                     <span>
                       {b.label}
                       {b.meetsTarget ? " ★目標達成ルール" : ""}
-                      {b.blockedByOdds ? " / 異常オッズ回避" : ""}
                     </span>
-                    <strong>
-                      {b.ok ? b.tickets.join(" · ") : "見送り"}
-                    </strong>
+                    <strong>{b.ok ? b.tickets.join(" · ") : "見送り"}</strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
                       {b.ok
-                        ? `${b.ticketLabel}${b.validatedRoi != null ? ` / 検証ROI ${b.validatedRoi.toFixed(1)}%` : ""}${b.validatedHit != null ? ` / 的中 ${b.validatedHit.toFixed(1)}%` : ""}`
+                        ? `${b.ticketLabel}${b.validatedRoi != null ? ` / 検証ROI ${b.validatedRoi.toFixed(1)}%` : ""}`
                         : b.reasons.slice(0, 2).join(" / ")}
                     </div>
                   </div>
@@ -322,26 +454,38 @@ export default function Home() {
               </div>
             </div>
 
+            {purchased && liveUrls ? (
+              <div className="live-box purchased">
+                <strong>購入済み → ライブ放送</strong>
+                <p className="note" style={{ marginTop: "0.35rem" }}>
+                  {liveUrls.placeName} の公式ライブ入口を開きます。
+                </p>
+                <div className="cta-row">
+                  <a className="btn" href={liveUrls.mediaTop} target="_blank" rel="noreferrer">
+                    公式ライブを見る
+                  </a>
+                  <a className="btn ghost" href={liveUrls.beforeInfo} target="_blank" rel="noreferrer">
+                    直前情報
+                  </a>
+                  <a className="btn ghost" href={liveUrls.raceList} target="_blank" rel="noreferrer">
+                    出走表
+                  </a>
+                </div>
+                {liveUrls.mediaTop ? (
+                  <iframe
+                    title="boatrace-live"
+                    className="live-frame"
+                    src={liveUrls.mediaTop}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : null}
+              </div>
+            ) : null}
+
             {triple ? (
               <div className={`anomaly ${triple.anomaly.ok ? "ok" : "bad"}`}>
                 <strong>異常オッズ監視</strong>
                 <p>{triple.anomaly.advice}</p>
-                <div className="note" style={{ margin: 0 }}>
-                  1番人気 {triple.anomaly.favorite ?? "—"} @ {triple.anomaly.favOdds ?? "—"} /
-                  上位占有 {((triple.anomaly.top3ShareProxy ?? 0) * 100).toFixed(1)}% /
-                  フラグ {(triple.anomaly.flags || []).join(", ") || "なし"}
-                </div>
-                {data.odds?.sample?.length ? (
-                  <div className="odds-row">
-                    {data.odds.sample.map((o) => (
-                      <span key={o.combo} className="badge">
-                        {o.combo} {o.odds.toFixed(1)}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="note">当日オッズ未取得（履歴ルールのみ適用）</p>
-                )}
               </div>
             ) : null}
 
@@ -353,7 +497,6 @@ export default function Home() {
                     <th>選手</th>
                     <th>級別</th>
                     <th>全国</th>
-                    <th>当地</th>
                     <th>M2連</th>
                     <th>ST</th>
                     <th>得意コース</th>
@@ -373,32 +516,19 @@ export default function Home() {
                         </div>
                       </td>
                       <td>{r.className}</td>
-                      <td>
-                        {r.nationalWin.toFixed(2)}
-                        <div className="note" style={{ margin: 0 }}>
-                          2連 {r.nationalTop2.toFixed(1)}%
-                        </div>
-                      </td>
-                      <td>{r.localWin.toFixed(2)}</td>
+                      <td>{r.nationalWin.toFixed(2)}</td>
                       <td>{r.motorTop2.toFixed(1)}%</td>
                       <td>{r.avgStart.toFixed(2)}</td>
                       <td>
                         {r.courseSkill?.label ?? "—"}
                         <div className="note" style={{ margin: 0 }}>
                           勝率 {((r.courseSkill?.winRate ?? 0) * 100).toFixed(1)}%
-                          {r.courseSkill?.bestCourse
-                            ? ` / 最得意${r.courseSkill.bestCourse}`
-                            : ""}
                         </div>
                       </td>
                       <td style={{ minWidth: 110 }}>
                         {(r.score ?? 0).toFixed(1)}
                         <div className="scorebar">
-                          <i
-                            style={{
-                              width: `${((r.score ?? 0) / maxScore) * 100}%`,
-                            }}
-                          />
+                          <i style={{ width: `${((r.score ?? 0) / maxScore) * 100}%` }} />
                         </div>
                       </td>
                     </tr>
@@ -406,141 +536,72 @@ export default function Home() {
                 </tbody>
               </table>
             </div>
-
-            {triple?.live ? (
-              <div className="live-box">
-                <strong>ライブ解析フック</strong>
-                <p className="note" style={{ marginTop: "0.35rem" }}>
-                  {triple.live.message}
-                </p>
-                {triple.live.exhibitionNotes?.length ? (
-                  <div className="odds-row">
-                    {triple.live.exhibitionNotes.slice(0, 6).map((n) => (
-                      <span key={n.boat} className="badge">
-                        {n.boat}号 {n.notes.join("·") || "標準"} ({n.score})
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-                {triple.live.stream ? (
-                  <a
-                    className="btn ghost"
-                    style={{ display: "inline-flex", marginTop: "0.75rem" }}
-                    href={triple.live.stream.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    公式結果/ライブ導線
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-
-            <p className="note">
-              {data.note
-                ? data.note
-                : "出走はボートレース日和、履歴・得意コースはOpenAPI/艇愛DB。予想は娯楽・参考用で的中や回収を保証しません。"}
-            </p>
           </>
         ) : null}
       </section>
+
+      {research?.equity10k ? (
+        <section className="panel" style={{ marginTop: "1rem" }}>
+          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>
+            1レース1万円の収支推移
+          </h2>
+          <p className="note">
+            検証期間 {research.equity10k.period} / 投資単位{" "}
+            {research.equity10k.stake_per_race.toLocaleString()}円（点数で等分）。
+            将来の利益を保証しません。
+          </p>
+          <div className="band-grid">
+            {(["honmei", "oshi", "ana"] as const).map((key) => {
+              const b = research.equity10k?.bands?.[key];
+              if (!b) return null;
+              const label = key === "honmei" ? "本命" : key === "oshi" ? "押し目" : "穴目";
+              const color =
+                key === "honmei" ? "#3ad0c4" : key === "oshi" ? "#f0b429" : "#f97316";
+              return (
+                <div key={key} className="side-card on">
+                  <span>{label}</span>
+                  <strong>
+                    最終 {b.final_equity.toLocaleString()}円 / ROI {b.roi.toFixed(1)}%
+                  </strong>
+                  <div className="note" style={{ margin: "0.35rem 0 0.5rem" }}>
+                    {b.selected}R / 的中 {b.hit_rate.toFixed(1)}% / 損益{" "}
+                    {b.pnl.toLocaleString()}円
+                  </div>
+                  <EquityMiniChart curve={b.curve} color={color} />
+                </div>
+              );
+            })}
+          </div>
+          {research.equity10k.portfolio ? (
+            <div className="side-card on" style={{ marginTop: "0.75rem" }}>
+              <span>合算（本命優先で同一レースは1帯）</span>
+              <strong>
+                最終 {research.equity10k.portfolio.final_equity.toLocaleString()}円 / ROI{" "}
+                {research.equity10k.portfolio.roi.toFixed(1)}%
+              </strong>
+              <div className="note" style={{ margin: "0.35rem 0 0.5rem" }}>
+                {research.equity10k.portfolio.selected}R / 的中{" "}
+                {research.equity10k.portfolio.hit_rate.toFixed(1)}% /{" "}
+                {research.equity10k.portfolio.rule}
+              </div>
+              <EquityMiniChart
+                curve={research.equity10k.portfolio.curve}
+                color="#d7f3ff"
+              />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {research ? (
         <section className="panel" style={{ marginTop: "1rem" }}>
           <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>3段検証レポート</h2>
           <p className="note">
             学習 {research.backtestSummary.train_n.toLocaleString()} レース /
-            検証 {research.backtestSummary.test_n.toLocaleString()} レース /
-            本命ROI150%超 {research.backtestSummary.strategies_ge_150_test} 本
+            検証 {research.backtestSummary.test_n.toLocaleString()} レース
           </p>
-          <div className="band-grid">
-            <div className="side-card on">
-              <span>本命</span>
-              <strong>
-                ROI {research.lockedHonmei.validated_test_roi.toFixed(1)}%
-              </strong>
-              <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                {research.lockedHonmei.ticketLabel} / 場{" "}
-                {research.lockedHonmei.stadium_whitelist.join(",")}
-              </div>
-            </div>
-            <div className={`side-card ${research.lockedTriple?.oshi?.meets_target ? "on" : ""}`}>
-              <span>押し目</span>
-              <strong>
-                ROI {(research.lockedTriple?.oshi?.validated_test_roi ?? 0).toFixed(1)}%
-                {research.lockedTriple?.oshi?.validated_test_hit_rate != null
-                  ? ` / 的中 ${research.lockedTriple.oshi.validated_test_hit_rate.toFixed(1)}%`
-                  : ""}
-              </strong>
-              <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                {research.lockedTriple?.oshi?.ticketLabel ?? "探索中"}
-                {research.lockedTriple?.oshi?.meets_target ? " / 目標達成" : " / 目標未達・最良候補"}
-              </div>
-            </div>
-            <div className={`side-card ${research.lockedTriple?.ana?.meets_target ? "on" : ""}`}>
-              <span>穴目</span>
-              <strong>
-                ROI {(research.lockedTriple?.ana?.validated_test_roi ?? 0).toFixed(1)}%
-                {research.lockedTriple?.ana?.validated_test_hit_rate != null
-                  ? ` / 的中 ${research.lockedTriple.ana.validated_test_hit_rate.toFixed(1)}%`
-                  : ""}
-              </strong>
-              <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                {research.lockedTriple?.ana?.ticketLabel ?? "探索中"}
-                {research.lockedTriple?.ana?.meets_target ? " / 目標達成" : " / 目標未達・最良候補"}
-              </div>
-            </div>
-          </div>
-          <p className="note">{research.oddsAnomaly?.note}</p>
           <p className="note">{research.exhibition.note}</p>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>場</th>
-                  <th>イン逃げ率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(research.stadiumInnige)
-                  .sort((a, b) => b[1].rate - a[1].rate)
-                  .map(([name, v]) => (
-                    <tr key={name}>
-                      <td>
-                        {name}
-                        {research.lockedHonmei.stadium_whitelist.includes(v.stadium)
-                          ? " ★本命対象"
-                          : ""}
-                      </td>
-                      <td>{(v.rate * 100).toFixed(1)}%</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-          <h3 style={{ marginTop: "1rem" }}>ノリ好調（直近1ヶ月 / as of {research.hotRacers.as_of}）</h3>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>選手</th>
-                  <th>出走</th>
-                  <th>勝率</th>
-                  <th>得意コース</th>
-                </tr>
-              </thead>
-              <tbody>
-                {research.hotRacers.windows["1m"].slice(0, 10).map((r) => (
-                  <tr key={r.name + r.starts}>
-                    <td>{r.name}</td>
-                    <td>{r.starts}</td>
-                    <td>{(r.win_rate * 100).toFixed(1)}%</td>
-                    <td>{r.best_course ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <p className="note">{research.oddsAnomaly?.note}</p>
         </section>
       ) : null}
     </main>

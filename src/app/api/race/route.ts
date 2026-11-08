@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchKyoteiRace } from "@/lib/kyotei";
+import { fetchKyoteiRaceBundle } from "@/lib/kyotei";
 import { scoreRace } from "@/lib/predict";
 import { buildTriplePrediction } from "@/lib/tripleSystem";
 import { fetchTrifectaOdds } from "@/lib/oddsFetch";
 import { annotateCourseSkills } from "@/lib/courseSkills";
+import { remapRacersToExhibitionCourses } from "@/lib/exhibition";
 import { jstDateKey } from "@/lib/stadiums";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ export async function GET(req: NextRequest) {
   const race = Number(req.nextUrl.searchParams.get("race") ?? "1");
   const date = req.nextUrl.searchParams.get("date") ?? jstDateKey();
   const streamUrl = req.nextUrl.searchParams.get("stream") ?? undefined;
+  const demoExhibition = req.nextUrl.searchParams.get("demoExhibition") === "1";
+  const windParam = req.nextUrl.searchParams.get("wind");
 
   if (!Number.isInteger(place) || place < 1 || place > 24) {
     return NextResponse.json({ error: "invalid place" }, { status: 400 });
@@ -24,27 +27,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "invalid date" }, { status: 400 });
   }
 
-  const payload = await fetchKyoteiRace(place, race, date);
-  const prediction = scoreRace(payload.racers);
-  const { odds, source: oddsSource } = await fetchTrifectaOdds(place, race, date);
-  const windParam = req.nextUrl.searchParams.get("wind");
+  const { payload, exhibition } = await fetchKyoteiRaceBundle(place, race, date, {
+    forceSampleExhibition: demoExhibition,
+  });
   const windSpeed =
     windParam != null && windParam !== "" && Number.isFinite(Number(windParam))
       ? Number(windParam)
-      : null;
+      : payload.windSpeed ?? exhibition.windSpeed;
+
+  const racersForScore = exhibition.ready
+    ? remapRacersToExhibitionCourses(payload.racers, exhibition)
+    : payload.racers;
+  const prediction = scoreRace(racersForScore);
+  const { odds, source: oddsSource } = await fetchTrifectaOdds(place, race, date);
   const triple = buildTriplePrediction({
     placeNo: place,
     dateKey: date,
+    raceNo: race,
     racers: payload.racers,
     trifectaOdds: odds,
     streamUrl,
     windSpeed,
+    exhibition,
   });
-  const courseAnnotated = annotateCourseSkills(payload.racers);
+  const courseAnnotated = annotateCourseSkills(racersForScore);
 
   return NextResponse.json({
     ...payload,
     prediction,
+    exhibition,
     courseSkills: courseAnnotated.map((r) => ({
       course: r.course,
       name: r.name,
