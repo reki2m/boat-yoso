@@ -32,6 +32,7 @@ type Band = {
   label: string;
   ok: boolean;
   reasons: string[];
+  why?: string;
   tickets: string[];
   ticketLabel: string;
   betType: string;
@@ -118,6 +119,7 @@ type RaceResponse = {
     };
     portfolioTickets: string[];
     focus: string;
+    why?: string;
     disclaimer: string;
     ticketsLocked?: boolean;
     skipped?: boolean;
@@ -197,6 +199,8 @@ type DayPick = {
   status: string;
   skip_reason?: string | null;
   validated_roi?: number;
+  why?: string;
+  reasons?: string[];
 };
 
 type PicksPayload = {
@@ -211,6 +215,7 @@ type PicksPayload = {
     skipped?: number;
     provisional?: number;
   };
+  recent?: DayPick[];
   accuracy: {
     scored_at?: string;
     aggregate?: {
@@ -235,6 +240,42 @@ type PicksPayload = {
   };
   policy?: { note?: string };
 };
+
+function PickExplainCards({ picks }: { picks: DayPick[] }) {
+  if (!picks.length) return null;
+  return (
+    <div className="picks-explain-list">
+      {picks.map((p) => (
+        <article key={`${p.date}-${p.stadium}-${p.race}-${p.band}`} className="pick-explain-card">
+          <div className="pick-explain-head">
+            <strong>
+              {p.date ? `${p.date} · ` : ""}
+              {p.stadium_name} {p.race}R · {p.label || p.band}
+            </strong>
+            <span>
+              {p.status === "confirmed"
+                ? "確定"
+                : p.status === "skipped"
+                  ? "スキップ"
+                  : "展示待ち"}
+            </span>
+          </div>
+          <div className="sanren" style={{ fontSize: "1.35rem", margin: "0.55rem 0" }}>
+            {(p.tickets || []).join(" / ")}
+          </div>
+          <p className="why-text">{p.why || "条件一致のため抽出。"}</p>
+          {(p.reasons?.length ?? 0) > 0 ? (
+            <ul className="why-list">
+              {p.reasons?.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          ) : null}
+        </article>
+      ))}
+    </div>
+  );
+}
 
 function EquityMiniChart({
   curve,
@@ -510,6 +551,19 @@ export default function Home() {
                           : ["見送り"]
                         ).join(" / ")}
                 </div>
+                {triple?.why ? (
+                  <div className="why-box">
+                    <strong>なぜこのレースか</strong>
+                    <p>{triple.why}</p>
+                    {activeBand?.reasons?.length ? (
+                      <ul>
+                        {activeBand.reasons.map((r) => (
+                          <li key={r}>{r}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
                 {!triple?.ticketsLocked &&
                 !triple?.skipped &&
                 (triple?.portfolioTickets?.length ?? 0) > 0 ? (
@@ -539,6 +593,11 @@ export default function Home() {
                         ? `${b.ticketLabel}${b.validatedRoi != null ? ` / 検証ROI ${b.validatedRoi.toFixed(1)}%` : ""}`
                         : b.reasons.slice(0, 2).join(" / ")}
                     </div>
+                    {b.ok && b.why ? (
+                      <div className="note" style={{ margin: "0.45rem 0 0" }}>
+                        {b.why}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -691,39 +750,19 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (
-            <p className="status">条件該当の買い目はまだありません（番組未公開か、厳選ルール外）。</p>
+            <p className="status">本日の条件該当はまだありません。直近の採用例と理由を下に表示します。</p>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>場</th>
-                    <th>R</th>
-                    <th>帯</th>
-                    <th>買い目</th>
-                    <th>状態</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {picksPayload.board.picks?.map((p) => (
-                    <tr key={`${p.stadium}-${p.race}-${p.band}`}>
-                      <td>{p.stadium_name}</td>
-                      <td>{p.race}R</td>
-                      <td>{p.label || p.band}</td>
-                      <td>{(p.tickets || []).join(" · ")}</td>
-                      <td>
-                        {p.status === "confirmed"
-                          ? "確定"
-                          : p.status === "skipped"
-                            ? "スキップ"
-                            : "展示待ち"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PickExplainCards picks={picksPayload.board.picks || []} />
           )}
+          {(picksPayload.recent?.length ?? 0) > 0 &&
+          (picksPayload.board.picks?.length ?? 0) === 0 ? (
+            <>
+              <h3 style={{ fontFamily: "var(--font-display)", margin: "1rem 0 0.35rem" }}>
+                直近の買い目と理由
+              </h3>
+              <PickExplainCards picks={picksPayload.recent || []} />
+            </>
+          ) : null}
         </section>
       ) : null}
 

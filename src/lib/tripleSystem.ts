@@ -17,6 +17,7 @@ import type { RacerRow } from "./types";
 import { analyzeLive, type LiveAnalysisResult } from "./liveAnalysis";
 import { type ExhibitionStatus } from "./exhibition";
 import { liveBroadcastUrls } from "./liveBroadcast";
+import { STADIUMS } from "./stadiums";
 
 type BandRule = Record<string, unknown> & {
   band?: string;
@@ -148,7 +149,16 @@ function passesOshi(placeNo: number, racers: RacerRow[], rule: BandRule): { ok: 
     const gap = c2Skill - courseWinRate(c1.playerNo, 1);
     if (gap < rule.min_skill_gap_21) reasons.push("得意コース差が不足");
   }
-  return { ok: reasons.length === 0, reasons: reasons.length ? reasons : ["押し目条件を充足"] };
+  if (reasons.length) return { ok: false, reasons };
+  return {
+    ok: true,
+    reasons: [
+      `1号勝率 ${c1.nationalWin.toFixed(2)} は押し目レンジ`,
+      `2号 ${c2.name} 勝率 ${c2.nationalWin.toFixed(2)} / 2コース ${(c2Skill * 100).toFixed(1)}%`,
+      `場イン逃げ率 ${(rate * 100).toFixed(1)}%`,
+      "差し・まくり返しの押し目形",
+    ],
+  };
 }
 
 function passesAna(
@@ -201,7 +211,16 @@ function passesAna(
     if (windSpeed == null) reasons.push("風速未取得（直前情報待ち）");
     else if (windSpeed < rule.min_wind) reasons.push(`風が弱い (${windSpeed}m < ${rule.min_wind}m)`);
   }
-  return { ok: reasons.length === 0, reasons: reasons.length ? reasons : ["穴目条件を充足"] };
+  if (reasons.length) return { ok: false, reasons };
+  return {
+    ok: true,
+    reasons: [
+      `イン逃げ率 ${(rate * 100).toFixed(1)}% でイン絶対場ではない`,
+      `1号 ${c1.name} は勝率 ${c1.nationalWin.toFixed(2)} / ST ${c1.avgStart.toFixed(2)} と弱い`,
+      `${axis}号 ${ax.name} が軸（勝率 ${ax.nationalWin.toFixed(2)} / ${axis}コース ${(axSkill * 100).toFixed(1)}%）`,
+      windSpeed != null ? `風速 ${windSpeed}m` : "風速は直前確認",
+    ],
+  };
 }
 
 export type BandResult = {
@@ -209,6 +228,7 @@ export type BandResult = {
   label: string;
   ok: boolean;
   reasons: string[];
+  why: string;
   tickets: string[];
   ticketLabel: string;
   betType: "trifecta" | "exacta";
@@ -225,6 +245,7 @@ export type TriplePrediction = {
   live: LiveAnalysisResult;
   portfolioTickets: string[];
   focus: string;
+  why: string;
   disclaimer: string;
   exhibition: ExhibitionStatus;
   ticketsLocked: boolean;
@@ -232,6 +253,58 @@ export type TriplePrediction = {
   skipped: boolean;
   skipReason: string | null;
 };
+
+function buildWhyText(input: {
+  placeNo: number;
+  skipped: boolean;
+  ticketsLocked: boolean;
+  entryChanged: boolean;
+  active: BandResult[];
+  racers: RacerRow[];
+  windSpeed: number | null;
+}): string {
+  const place = STADIUMS[input.placeNo] ?? `場${input.placeNo}`;
+  if (input.entryChanged) {
+    return `${place}はこのレース進入変更のため買い目を出しません。予想を無理に当てはめずスキップします。`;
+  }
+  if (input.ticketsLocked) {
+    return `${place}はスタート展示（進入・スリット・周回タイム）の確認前です。展示が出てから買い目を確定します。`;
+  }
+  const top = input.active[0];
+  if (!top) {
+    return `${place}はロック済みの本命/押し目/穴条件に当てはまらないため見送りです。`;
+  }
+  const c1 = byCourse(input.racers, 1);
+  const c2 = byCourse(input.racers, 2);
+  const c4 = byCourse(input.racers, 4);
+  const inn = innigeRate(input.placeNo);
+  if (top.band === "honmei" && c1) {
+    return (
+      `${place}はイン逃げ率 ${(inn * 100).toFixed(1)}% のイン向き場。` +
+      `1号の${c1.name}が${c1.className}・勝率${c1.nationalWin.toFixed(2)}・ST${c1.avgStart.toFixed(2)}・` +
+      `モーター${c1.motorTop2.toFixed(1)}%で本命条件を満たすため、${top.tickets.join("・")}を採用。`
+    );
+  }
+  if (top.band === "oshi" && c1 && c2) {
+    const c2Skill = courseWinRate(c2.playerNo, 2);
+    return (
+      `${place}で1号勝率${c1.nationalWin.toFixed(2)}は押し目レンジ。` +
+      `2号の${c2.name}が勝率${c2.nationalWin.toFixed(2)}・2コース実績${(c2Skill * 100).toFixed(1)}%で反撃できる形のため、` +
+      `${top.tickets.join("・")}を採用。`
+    );
+  }
+  if (top.band === "ana" && c1 && c4) {
+    const axSkill = courseWinRate(c4.playerNo, 4);
+    return (
+      `${place}はイン絶対場ではなく（逃げ率 ${(inn * 100).toFixed(1)}%）、` +
+      `1号の${c1.name}が勝率${c1.nationalWin.toFixed(2)}/ST${c1.avgStart.toFixed(2)}と弱い一方、` +
+      `4号の${c4.name}が軸（勝率${c4.nationalWin.toFixed(2)}・4コース${(axSkill * 100).toFixed(1)}%）になれるため` +
+      `${top.tickets.join("・")}を採用。` +
+      (input.windSpeed != null ? ` 風速${input.windSpeed}m。` : "")
+    );
+  }
+  return top.why || top.reasons.join("。");
+}
 
 function betTypeOf(tickets: string[]): "trifecta" | "exacta" {
   return tickets.some((t) => t.split("-").length === 3) ? "trifecta" : "exacta";
@@ -340,14 +413,32 @@ export function buildTriplePrediction(input: {
     }
   }
 
+  const honmeiOk = honmeiEval.ok && honmeiTickets.length > 0;
+  const oshiOk = oshiPass.ok && oshiTickets.length > 0;
+  const anaOk = anaPass.ok && anaTickets.length > 0;
+  const honmeiReasons = honmeiBlocked
+    ? [...honmeiEval.reasons, "異常オッズ（買われすぎ）で回避"]
+    : honmeiOk && c1
+      ? [
+          `場イン逃げ率 ${(innigeRate(input.placeNo) * 100).toFixed(1)}%`,
+          `1号 ${c1.name} ${c1.className} / 勝率 ${c1.nationalWin.toFixed(2)} / ST ${c1.avgStart.toFixed(2)}`,
+          `モーター2連対 ${c1.motorTop2.toFixed(1)}%` +
+            (c2 ? ` / 2号との勝率差 ${(c1.nationalWin - c2.nationalWin).toFixed(2)}` : ""),
+          `買い目 ${honmeiTickets.join("・")}`,
+        ]
+      : honmeiEval.reasons;
+  const oshiReasons = oshiBlocked
+    ? [...oshiPass.reasons, "異常オッズ（買われすぎ）で回避"]
+    : oshiPass.reasons;
+  const anaReasons = anaPass.reasons;
+
   const bands: BandResult[] = [
     {
       band: "honmei",
       label: "本命",
-      ok: honmeiEval.ok && honmeiTickets.length > 0,
-      reasons: honmeiBlocked
-        ? [...honmeiEval.reasons, "異常オッズ（買われすぎ）で回避"]
-        : honmeiEval.reasons,
+      ok: honmeiOk,
+      reasons: honmeiReasons,
+      why: "",
       tickets: honmeiTickets,
       ticketLabel: HONMEI_TICKET_LABEL[HONMEI_RULE.ticket] ?? "本命",
       betType: "trifecta",
@@ -358,10 +449,9 @@ export function buildTriplePrediction(input: {
     {
       band: "oshi",
       label: "押し目",
-      ok: oshiPass.ok && oshiTickets.length > 0,
-      reasons: oshiBlocked
-        ? [...oshiPass.reasons, "異常オッズ（買われすぎ）で回避"]
-        : oshiPass.reasons,
+      ok: oshiOk,
+      reasons: oshiReasons,
+      why: "",
       tickets: oshiTickets,
       ticketLabel: BAND_TICKET_LABEL[String(oshiRule?.ticket ?? "")] ?? "押し目",
       betType: betTypeOf(oshiTickets),
@@ -373,8 +463,9 @@ export function buildTriplePrediction(input: {
     {
       band: "ana",
       label: "穴目",
-      ok: anaPass.ok && anaTickets.length > 0,
-      reasons: anaPass.reasons,
+      ok: anaOk,
+      reasons: anaReasons,
+      why: "",
       tickets: anaTickets,
       ticketLabel: BAND_TICKET_LABEL[String(anaRule?.ticket ?? "")] ?? "穴目",
       betType: betTypeOf(anaTickets),
@@ -385,6 +476,19 @@ export function buildTriplePrediction(input: {
   ];
 
   const active = bands.filter((b) => b.ok);
+  const why = buildWhyText({
+    placeNo: input.placeNo,
+    skipped: entryChanged,
+    ticketsLocked,
+    entryChanged,
+    active,
+    racers,
+    windSpeed: wind,
+  });
+  for (const b of bands) {
+    if (b.ok) b.why = why;
+    else b.why = b.reasons.slice(0, 3).join("。");
+  }
   const portfolioTickets = [...new Set(active.flatMap((b) => b.tickets))];
   const live = analyzeLive({
     streamUrl: input.streamUrl ?? liveUrls.mediaTop,
@@ -411,6 +515,7 @@ export function buildTriplePrediction(input: {
     live,
     portfolioTickets,
     focus,
+    why,
     disclaimer:
       "必ず勝てる保証はない。スタート展示確認後に買い目確定。進入変更・予期しない事態はスキップ。",
     exhibition: input.exhibition,

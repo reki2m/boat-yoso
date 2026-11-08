@@ -2,7 +2,7 @@
   "active_date": "20261109",
   "date": "20261109",
   "phase": "today",
-  "generated_at": "2026-11-09T03:28:22.221612+09:00",
+  "generated_at": "2026-11-09T03:31:38.029984+09:00",
   "picks": [],
   "count": 0,
   "status": "ok",
@@ -13,7 +13,7 @@
   "today": {
     "date": "20261109",
     "phase": "today",
-    "generated_at": "2026-11-09T03:28:22.221612+09:00",
+    "generated_at": "2026-11-09T03:31:38.029984+09:00",
     "picks": [],
     "count": 0,
     "status": "ok",
@@ -21,7 +21,7 @@
     "confirmed": 0,
     "skipped": 0,
     "provisional": 0,
-    "confirmed_at": "2026-11-09T03:28:22.340548+09:00"
+    "confirmed_at": "2026-11-09T03:31:38.169784+09:00"
   },
   "tomorrow": {
     "date": "20261110",

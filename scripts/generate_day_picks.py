@@ -66,10 +66,73 @@ def tickets(kind: str) -> list[str]:
     return m.get(kind, [])
 
 
+CLASS_LABEL = {1: "A1", 2: "A2", 3: "B1", 4: "B2"}
+
+
+def class_label(n: int) -> str:
+    return CLASS_LABEL.get(int(n), f"級{n}")
+
+
+def explain_honmei(place: int, stadium_name: str, e1: dict, e2: dict, inn: float, h: dict, ticket_list: list[str]) -> dict:
+    reasons = [
+        f"{stadium_name}はイン逃げ率 {(inn * 100):.1f}%（閾値 {(float(h.get('min_stadium_innige') or 0.6) * 100):.0f}%以上）",
+        f"1号 {e1.get('name')} は{class_label(e1.get('class'))}・全国勝率 {float(e1.get('nat') or 0):.2f}・平均ST {float(e1.get('st') or 0):.2f}",
+        f"モーター2連対 {float(e1.get('motor2') or 0):.1f}%、2号との勝率差 {float(e1.get('nat') or 0) - float(e2.get('nat') or 0):.2f}",
+        f"買い目はイン戦の {', '.join(ticket_list)}（1-2軸の流れ）",
+    ]
+    why = (
+        f"{stadium_name}はインが決まりやすい場。1号の{e1.get('name')}が"
+        f"{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}・"
+        f"モーター{float(e1.get('motor2') or 0):.1f}%と本命条件を満たし、2号との勝率差も確保できるため"
+        "「1-2流し」を採用。"
+    )
+    return {"why": why, "reasons": reasons}
+
+
+def explain_oshi(place: int, stadium_name: str, e1: dict, e2: dict, skills: dict, inn: float, o: dict, ticket_list: list[str]) -> dict:
+    c2s = skill_win(skills, int(e2.get("regno") or 0), 2)
+    c2t2 = skill_top2(skills, int(e2.get("regno") or 0), 2)
+    reasons = [
+        f"1号勝率 {float(e1.get('nat') or 0):.2f} は押し目レンジ（{o.get('c1_nat_lo')}〜{o.get('c1_nat_hi')}）",
+        f"2号 {e2.get('name')} の全国勝率 {float(e2.get('nat') or 0):.2f}、2コース勝率 {(c2s * 100):.1f}% / 2連対 {(c2t2 * 100):.1f}%",
+        f"場のイン逃げ率 {(inn * 100):.1f}%（押し目下限 {(float(o.get('min_inn') or 0) * 100):.0f}%以上）",
+        f"買い目は差し・まくり返し想定の {', '.join(ticket_list)}",
+    ]
+    why = (
+        f"{stadium_name}で1号が強すぎず（勝率{float(e1.get('nat') or 0):.2f}）、"
+        f"2号の{e2.get('name')}が2コース実績（勝率{(c2s * 100):.1f}%）と全国勝率{float(e2.get('nat') or 0):.2f}で反撃できる形。"
+        f"イン一本に偏らず押し目の {', '.join(ticket_list)} を採用。"
+    )
+    return {"why": why, "reasons": reasons}
+
+
+def explain_ana(place: int, stadium_name: str, e1: dict, ex: dict, axis: int, skills: dict, inn: float, a: dict, ticket_list: list[str]) -> dict:
+    c1s = skill_win(skills, int(e1.get("regno") or 0), 1)
+    axs = skill_win(skills, int(ex.get("regno") or 0), axis)
+    reasons = [
+        f"イン場が強くない（逃げ率 {(inn * 100):.1f}% ≤ {(float(a.get('max_inn') or 1) * 100):.0f}%）",
+        f"1号 {e1.get('name')} は{class_label(e1.get('class'))}・勝率 {float(e1.get('nat') or 0):.2f}・ST {float(e1.get('st') or 0):.2f}・1コース勝率 {(c1s * 100):.1f}% と弱い",
+        f"{axis}号 {ex.get('name')} は軸候補（全国勝率 {float(ex.get('nat') or 0):.2f}・{axis}コース勝率 {(axs * 100):.1f}%・モーター {float(ex.get('motor2') or 0):.1f}%）",
+        f"買い目はアウト寄り {', '.join(ticket_list)}",
+    ]
+    why = (
+        f"{stadium_name}はイン絶対場ではなく、1号の{e1.get('name')}が"
+        f"勝率{float(e1.get('nat') or 0):.2f}/ST{float(e1.get('st') or 0):.2f}と穴向き。"
+        f"{axis}号の{ex.get('name')}がコース実績と勝率で軸になれるため、"
+        f"{', '.join(ticket_list)} を採用。"
+    )
+    if float(a.get("min_wind") or 0) > 0:
+        reasons.append(f"風速 {a.get('min_wind')}m以上を当日確認（未達ならスキップ）")
+        why += f" 当日風速{a.get('min_wind')}m未満なら見送り。"
+    return {"why": why, "reasons": reasons}
+
+
 def pick_band(place: int, entries: dict[int, dict], locked: dict, skills: dict, innige: dict[int, float]):
     e1, e2, e3, e4 = entries.get(1), entries.get(2), entries.get(3), entries.get(4)
     if not e1 or not e2:
         return None
+    stadium_name = STADIUMS.get(place, f"場{place}")
+    inn = innige.get(place, 0)
 
     # honmei
     h = locked.get("honmei") or {}
@@ -80,15 +143,18 @@ def pick_band(place: int, entries: dict[int, dict], locked: dict, skills: dict, 
         and float(e1.get("st") or 9) <= float(h.get("max_c1_st") or 0.14)
         and float(e1.get("motor2") or 0) >= float(h.get("min_motor2") or 35)
         and float(e1.get("nat") or 0) - float(e2.get("nat") or 0) >= float(h.get("min_gap_c2") or 1)
-        and innige.get(place, 0) >= float(h.get("min_stadium_innige") or 0.6)
+        and inn >= float(h.get("min_stadium_innige") or 0.6)
         and int(e1.get("grade") or 5) in (h.get("grades") or [4, 5])
     ):
+        ticket_list = tickets(h.get("ticket") or "trifecta_1_2_stream")
+        explanation = explain_honmei(place, stadium_name, e1, e2, inn, h, ticket_list)
         return {
             "band": "honmei",
             "label": "本命",
-            "tickets": tickets(h.get("ticket") or "trifecta_1_2_stream"),
+            "tickets": ticket_list,
             "ticket": h.get("ticket"),
             "validated_roi": h.get("validated_test_roi"),
+            **explanation,
         }
 
     # oshi
@@ -97,7 +163,7 @@ def pick_band(place: int, entries: dict[int, dict], locked: dict, skills: dict, 
     c2s = skill_win(skills, int(e2.get("regno") or 0), 2)
     if (
         (wl is None or place in wl)
-        and float(o.get("min_inn") or 0) <= innige.get(place, 0)
+        and float(o.get("min_inn") or 0) <= inn
         and float(o.get("c1_nat_lo") or 0) <= float(e1.get("nat") or 0) <= float(o.get("c1_nat_hi") or 99)
         and float(e2.get("nat") or 0) >= float(o.get("min_c2_nat") or 0)
         and c2s >= float(o.get("min_c2_skill") or 0)
@@ -106,13 +172,16 @@ def pick_band(place: int, entries: dict[int, dict], locked: dict, skills: dict, 
         and (o.get("min_c2_motor") is None or float(e2.get("motor2") or 0) >= float(o["min_c2_motor"]))
         and int(e1.get("grade") or 5) in (o.get("grades") or [4, 5])
     ):
+        ticket_list = tickets(o.get("ticket") or "tri_oshi4")
+        explanation = explain_oshi(place, stadium_name, e1, e2, skills, inn, o, ticket_list)
         return {
             "band": "oshi",
             "label": "押し目",
-            "tickets": tickets(o.get("ticket") or "tri_oshi4"),
+            "tickets": ticket_list,
             "ticket": o.get("ticket"),
             "validated_roi": o.get("validated_test_roi"),
             "validated_hit": o.get("validated_test_hit_rate"),
+            **explanation,
         }
 
     # ana
@@ -135,15 +204,18 @@ def pick_band(place: int, entries: dict[int, dict], locked: dict, skills: dict, 
         and int(e1.get("grade") or 5) in (a.get("grades") or [4, 5])
         # wind unknown day-before → mark needs_wind_confirm
     ):
+        ticket_list = tickets(a.get("ticket") or "tri_4_1_stream")
+        explanation = explain_ana(place, stadium_name, e1, ex, axis, skills, innige.get(place, 0), a, ticket_list)
         return {
             "band": "ana",
             "label": "穴目",
-            "tickets": tickets(a.get("ticket") or "tri_4_1_stream"),
+            "tickets": ticket_list,
             "ticket": a.get("ticket"),
             "validated_roi": a.get("validated_test_roi"),
             "validated_hit": a.get("validated_test_hit_rate"),
             "needs_wind_confirm": float(a.get("min_wind") or 0) > 0,
             "min_wind": a.get("min_wind"),
+            **explanation,
         }
     return None
 

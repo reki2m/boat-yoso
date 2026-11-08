@@ -429,6 +429,72 @@ th {
   border-color: rgba(58, 208, 196, 0.45);
 }
 
+.why-box {
+  margin-top: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid rgba(58, 208, 196, 0.28);
+  background:
+    linear-gradient(160deg, rgba(58, 208, 196, 0.1), transparent 55%),
+    rgba(3, 18, 26, 0.7);
+}
+
+.why-box strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+.why-box p {
+  margin: 0.4rem 0 0;
+  line-height: 1.65;
+  color: rgba(215, 243, 255, 0.9);
+}
+
+.why-box ul,
+.why-list {
+  margin: 0.55rem 0 0;
+  padding-left: 1.1rem;
+  color: rgba(215, 243, 255, 0.72);
+  line-height: 1.55;
+}
+
+.picks-explain-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.pick-explain-card {
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(4, 22, 30, 0.72);
+}
+
+.pick-explain-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.pick-explain-head strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.pick-explain-head span {
+  font-size: 0.78rem;
+  color: rgba(215, 243, 255, 0.62);
+}
+
+.why-text {
+  margin: 0;
+  line-height: 1.65;
+  color: rgba(215, 243, 255, 0.88);
+}
+
 .stadium-live-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
