@@ -44,6 +44,7 @@ const STADIUM_INNIGE = stadiumRates as Record<string, { rate: number; stadium: n
 export const BAND_TICKET_LABEL: Record<string, string> = {
   ...HONMEI_TICKET_LABEL,
   tri_12_narrow: "3連単 1-2-3 / 1-2-4",
+  exa_12: "2連単 1-2",
   exa_21: "2連単 2-1",
   exa_21_23: "2連単 2-1 / 2-3",
   exa_31: "2連単 3-1",
@@ -69,6 +70,8 @@ function innigeRate(placeNo: number): number {
 
 function ticketsFromKind(kind: string | undefined): string[] {
   switch (kind) {
+    case "exa_12":
+      return ["1-2"];
     case "exa_21":
       return ["2-1"];
     case "exa_21_23":

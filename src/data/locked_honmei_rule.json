@@ -1,17 +1,17 @@
 {
-  "ticket": "tri_12_narrow",
-  "min_stadium_innige": 0.45,
+  "ticket": "exa_12",
+  "min_stadium_innige": 0.5,
   "max_c1_class": 2,
-  "min_c1_nat": 5.6,
-  "max_c1_st": 0.19,
-  "min_motor2": 25,
-  "min_gap_c2": 0.0,
+  "min_c1_nat": 5.8,
+  "max_c1_st": 0.18,
+  "min_motor2": 28,
+  "min_gap_c2": 0.3,
   "grades": [
     4,
     5
   ],
   "stadium_whitelist": null,
-  "validated_test_roi": 174.3076923076923,
+  "validated_test_roi": 83.8,
   "validated_test_selected": 65,
-  "note": "volume soft honmei (elite backup in elite_locked_triple_rules.json)"
+  "note": "volume_max_roi exacta 1-2"
 }

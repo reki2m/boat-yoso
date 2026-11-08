@@ -27,6 +27,7 @@ export const TICKET_LABEL: Record<string, string> = {
   trifecta_123: "3連単 1-2-3",
   trifecta_1axis_23: "3連単 1軸 2/3相手",
   exacta_12: "2連単 1-2",
+  exa_12: "2連単 1-2",
 };
 
 function innigeRate(placeNo: number): number {
@@ -40,8 +41,8 @@ export function buildHonmeiTickets(rule: HonmeiRule = HONMEI_RULE): string[] {
   }
   if (rule.ticket === "tri_12_narrow") return ["1-2-3", "1-2-4"];
   if (rule.ticket === "trifecta_123") return ["1-2-3"];
-  if (rule.ticket === "exacta_12") return ["1-2"];
-  return ["1-2-3", "1-2-4"];
+  if (rule.ticket === "exacta_12" || rule.ticket === "exa_12") return ["1-2"];
+  return ["1-2"];
 }
 
 export function evaluateHonmeiEligibility(input: {

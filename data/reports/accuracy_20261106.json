@@ -1,14 +1,14 @@
 {
   "date": "20261106",
-  "scored_at": "2026-11-09T03:41:56.827413+09:00",
-  "selected": 8,
-  "skipped": 4,
-  "hits": 2,
-  "hit_rate": 25.0,
-  "bets": 1600,
-  "pay": 1990,
-  "pnl": 390,
-  "roi": 124.37499999999999,
+  "scored_at": "2026-11-09T03:49:56.276635+09:00",
+  "selected": 9,
+  "skipped": 3,
+  "hits": 3,
+  "hit_rate": 33.33333333333333,
+  "bets": 900,
+  "pay": 1270,
+  "pnl": 370,
+  "roi": 141.11111111111111,
   "rows": [
     {
       "date": "20261106",
@@ -23,8 +23,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume",
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 40.72101445683602,
       "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5552801872504475,
       "entries": {
         "1": {
           "name": "中 亮太",
@@ -75,21 +84,12 @@
           "motor2": 0.0
         }
       },
-      "innige": 0.5552801872504475,
-      "band": "honmei",
-      "label": "本命",
-      "score": 22.80112074900179,
-      "tickets": [
-        "1-2-3",
-        "1-2-4"
-      ],
-      "ticket": "tri_12_narrow",
-      "why": "宮島はイン寄り。1号の中 亮太がA1・勝率7.01・ST0.14のため本命の 1-2-3, 1-2-4 を採用。",
+      "why": "宮島はイン寄りで1号の中 亮太が勝率7.01/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
       "reasons": [
         "宮島のイン逃げ率 55.5%",
         "1号 中 亮太 はA1・勝率 7.01・ST 0.14",
         "モーター2連対 100.0%、2号との勝率差 3.06",
-        "買い目 1-2-3, 1-2-4"
+        "買い目 1-2（volume本命）"
       ],
       "exhibition": {
         "ready": true,
@@ -144,154 +144,19 @@
       },
       "skip_reason": null,
       "result": "hit",
-      "pay": 1490,
-      "stake": 200,
+      "pay": 620,
+      "stake": 100,
       "hit": true,
       "hit_tickets": [
-        "1-2-3"
+        "1-2"
       ]
     },
     {
       "date": "20261106",
-      "stadium": 8,
-      "stadium_name": "常滑",
-      "race": 4,
-      "title": "日刊S&ニッカンC杯争奪第36回マリンキング決定戦",
-      "grade": 5,
-      "status": "provisional",
-      "skip_on": [
-        "entry_change",
-        "exhibition_missing",
-        "unexpected_event"
-      ],
-      "mode": "volume",
-      "elite": false,
-      "entries": {
-        "1": {
-          "name": "鋤柄 貴俊",
-          "regno": 3934,
-          "nat": 5.37,
-          "st": 0.17,
-          "class": 3,
-          "motor2": 12.5
-        },
-        "2": {
-          "name": "森永 淳",
-          "regno": 4072,
-          "nat": 7.45,
-          "st": 0.13,
-          "class": 1,
-          "motor2": 17.65
-        },
-        "3": {
-          "name": "柳内 敬太",
-          "regno": 4790,
-          "nat": 6.45,
-          "st": 0.15,
-          "class": 1,
-          "motor2": 40.0
-        },
-        "4": {
-          "name": "平見 真彦",
-          "regno": 4509,
-          "nat": 6.22,
-          "st": 0.18,
-          "class": 2,
-          "motor2": 55.56
-        },
-        "5": {
-          "name": "加藤 優弥",
-          "regno": 5185,
-          "nat": 5.67,
-          "st": 0.13,
-          "class": 3,
-          "motor2": 42.11
-        },
-        "6": {
-          "name": "田中 太一郎",
-          "regno": 4196,
-          "nat": 4.26,
-          "st": 0.17,
-          "class": 3,
-          "motor2": 31.58
-        }
-      },
-      "innige": 0.55,
-      "band": "oshi",
-      "label": "押し目",
-      "score": 22.6805,
-      "tickets": [
-        "2-1",
-        "3-1"
-      ],
-      "ticket": "exa_oshi2",
-      "why": "常滑で1号が強すぎず、2号の森永 淳が反撃できる形のため押し目の 2-1, 3-1 を採用。",
-      "reasons": [
-        "1号勝率 5.37 は押し目レンジ",
-        "2号 森永 淳 勝率 7.45 / 2コース 27.7%",
-        "買い目 2-1, 3-1"
-      ],
-      "exhibition": {
-        "ready": false,
-        "reason": "進入・スリット・周回タイム未完了",
-        "entryChanged": false,
-        "unexpected": false,
-        "boats": [
-          {
-            "entry": 1,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          },
-          {
-            "entry": 2,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          },
-          {
-            "entry": 3,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          },
-          {
-            "entry": 4,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          },
-          {
-            "entry": 5,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          },
-          {
-            "entry": 6,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          }
-        ],
-        "wind_speed": null
-      },
-      "skip_reason": "exhibition_pending",
-      "result": "skipped_no_exhibition",
-      "hit": false
-    },
-    {
-      "date": "20261106",
-      "stadium": 2,
-      "stadium_name": "戸田",
-      "race": 3,
-      "title": "マンスリーBOATRACE杯",
+      "stadium": 1,
+      "stadium_name": "桐生",
+      "race": 12,
+      "title": "第38回日本モーターボート選手会会長杯",
       "grade": 5,
       "status": "confirmed",
       "skip_on": [
@@ -299,72 +164,73 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume",
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 39.47162318840579,
       "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5044927536231885,
       "entries": {
         "1": {
-          "name": "山田 和佐",
-          "regno": 4978,
-          "nat": 5.23,
+          "name": "平田 忠則",
+          "regno": 3898,
+          "nat": 8.11,
           "st": 0.17,
-          "class": 3,
-          "motor2": 44.83
+          "class": 1,
+          "motor2": 39.38
         },
         "2": {
-          "name": "秦 英悟",
-          "regno": 4427,
-          "nat": 7.22,
-          "st": 0.14,
+          "name": "重木 輝彦",
+          "regno": 4543,
+          "nat": 6.26,
+          "st": 0.17,
           "class": 1,
-          "motor2": 32.14
+          "motor2": 35.58
         },
         "3": {
-          "name": "中島 航",
-          "regno": 5070,
-          "nat": 4.34,
-          "st": 0.22,
+          "name": "大谷 健太",
+          "regno": 4836,
+          "nat": 4.48,
+          "st": 0.17,
           "class": 3,
-          "motor2": 34.48
+          "motor2": 35.06
         },
         "4": {
-          "name": "榎 幸司",
-          "regno": 4171,
-          "nat": 6.26,
-          "st": 0.19,
+          "name": "角谷 健吾",
+          "regno": 3613,
+          "nat": 6.3,
+          "st": 0.16,
           "class": 2,
-          "motor2": 50.0
+          "motor2": 28.95
         },
         "5": {
-          "name": "飯島 昌弘",
-          "regno": 3679,
-          "nat": 6.59,
-          "st": 0.17,
-          "class": 2,
-          "motor2": 46.15
+          "name": "山口 修路",
+          "regno": 4367,
+          "nat": 4.36,
+          "st": 0.23,
+          "class": 3,
+          "motor2": 38.02
         },
         "6": {
-          "name": "楠原 正剛",
-          "regno": 4485,
-          "nat": 4.73,
-          "st": 0.16,
-          "class": 3,
-          "motor2": 50.98
+          "name": "小坂 宗司",
+          "regno": 4593,
+          "nat": 5.99,
+          "st": 0.17,
+          "class": 2,
+          "motor2": 40.5
         }
       },
-      "innige": 0.409431032048567,
-      "band": "oshi",
-      "label": "押し目",
-      "score": 22.0785,
-      "tickets": [
-        "2-1",
-        "3-1"
-      ],
-      "ticket": "exa_oshi2",
-      "why": "戸田で1号が強すぎず、2号の秦 英悟が反撃できる形のため押し目の 2-1, 3-1 を採用。",
+      "why": "桐生はイン寄りで1号の平田 忠則が勝率8.11/ST0.17と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
       "reasons": [
-        "1号勝率 5.23 は押し目レンジ",
-        "2号 秦 英悟 勝率 7.22 / 2コース 25.8%",
-        "買い目 2-1, 3-1"
+        "桐生のイン逃げ率 50.4%",
+        "1号 平田 忠則 はA1・勝率 8.11・ST 0.17",
+        "モーター2連対 39.4%、2号との勝率差 1.85",
+        "買い目 1-2（volume本命）"
       ],
       "exhibition": {
         "ready": true,
@@ -375,327 +241,56 @@
           {
             "entry": 1,
             "course": 1,
-            "slit": 0.05,
-            "lapTime": 6.74,
-            "entryChanged": false
-          },
-          {
-            "entry": 2,
-            "course": 2,
-            "slit": 0.04,
-            "lapTime": 6.83,
-            "entryChanged": false
-          },
-          {
-            "entry": 3,
-            "course": 3,
-            "slit": 0.04,
-            "lapTime": 6.83,
-            "entryChanged": false
-          },
-          {
-            "entry": 4,
-            "course": 4,
-            "slit": 0.19,
-            "lapTime": 6.97,
-            "entryChanged": false
-          },
-          {
-            "entry": 5,
-            "course": 5,
-            "slit": 0.14,
+            "slit": -0.06,
             "lapTime": 6.91,
             "entryChanged": false
           },
           {
-            "entry": 6,
-            "course": 6,
-            "slit": 0.14,
-            "lapTime": 6.87,
-            "entryChanged": false
-          }
-        ],
-        "wind_speed": 3
-      },
-      "skip_reason": null,
-      "result": "miss",
-      "pay": 0,
-      "stake": 200,
-      "hit": false,
-      "hit_tickets": []
-    },
-    {
-      "date": "20261106",
-      "stadium": 3,
-      "stadium_name": "江戸川",
-      "race": 7,
-      "title": "第2回Sammyカップ",
-      "grade": 5,
-      "status": "skipped",
-      "skip_on": [
-        "entry_change",
-        "exhibition_missing",
-        "unexpected_event"
-      ],
-      "mode": "volume",
-      "elite": false,
-      "entries": {
-        "1": {
-          "name": "長谷川 充",
-          "regno": 3619,
-          "nat": 4.51,
-          "st": 0.19,
-          "class": 3,
-          "motor2": 44.23
-        },
-        "2": {
-          "name": "益田 啓司",
-          "regno": 4102,
-          "nat": 6.68,
-          "st": 0.15,
-          "class": 1,
-          "motor2": 35.0
-        },
-        "3": {
-          "name": "山崎 聖司",
-          "regno": 3812,
-          "nat": 4.15,
-          "st": 0.18,
-          "class": 3,
-          "motor2": 20.0
-        },
-        "4": {
-          "name": "澁澤 周羽",
-          "regno": 5455,
-          "nat": 2.0,
-          "st": 0.2,
-          "class": 4,
-          "motor2": 47.66
-        },
-        "5": {
-          "name": "永井 源",
-          "regno": 4067,
-          "nat": 6.23,
-          "st": 0.17,
-          "class": 2,
-          "motor2": 43.81
-        },
-        "6": {
-          "name": "谷本 幸司",
-          "regno": 3455,
-          "nat": 4.8,
-          "st": 0.17,
-          "class": 3,
-          "motor2": 31.37
-        }
-      },
-      "innige": 0.4057858910891089,
-      "band": "oshi",
-      "label": "押し目",
-      "score": 21.9615,
-      "tickets": [
-        "2-1",
-        "3-1"
-      ],
-      "ticket": "exa_oshi2",
-      "why": "江戸川で1号が強すぎず、2号の益田 啓司が反撃できる形のため押し目の 2-1, 3-1 を採用。",
-      "reasons": [
-        "1号勝率 4.51 は押し目レンジ",
-        "2号 益田 啓司 勝率 6.68 / 2コース 27.4%",
-        "買い目 2-1, 3-1"
-      ],
-      "exhibition": {
-        "ready": false,
-        "reason": "進入変更のためスキップ",
-        "entryChanged": true,
-        "unexpected": false,
-        "boats": [
-          {
-            "entry": 1,
-            "course": 1,
-            "slit": 0.16,
-            "lapTime": 7.02,
-            "entryChanged": false
-          },
-          {
             "entry": 2,
             "course": 2,
-            "slit": -0.05,
-            "lapTime": 7.16,
+            "slit": -0.1,
+            "lapTime": 6.84,
             "entryChanged": false
           },
           {
             "entry": 3,
             "course": 3,
-            "slit": -0.02,
-            "lapTime": 7.08,
-            "entryChanged": false
-          },
-          {
-            "entry": 4,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          },
-          {
-            "entry": 5,
-            "course": 4,
-            "slit": 0.15,
-            "lapTime": 7.01,
-            "entryChanged": true
-          },
-          {
-            "entry": 6,
-            "course": 5,
-            "slit": 0.19,
-            "lapTime": 7.25,
-            "entryChanged": true
-          }
-        ],
-        "wind_speed": 3
-      },
-      "skip_reason": "entry_change",
-      "result": "skipped_entry_change",
-      "hit": false
-    },
-    {
-      "date": "20261106",
-      "stadium": 23,
-      "stadium_name": "唐津",
-      "race": 2,
-      "title": "BTSみやき開設17周年記念",
-      "grade": 5,
-      "status": "confirmed",
-      "skip_on": [
-        "entry_change",
-        "exhibition_missing",
-        "unexpected_event"
-      ],
-      "mode": "volume",
-      "elite": false,
-      "entries": {
-        "1": {
-          "name": "山本 修一",
-          "regno": 4069,
-          "nat": 5.4,
-          "st": 0.18,
-          "class": 2,
-          "motor2": 50.0
-        },
-        "2": {
-          "name": "浜先 真範",
-          "regno": 4798,
-          "nat": 7.15,
-          "st": 0.13,
-          "class": 1,
-          "motor2": 25.93
-        },
-        "3": {
-          "name": "谷川 将太",
-          "regno": 4603,
-          "nat": 5.97,
-          "st": 0.16,
-          "class": 3,
-          "motor2": 37.93
-        },
-        "4": {
-          "name": "渡辺 真至",
-          "regno": 3939,
-          "nat": 4.79,
-          "st": 0.14,
-          "class": 4,
-          "motor2": 26.32
-        },
-        "5": {
-          "name": "松下 直也",
-          "regno": 4105,
-          "nat": 5.6,
-          "st": 0.19,
-          "class": 3,
-          "motor2": 31.43
-        },
-        "6": {
-          "name": "大庭 元明",
-          "regno": 3662,
-          "nat": 5.32,
-          "st": 0.16,
-          "class": 3,
-          "motor2": 28.0
-        }
-      },
-      "innige": 0.5187959095491862,
-      "band": "oshi",
-      "label": "押し目",
-      "score": 21.8915,
-      "tickets": [
-        "2-1",
-        "3-1"
-      ],
-      "ticket": "exa_oshi2",
-      "why": "唐津で1号が強すぎず、2号の浜先 真範が反撃できる形のため押し目の 2-1, 3-1 を採用。",
-      "reasons": [
-        "1号勝率 5.40 は押し目レンジ",
-        "2号 浜先 真範 勝率 7.15 / 2コース 26.6%",
-        "買い目 2-1, 3-1"
-      ],
-      "exhibition": {
-        "ready": true,
-        "reason": "スタート展示確認済み",
-        "entryChanged": false,
-        "unexpected": false,
-        "boats": [
-          {
-            "entry": 1,
-            "course": 1,
             "slit": 0.01,
-            "lapTime": 6.68,
-            "entryChanged": false
-          },
-          {
-            "entry": 2,
-            "course": 2,
-            "slit": 0.07,
-            "lapTime": 6.83,
-            "entryChanged": false
-          },
-          {
-            "entry": 3,
-            "course": 3,
-            "slit": -0.04,
-            "lapTime": 6.75,
+            "lapTime": 7.03,
             "entryChanged": false
           },
           {
             "entry": 4,
             "course": 4,
-            "slit": 0.02,
-            "lapTime": 6.72,
+            "slit": 0.01,
+            "lapTime": 6.96,
             "entryChanged": false
           },
           {
             "entry": 5,
             "course": 5,
-            "slit": -0.05,
-            "lapTime": 6.78,
+            "slit": -0.01,
+            "lapTime": 6.96,
             "entryChanged": false
           },
           {
             "entry": 6,
             "course": 6,
-            "slit": -0.05,
-            "lapTime": 6.58,
+            "slit": 0.07,
+            "lapTime": 6.99,
             "entryChanged": false
           }
         ],
-        "wind_speed": 1
+        "wind_speed": 9
       },
       "skip_reason": null,
-      "result": "miss",
-      "pay": 0,
-      "stake": 200,
-      "hit": false,
-      "hit_tickets": []
+      "result": "hit",
+      "pay": 220,
+      "stake": 100,
+      "hit": true,
+      "hit_tickets": [
+        "1-2"
+      ]
     },
     {
       "date": "20261106",
@@ -710,8 +305,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume",
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 39.45228985507246,
       "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5044927536231885,
       "entries": {
         "1": {
           "name": "佐々木 康幸",
@@ -762,21 +366,12 @@
           "motor2": 35.06
         }
       },
-      "innige": 0.5044927536231885,
-      "band": "honmei",
-      "label": "本命",
-      "score": 21.648771014492752,
-      "tickets": [
-        "1-2-3",
-        "1-2-4"
-      ],
-      "ticket": "tri_12_narrow",
-      "why": "桐生はイン寄り。1号の佐々木 康幸がA1・勝率6.89・ST0.12のため本命の 1-2-3, 1-2-4 を採用。",
+      "why": "桐生はイン寄りで1号の佐々木 康幸が勝率6.89/ST0.12と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
       "reasons": [
         "桐生のイン逃げ率 50.4%",
         "1号 佐々木 康幸 はA1・勝率 6.89・ST 0.12",
         "モーター2連対 39.0%、2号との勝率差 2.97",
-        "買い目 1-2-3, 1-2-4"
+        "買い目 1-2（volume本命）"
       ],
       "exhibition": {
         "ready": true,
@@ -835,422 +430,6 @@
     },
     {
       "date": "20261106",
-      "stadium": 1,
-      "stadium_name": "桐生",
-      "race": 12,
-      "title": "第38回日本モーターボート選手会会長杯",
-      "grade": 5,
-      "status": "confirmed",
-      "skip_on": [
-        "entry_change",
-        "exhibition_missing",
-        "unexpected_event"
-      ],
-      "mode": "volume",
-      "elite": false,
-      "entries": {
-        "1": {
-          "name": "平田 忠則",
-          "regno": 3898,
-          "nat": 8.11,
-          "st": 0.17,
-          "class": 1,
-          "motor2": 39.38
-        },
-        "2": {
-          "name": "重木 輝彦",
-          "regno": 4543,
-          "nat": 6.26,
-          "st": 0.17,
-          "class": 1,
-          "motor2": 35.58
-        },
-        "3": {
-          "name": "大谷 健太",
-          "regno": 4836,
-          "nat": 4.48,
-          "st": 0.17,
-          "class": 3,
-          "motor2": 35.06
-        },
-        "4": {
-          "name": "角谷 健吾",
-          "regno": 3613,
-          "nat": 6.3,
-          "st": 0.16,
-          "class": 2,
-          "motor2": 28.95
-        },
-        "5": {
-          "name": "山口 修路",
-          "regno": 4367,
-          "nat": 4.36,
-          "st": 0.23,
-          "class": 3,
-          "motor2": 38.02
-        },
-        "6": {
-          "name": "小坂 宗司",
-          "regno": 4593,
-          "nat": 5.99,
-          "st": 0.17,
-          "class": 2,
-          "motor2": 40.5
-        }
-      },
-      "innige": 0.5044927536231885,
-      "band": "honmei",
-      "label": "本命",
-      "score": 21.475571014492758,
-      "tickets": [
-        "1-2-3",
-        "1-2-4"
-      ],
-      "ticket": "tri_12_narrow",
-      "why": "桐生はイン寄り。1号の平田 忠則がA1・勝率8.11・ST0.17のため本命の 1-2-3, 1-2-4 を採用。",
-      "reasons": [
-        "桐生のイン逃げ率 50.4%",
-        "1号 平田 忠則 はA1・勝率 8.11・ST 0.17",
-        "モーター2連対 39.4%、2号との勝率差 1.85",
-        "買い目 1-2-3, 1-2-4"
-      ],
-      "exhibition": {
-        "ready": true,
-        "reason": "スタート展示確認済み",
-        "entryChanged": false,
-        "unexpected": false,
-        "boats": [
-          {
-            "entry": 1,
-            "course": 1,
-            "slit": -0.06,
-            "lapTime": 6.91,
-            "entryChanged": false
-          },
-          {
-            "entry": 2,
-            "course": 2,
-            "slit": -0.1,
-            "lapTime": 6.84,
-            "entryChanged": false
-          },
-          {
-            "entry": 3,
-            "course": 3,
-            "slit": 0.01,
-            "lapTime": 7.03,
-            "entryChanged": false
-          },
-          {
-            "entry": 4,
-            "course": 4,
-            "slit": 0.01,
-            "lapTime": 6.96,
-            "entryChanged": false
-          },
-          {
-            "entry": 5,
-            "course": 5,
-            "slit": -0.01,
-            "lapTime": 6.96,
-            "entryChanged": false
-          },
-          {
-            "entry": 6,
-            "course": 6,
-            "slit": 0.07,
-            "lapTime": 6.99,
-            "entryChanged": false
-          }
-        ],
-        "wind_speed": 9
-      },
-      "skip_reason": null,
-      "result": "hit",
-      "pay": 500,
-      "stake": 200,
-      "hit": true,
-      "hit_tickets": [
-        "1-2-4"
-      ]
-    },
-    {
-      "date": "20261106",
-      "stadium": 5,
-      "stadium_name": "多摩川",
-      "race": 11,
-      "title": "ヴィーナスS第17戦是政プリンセスカップ",
-      "grade": 5,
-      "status": "skipped",
-      "skip_on": [
-        "entry_change",
-        "exhibition_missing",
-        "unexpected_event"
-      ],
-      "mode": "volume",
-      "elite": false,
-      "entries": {
-        "1": {
-          "name": "小野 生奈",
-          "regno": 4530,
-          "nat": 7.12,
-          "st": 0.15,
-          "class": 1,
-          "motor2": 25.24
-        },
-        "2": {
-          "name": "鈴木 成美",
-          "regno": 4244,
-          "nat": 3.68,
-          "st": 0.16,
-          "class": 4,
-          "motor2": 32.0
-        },
-        "3": {
-          "name": "原 加央理",
-          "regno": 4419,
-          "nat": 5.54,
-          "st": 0.16,
-          "class": 2,
-          "motor2": 41.98
-        },
-        "4": {
-          "name": "永井 聖美",
-          "regno": 3993,
-          "nat": 5.86,
-          "st": 0.16,
-          "class": 3,
-          "motor2": 34.81
-        },
-        "5": {
-          "name": "薮内 瑞希",
-          "regno": 4909,
-          "nat": 4.54,
-          "st": 0.16,
-          "class": 3,
-          "motor2": 33.59
-        },
-        "6": {
-          "name": "落合 直子",
-          "regno": 4289,
-          "nat": 6.09,
-          "st": 0.13,
-          "class": 2,
-          "motor2": 35.96
-        }
-      },
-      "innige": 0.5041907514450867,
-      "band": "honmei",
-      "label": "本命",
-      "score": 21.40156300578035,
-      "tickets": [
-        "1-2-3",
-        "1-2-4"
-      ],
-      "ticket": "tri_12_narrow",
-      "why": "多摩川はイン寄り。1号の小野 生奈がA1・勝率7.12・ST0.15のため本命の 1-2-3, 1-2-4 を採用。",
-      "reasons": [
-        "多摩川のイン逃げ率 50.4%",
-        "1号 小野 生奈 はA1・勝率 7.12・ST 0.15",
-        "モーター2連対 25.2%、2号との勝率差 3.44",
-        "買い目 1-2-3, 1-2-4"
-      ],
-      "exhibition": {
-        "ready": false,
-        "reason": "進入変更のためスキップ",
-        "entryChanged": true,
-        "unexpected": false,
-        "boats": [
-          {
-            "entry": 1,
-            "course": 1,
-            "slit": 0.09,
-            "lapTime": 6.67,
-            "entryChanged": false
-          },
-          {
-            "entry": 2,
-            "course": 2,
-            "slit": 0.1,
-            "lapTime": 6.74,
-            "entryChanged": false
-          },
-          {
-            "entry": 3,
-            "course": 3,
-            "slit": 0.08,
-            "lapTime": 6.67,
-            "entryChanged": false
-          },
-          {
-            "entry": 4,
-            "course": 4,
-            "slit": 0.25,
-            "lapTime": 6.71,
-            "entryChanged": false
-          },
-          {
-            "entry": 5,
-            "course": null,
-            "slit": null,
-            "lapTime": null,
-            "entryChanged": false
-          },
-          {
-            "entry": 6,
-            "course": 5,
-            "slit": 0.19,
-            "lapTime": 6.73,
-            "entryChanged": true
-          }
-        ],
-        "wind_speed": 1
-      },
-      "skip_reason": "entry_change",
-      "result": "skipped_entry_change",
-      "hit": false
-    },
-    {
-      "date": "20261106",
-      "stadium": 22,
-      "stadium_name": "福岡",
-      "race": 6,
-      "title": "ばんえい十勝杯",
-      "grade": 5,
-      "status": "confirmed",
-      "skip_on": [
-        "entry_change",
-        "exhibition_missing",
-        "unexpected_event"
-      ],
-      "mode": "volume",
-      "elite": false,
-      "entries": {
-        "1": {
-          "name": "三浦 永理",
-          "regno": 4208,
-          "nat": 7.21,
-          "st": 0.15,
-          "class": 1,
-          "motor2": 28.87
-        },
-        "2": {
-          "name": "今坂 晃広",
-          "regno": 3981,
-          "nat": 4.46,
-          "st": 0.18,
-          "class": 3,
-          "motor2": 23.88
-        },
-        "3": {
-          "name": "山本 寛久",
-          "regno": 3874,
-          "nat": 6.68,
-          "st": 0.17,
-          "class": 2,
-          "motor2": 39.74
-        },
-        "4": {
-          "name": "薗頭 心",
-          "regno": 5440,
-          "nat": 1.57,
-          "st": 0.19,
-          "class": 4,
-          "motor2": 33.33
-        },
-        "5": {
-          "name": "山口 隼人",
-          "regno": 5468,
-          "nat": 1.27,
-          "st": 0.2,
-          "class": 4,
-          "motor2": 30.86
-        },
-        "6": {
-          "name": "小川 晃司",
-          "regno": 3352,
-          "nat": 4.5,
-          "st": 0.17,
-          "class": 3,
-          "motor2": 37.58
-        }
-      },
-      "innige": 0.5156691134952005,
-      "band": "honmei",
-      "label": "本命",
-      "score": 21.010076453980805,
-      "tickets": [
-        "1-2-3",
-        "1-2-4"
-      ],
-      "ticket": "tri_12_narrow",
-      "why": "福岡はイン寄り。1号の三浦 永理がA1・勝率7.21・ST0.15のため本命の 1-2-3, 1-2-4 を採用。",
-      "reasons": [
-        "福岡のイン逃げ率 51.6%",
-        "1号 三浦 永理 はA1・勝率 7.21・ST 0.15",
-        "モーター2連対 28.9%、2号との勝率差 2.75",
-        "買い目 1-2-3, 1-2-4"
-      ],
-      "exhibition": {
-        "ready": true,
-        "reason": "スタート展示確認済み",
-        "entryChanged": false,
-        "unexpected": false,
-        "boats": [
-          {
-            "entry": 1,
-            "course": 1,
-            "slit": 0.03,
-            "lapTime": 6.81,
-            "entryChanged": false
-          },
-          {
-            "entry": 2,
-            "course": 2,
-            "slit": 0.0,
-            "lapTime": 6.84,
-            "entryChanged": false
-          },
-          {
-            "entry": 3,
-            "course": 3,
-            "slit": -0.12,
-            "lapTime": 6.73,
-            "entryChanged": false
-          },
-          {
-            "entry": 4,
-            "course": 4,
-            "slit": 0.18,
-            "lapTime": 6.8,
-            "entryChanged": false
-          },
-          {
-            "entry": 5,
-            "course": 5,
-            "slit": 0.24,
-            "lapTime": 6.84,
-            "entryChanged": false
-          },
-          {
-            "entry": 6,
-            "course": 6,
-            "slit": 0.02,
-            "lapTime": 6.94,
-            "entryChanged": false
-          }
-        ],
-        "wind_speed": 4
-      },
-      "skip_reason": null,
-      "result": "miss",
-      "pay": 0,
-      "stake": 200,
-      "hit": false,
-      "hit_tickets": []
-    },
-    {
-      "date": "20261106",
       "stadium": 23,
       "stadium_name": "唐津",
       "race": 12,
@@ -1262,8 +441,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume",
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 39.01077545729512,
       "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5187959095491862,
       "entries": {
         "1": {
           "name": "茅原 悠紀",
@@ -1314,21 +502,12 @@
           "motor2": 37.04
         }
       },
-      "innige": 0.5187959095491862,
-      "band": "honmei",
-      "label": "本命",
-      "score": 20.363983638196743,
-      "tickets": [
-        "1-2-3",
-        "1-2-4"
-      ],
-      "ticket": "tri_12_narrow",
-      "why": "唐津はイン寄り。1号の茅原 悠紀がA1・勝率7.54・ST0.13のため本命の 1-2-3, 1-2-4 を採用。",
+      "why": "唐津はイン寄りで1号の茅原 悠紀が勝率7.54/ST0.13と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
       "reasons": [
         "唐津のイン逃げ率 51.9%",
         "1号 茅原 悠紀 はA1・勝率 7.54・ST 0.13",
         "モーター2連対 41.9%、2号との勝率差 0.57",
-        "買い目 1-2-3, 1-2-4"
+        "買い目 1-2（volume本命）"
       ],
       "exhibition": {
         "ready": true,
@@ -1384,9 +563,428 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 200,
+      "stake": 100,
       "hit": false,
       "hit_tickets": []
+    },
+    {
+      "date": "20261106",
+      "stadium": 22,
+      "stadium_name": "福岡",
+      "race": 6,
+      "title": "ばんえい十勝杯",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 38.235348014304535,
+      "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5156691134952005,
+      "entries": {
+        "1": {
+          "name": "三浦 永理",
+          "regno": 4208,
+          "nat": 7.21,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 28.87
+        },
+        "2": {
+          "name": "今坂 晃広",
+          "regno": 3981,
+          "nat": 4.46,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 23.88
+        },
+        "3": {
+          "name": "山本 寛久",
+          "regno": 3874,
+          "nat": 6.68,
+          "st": 0.17,
+          "class": 2,
+          "motor2": 39.74
+        },
+        "4": {
+          "name": "薗頭 心",
+          "regno": 5440,
+          "nat": 1.57,
+          "st": 0.19,
+          "class": 4,
+          "motor2": 33.33
+        },
+        "5": {
+          "name": "山口 隼人",
+          "regno": 5468,
+          "nat": 1.27,
+          "st": 0.2,
+          "class": 4,
+          "motor2": 30.86
+        },
+        "6": {
+          "name": "小川 晃司",
+          "regno": 3352,
+          "nat": 4.5,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 37.58
+        }
+      },
+      "why": "福岡はイン寄りで1号の三浦 永理が勝率7.21/ST0.15と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "reasons": [
+        "福岡のイン逃げ率 51.6%",
+        "1号 三浦 永理 はA1・勝率 7.21・ST 0.15",
+        "モーター2連対 28.9%、2号との勝率差 2.75",
+        "買い目 1-2（volume本命）"
+      ],
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.03,
+            "lapTime": 6.81,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.0,
+            "lapTime": 6.84,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": -0.12,
+            "lapTime": 6.73,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.18,
+            "lapTime": 6.8,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.24,
+            "lapTime": 6.84,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.02,
+            "lapTime": 6.94,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 4
+      },
+      "skip_reason": null,
+      "result": "miss",
+      "pay": 0,
+      "stake": 100,
+      "hit": false,
+      "hit_tickets": []
+    },
+    {
+      "date": "20261106",
+      "stadium": 22,
+      "stadium_name": "福岡",
+      "race": 12,
+      "title": "ばんえい十勝杯",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 37.26268134763787,
+      "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5156691134952005,
+      "entries": {
+        "1": {
+          "name": "石丸 海渡",
+          "regno": 4772,
+          "nat": 6.82,
+          "st": 0.11,
+          "class": 1,
+          "motor2": 30.92
+        },
+        "2": {
+          "name": "池田 雄一",
+          "regno": 4124,
+          "nat": 6.01,
+          "st": 0.16,
+          "class": 2,
+          "motor2": 39.61
+        },
+        "3": {
+          "name": "宮地 元輝",
+          "regno": 4445,
+          "nat": 7.14,
+          "st": 0.12,
+          "class": 1,
+          "motor2": 31.36
+        },
+        "4": {
+          "name": "若狭 奈美子",
+          "regno": 4373,
+          "nat": 6.26,
+          "st": 0.17,
+          "class": 1,
+          "motor2": 56.56
+        },
+        "5": {
+          "name": "澤 大介",
+          "regno": 3852,
+          "nat": 5.04,
+          "st": 0.21,
+          "class": 3,
+          "motor2": 28.06
+        },
+        "6": {
+          "name": "橋本 英一",
+          "regno": 4866,
+          "nat": 4.71,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 33.86
+        }
+      },
+      "why": "福岡はイン寄りで1号の石丸 海渡が勝率6.82/ST0.11と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "reasons": [
+        "福岡のイン逃げ率 51.6%",
+        "1号 石丸 海渡 はA1・勝率 6.82・ST 0.11",
+        "モーター2連対 30.9%、2号との勝率差 0.81",
+        "買い目 1-2（volume本命）"
+      ],
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.11,
+            "lapTime": 6.8,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": -0.01,
+            "lapTime": 6.75,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": 0.06,
+            "lapTime": 6.72,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": -0.01,
+            "lapTime": 6.77,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.11,
+            "lapTime": 6.8,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.05,
+            "lapTime": 6.8,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 3
+      },
+      "skip_reason": null,
+      "result": "miss",
+      "pay": 0,
+      "stake": 100,
+      "hit": false,
+      "hit_tickets": []
+    },
+    {
+      "date": "20261106",
+      "stadium": 5,
+      "stadium_name": "多摩川",
+      "race": 12,
+      "title": "ヴィーナスS第17戦是政プリンセスカップ",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 37.017144508670526,
+      "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5041907514450867,
+      "entries": {
+        "1": {
+          "name": "倉持 莉々",
+          "regno": 4825,
+          "nat": 7.2,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 36.36
+        },
+        "2": {
+          "name": "櫻本 あゆみ",
+          "regno": 4478,
+          "nat": 6.03,
+          "st": 0.16,
+          "class": 1,
+          "motor2": 42.52
+        },
+        "3": {
+          "name": "平田 さやか",
+          "regno": 4286,
+          "nat": 6.01,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 48.12
+        },
+        "4": {
+          "name": "渡邉 優美",
+          "regno": 4590,
+          "nat": 6.36,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 38.06
+        },
+        "5": {
+          "name": "井上 遥妃",
+          "regno": 5281,
+          "nat": 6.51,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 35.04
+        },
+        "6": {
+          "name": "安井 瑞紀",
+          "regno": 4974,
+          "nat": 5.84,
+          "st": 0.18,
+          "class": 2,
+          "motor2": 35.94
+        }
+      },
+      "why": "多摩川はイン寄りで1号の倉持 莉々が勝率7.20/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "reasons": [
+        "多摩川のイン逃げ率 50.4%",
+        "1号 倉持 莉々 はA1・勝率 7.20・ST 0.14",
+        "モーター2連対 36.4%、2号との勝率差 1.17",
+        "買い目 1-2（volume本命）"
+      ],
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.25,
+            "lapTime": 6.68,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.33,
+            "lapTime": 6.72,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": 0.11,
+            "lapTime": 6.72,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.12,
+            "lapTime": 6.72,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.11,
+            "lapTime": 6.68,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.06,
+            "lapTime": 6.72,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 1
+      },
+      "skip_reason": null,
+      "result": "hit",
+      "pay": 430,
+      "stake": 100,
+      "hit": true,
+      "hit_tickets": [
+        "1-2"
+      ]
     },
     {
       "date": "20261106",
@@ -1401,8 +999,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume",
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 36.98868134763787,
       "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5156691134952005,
       "entries": {
         "1": {
           "name": "川原 祐明",
@@ -1453,21 +1060,12 @@
           "motor2": 21.23
         }
       },
-      "innige": 0.5156691134952005,
-      "band": "honmei",
-      "label": "本命",
-      "score": 20.027876453980806,
-      "tickets": [
-        "1-2-3",
-        "1-2-4"
-      ],
-      "ticket": "tri_12_narrow",
-      "why": "福岡はイン寄り。1号の川原 祐明がA1・勝率6.86・ST0.15のため本命の 1-2-3, 1-2-4 を採用。",
+      "why": "福岡はイン寄りで1号の川原 祐明が勝率6.86/ST0.15と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
       "reasons": [
         "福岡のイン逃げ率 51.6%",
         "1号 川原 祐明 はA1・勝率 6.86・ST 0.15",
         "モーター2連対 39.3%、2号との勝率差 2.26",
-        "買い目 1-2-3, 1-2-4"
+        "買い目 1-2（volume本命）"
       ],
       "exhibition": {
         "ready": true,
@@ -1523,16 +1121,152 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 200,
+      "stake": 100,
       "hit": false,
       "hit_tickets": []
     },
     {
       "date": "20261106",
-      "stadium": 17,
-      "stadium_name": "宮島",
-      "race": 4,
-      "title": "ルーキーシリーズ第21戦スカパー!・JLC杯",
+      "stadium": 8,
+      "stadium_name": "常滑",
+      "race": 5,
+      "title": "日刊S&ニッカンC杯争奪第36回マリンキング決定戦",
+      "grade": 5,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 36.89266666666667,
+      "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.55,
+      "entries": {
+        "1": {
+          "name": "池永 太",
+          "regno": 4364,
+          "nat": 6.43,
+          "st": 0.13,
+          "class": 1,
+          "motor2": 59.09
+        },
+        "2": {
+          "name": "上田 洋平",
+          "regno": 3896,
+          "nat": 5.09,
+          "st": 0.16,
+          "class": 3,
+          "motor2": 47.37
+        },
+        "3": {
+          "name": "高野 心吾",
+          "regno": 4527,
+          "nat": 4.7,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 27.78
+        },
+        "4": {
+          "name": "廣瀬 将亨",
+          "regno": 4040,
+          "nat": 6.26,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 52.38
+        },
+        "5": {
+          "name": "岸本 隆",
+          "regno": 3930,
+          "nat": 5.23,
+          "st": 0.16,
+          "class": 2,
+          "motor2": 33.33
+        },
+        "6": {
+          "name": "塩嶋 泰空",
+          "regno": 5366,
+          "nat": 1.39,
+          "st": 0.19,
+          "class": 4,
+          "motor2": 27.27
+        }
+      },
+      "why": "常滑はイン寄りで1号の池永 太が勝率6.43/ST0.13と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "reasons": [
+        "常滑のイン逃げ率 55.0%",
+        "1号 池永 太 はA1・勝率 6.43・ST 0.13",
+        "モーター2連対 59.1%、2号との勝率差 1.34",
+        "買い目 1-2（volume本命）"
+      ],
+      "exhibition": {
+        "ready": false,
+        "reason": "進入・スリット・周回タイム未完了",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": null
+      },
+      "skip_reason": "exhibition_pending",
+      "result": "skipped_no_exhibition",
+      "hit": false
+    },
+    {
+      "date": "20261106",
+      "stadium": 10,
+      "stadium_name": "三国",
+      "race": 12,
+      "title": "新東通信杯",
       "grade": 5,
       "status": "confirmed",
       "skip_on": [
@@ -1540,73 +1274,73 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume",
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 36.64052238805971,
       "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5192537313432836,
       "entries": {
         "1": {
-          "name": "若林 麗",
-          "regno": 5285,
-          "nat": 3.52,
-          "st": 0.19,
-          "class": 3,
-          "motor2": 0.0
-        },
-        "2": {
-          "name": "嘉手苅 徹哉",
-          "regno": 5284,
-          "nat": 3.9,
-          "st": 0.18,
-          "class": 4,
-          "motor2": 0.0
-        },
-        "3": {
-          "name": "小宮 涼雅",
-          "regno": 5236,
-          "nat": 4.74,
-          "st": 0.17,
-          "class": 3,
-          "motor2": 20.0
-        },
-        "4": {
-          "name": "宮脇 遼太",
-          "regno": 5158,
-          "nat": 6.39,
+          "name": "下寺 秀和",
+          "regno": 4771,
+          "nat": 6.78,
           "st": 0.16,
           "class": 1,
-          "motor2": 25.0
+          "motor2": 32.91
+        },
+        "2": {
+          "name": "関 裕也",
+          "regno": 4301,
+          "nat": 4.58,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 36.81
+        },
+        "3": {
+          "name": "深井 利寿",
+          "regno": 3918,
+          "nat": 6.85,
+          "st": 0.18,
+          "class": 1,
+          "motor2": 30.32
+        },
+        "4": {
+          "name": "鈴谷 一平",
+          "regno": 4877,
+          "nat": 6.3,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 31.68
         },
         "5": {
-          "name": "石田 勇斗",
-          "regno": 5266,
-          "nat": 4.61,
-          "st": 0.15,
-          "class": 3,
-          "motor2": 72.73
+          "name": "津田 陸翔",
+          "regno": 5222,
+          "nat": 5.97,
+          "st": 0.17,
+          "class": 1,
+          "motor2": 39.87
         },
         "6": {
-          "name": "吉田 一心",
-          "regno": 5376,
-          "nat": 5.59,
-          "st": 0.17,
-          "class": 3,
-          "motor2": 0.0
+          "name": "池田 雄祐",
+          "regno": 4526,
+          "nat": 5.18,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 35.29
         }
       },
-      "innige": 0.5552801872504475,
-      "band": "ana",
-      "label": "穴目",
-      "score": 19.861159438248656,
-      "tickets": [
-        "4-1",
-        "5-1"
-      ],
-      "ticket": "exa_ana2",
-      "why": "宮島はイン絶対ではなく、1号が弱め・4号の宮脇 遼太が軸になれるため穴目の 4-1, 5-1 を採用。",
+      "why": "三国はイン寄りで1号の下寺 秀和が勝率6.78/ST0.16と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
       "reasons": [
-        "イン逃げ率 55.5%（穴向き）",
-        "1号 若林 麗 勝率 3.52 / ST 0.19",
-        "4号 宮脇 遼太 勝率 6.39 / 4コース 19.9%",
-        "買い目 4-1, 5-1"
+        "三国のイン逃げ率 51.9%",
+        "1号 下寺 秀和 はA1・勝率 6.78・ST 0.16",
+        "モーター2連対 32.9%、2号との勝率差 2.20",
+        "買い目 1-2（volume本命）"
       ],
       "exhibition": {
         "ready": true,
@@ -1617,54 +1351,329 @@
           {
             "entry": 1,
             "course": 1,
-            "slit": 0.29,
-            "lapTime": 6.73,
+            "slit": -0.01,
+            "lapTime": 6.71,
             "entryChanged": false
           },
           {
             "entry": 2,
             "course": 2,
-            "slit": 0.12,
-            "lapTime": 6.69,
+            "slit": -0.05,
+            "lapTime": 6.84,
             "entryChanged": false
           },
           {
             "entry": 3,
             "course": 3,
-            "slit": 0.06,
-            "lapTime": 6.7,
+            "slit": 0.02,
+            "lapTime": 6.84,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.01,
+            "lapTime": 6.8,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": -0.05,
+            "lapTime": 6.63,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.03,
+            "lapTime": 6.75,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 2
+      },
+      "skip_reason": null,
+      "result": "miss",
+      "pay": 0,
+      "stake": 100,
+      "hit": false,
+      "hit_tickets": []
+    },
+    {
+      "date": "20261106",
+      "stadium": 10,
+      "stadium_name": "三国",
+      "race": 4,
+      "title": "新東通信杯",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 35.6105223880597,
+      "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.5192537313432836,
+      "entries": {
+        "1": {
+          "name": "鈴谷 一平",
+          "regno": 4877,
+          "nat": 6.3,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 31.68
+        },
+        "2": {
+          "name": "萬 正嗣",
+          "regno": 4177,
+          "nat": 3.57,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 32.54
+        },
+        "3": {
+          "name": "小林 孝弘",
+          "regno": 4592,
+          "nat": 4.59,
+          "st": 0.15,
+          "class": 3,
+          "motor2": 33.54
+        },
+        "4": {
+          "name": "松尾 拓",
+          "regno": 4808,
+          "nat": 6.13,
+          "st": 0.16,
+          "class": 2,
+          "motor2": 33.55
+        },
+        "5": {
+          "name": "西橋 奈未",
+          "regno": 4961,
+          "nat": 6.72,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 38.75
+        },
+        "6": {
+          "name": "直江 健成",
+          "regno": 5465,
+          "nat": 1.24,
+          "st": 0.2,
+          "class": 4,
+          "motor2": 40.79
+        }
+      },
+      "why": "三国はイン寄りで1号の鈴谷 一平が勝率6.30/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "reasons": [
+        "三国のイン逃げ率 51.9%",
+        "1号 鈴谷 一平 はA1・勝率 6.30・ST 0.14",
+        "モーター2連対 31.7%、2号との勝率差 2.73",
+        "買い目 1-2（volume本命）"
+      ],
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.03,
+            "lapTime": 6.78,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.03,
+            "lapTime": 6.83,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": -0.08,
+            "lapTime": 6.74,
             "entryChanged": false
           },
           {
             "entry": 4,
             "course": 4,
             "slit": -0.01,
-            "lapTime": 6.65,
+            "lapTime": 6.75,
             "entryChanged": false
           },
           {
             "entry": 5,
             "course": 5,
-            "slit": -0.04,
-            "lapTime": 6.71,
+            "slit": 0.01,
+            "lapTime": 6.69,
             "entryChanged": false
           },
           {
             "entry": 6,
             "course": 6,
-            "slit": -0.09,
-            "lapTime": 6.65,
+            "slit": -0.11,
+            "lapTime": 6.77,
             "entryChanged": false
           }
         ],
-        "wind_speed": 3
+        "wind_speed": 1
       },
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 200,
+      "stake": 100,
       "hit": false,
       "hit_tickets": []
+    },
+    {
+      "date": "20261106",
+      "stadium": 8,
+      "stadium_name": "常滑",
+      "race": 11,
+      "title": "日刊S&ニッカンC杯争奪第36回マリンキング決定戦",
+      "grade": 5,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "volume_max_roi",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2"
+      ],
+      "ticket": "exa_12",
+      "score": 35.39066666666667,
+      "elite": false,
+      "validated_roi": 83.8,
+      "innige": 0.55,
+      "entries": {
+        "1": {
+          "name": "船岡 洋一郎",
+          "regno": 4398,
+          "nat": 6.28,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 42.86
+        },
+        "2": {
+          "name": "森 貴洋",
+          "regno": 3904,
+          "nat": 4.89,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 71.43
+        },
+        "3": {
+          "name": "小松 卓司",
+          "regno": 4329,
+          "nat": 4.53,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 45.0
+        },
+        "4": {
+          "name": "赤岩 善生",
+          "regno": 3946,
+          "nat": 7.35,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 50.0
+        },
+        "5": {
+          "name": "三宅 潤",
+          "regno": 4319,
+          "nat": 5.56,
+          "st": 0.18,
+          "class": 2,
+          "motor2": 45.0
+        },
+        "6": {
+          "name": "平見 真彦",
+          "regno": 4509,
+          "nat": 6.22,
+          "st": 0.18,
+          "class": 2,
+          "motor2": 55.56
+        }
+      },
+      "why": "常滑はイン寄りで1号の船岡 洋一郎が勝率6.28/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "reasons": [
+        "常滑のイン逃げ率 55.0%",
+        "1号 船岡 洋一郎 はA1・勝率 6.28・ST 0.14",
+        "モーター2連対 42.9%、2号との勝率差 1.39",
+        "買い目 1-2（volume本命）"
+      ],
+      "exhibition": {
+        "ready": false,
+        "reason": "進入・スリット・周回タイム未完了",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": null,
+            "slit": null,
+            "lapTime": null,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": null
+      },
+      "skip_reason": "exhibition_pending",
+      "result": "skipped_no_exhibition",
+      "hit": false
     }
   ],
   "note": "進入変更レースはスキップとして再計算。保証ではない。"
