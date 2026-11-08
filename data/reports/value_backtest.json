@@ -1,0 +1,386 @@
+{
+  "train_n": 27746,
+  "test_n": 20196,
+  "bands": {
+    "honmei": {
+      "targets_met": 0,
+      "best": {
+        "train_roi": 64.66,
+        "test_roi": 84.77,
+        "test_hit": 3.3,
+        "test_n": 2942,
+        "cfg": {
+          "min_ev": 1.4,
+          "odds_lo": 10,
+          "odds_hi": 80,
+          "anomaly_block": false,
+          "stadiums": [
+            12,
+            13,
+            18,
+            19,
+            21,
+            24
+          ]
+        }
+      },
+      "top5": [
+        {
+          "train_roi": 64.66,
+          "test_roi": 84.77,
+          "test_hit": 3.3,
+          "test_n": 2942,
+          "cfg": {
+            "min_ev": 1.4,
+            "odds_lo": 10,
+            "odds_hi": 80,
+            "anomaly_block": false,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 63.63,
+          "test_roi": 83.81,
+          "test_hit": 3.27,
+          "test_n": 2810,
+          "cfg": {
+            "min_ev": 1.6,
+            "odds_lo": 10,
+            "odds_hi": 80,
+            "anomaly_block": false,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 63.85,
+          "test_roi": 81.98,
+          "test_hit": 3.19,
+          "test_n": 3042,
+          "cfg": {
+            "min_ev": 1.2,
+            "odds_lo": 10,
+            "odds_hi": 80,
+            "anomaly_block": false,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 64.57,
+          "test_roi": 80.94,
+          "test_hit": 3.15,
+          "test_n": 3081,
+          "cfg": {
+            "min_ev": 1.1,
+            "odds_lo": 10,
+            "odds_hi": 80,
+            "anomaly_block": false,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 79.26,
+          "test_roi": 80.25,
+          "test_hit": 4.32,
+          "test_n": 2988,
+          "cfg": {
+            "min_ev": 1.4,
+            "odds_lo": 8,
+            "odds_hi": 50,
+            "anomaly_block": false,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        }
+      ]
+    },
+    "oshi": {
+      "targets_met": 0,
+      "best": {
+        "train_roi": 79.56,
+        "test_roi": 109.82,
+        "test_hit": 1.5,
+        "test_n": 1601,
+        "cfg": {
+          "min_ev": 2.5,
+          "odds_lo": 30,
+          "odds_hi": 150,
+          "anomaly_block": true,
+          "stadiums": [
+            18,
+            19,
+            21,
+            24
+          ]
+        }
+      },
+      "top5": [
+        {
+          "train_roi": 79.56,
+          "test_roi": 109.82,
+          "test_hit": 1.5,
+          "test_n": 1601,
+          "cfg": {
+            "min_ev": 2.5,
+            "odds_lo": 30,
+            "odds_hi": 150,
+            "anomaly_block": true,
+            "stadiums": [
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 82.7,
+          "test_roi": 107.93,
+          "test_hit": 1.6,
+          "test_n": 2432,
+          "cfg": {
+            "min_ev": 2.5,
+            "odds_lo": 30,
+            "odds_hi": 150,
+            "anomaly_block": true,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 77.83,
+          "test_roi": 101.46,
+          "test_hit": 1.38,
+          "test_n": 1812,
+          "cfg": {
+            "min_ev": 2.0,
+            "odds_lo": 30,
+            "odds_hi": 150,
+            "anomaly_block": true,
+            "stadiums": [
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 79.33,
+          "test_roi": 98.55,
+          "test_hit": 1.47,
+          "test_n": 2780,
+          "cfg": {
+            "min_ev": 2.0,
+            "odds_lo": 30,
+            "odds_hi": 150,
+            "anomaly_block": true,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 76.45,
+          "test_roi": 97.79,
+          "test_hit": 1.33,
+          "test_n": 1880,
+          "cfg": {
+            "min_ev": 1.8,
+            "odds_lo": 30,
+            "odds_hi": 150,
+            "anomaly_block": true,
+            "stadiums": [
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        }
+      ]
+    },
+    "ana": {
+      "targets_met": 0,
+      "best": {
+        "train_roi": 62.51,
+        "test_roi": 66.78,
+        "test_hit": 0.56,
+        "test_n": 12370,
+        "cfg": {
+          "min_ev": 1.5,
+          "odds_lo": 80,
+          "odds_hi": 300,
+          "anomaly_block": true,
+          "stadiums": "all"
+        }
+      },
+      "top5": [
+        {
+          "train_roi": 62.51,
+          "test_roi": 66.78,
+          "test_hit": 0.56,
+          "test_n": 12370,
+          "cfg": {
+            "min_ev": 1.5,
+            "odds_lo": 80,
+            "odds_hi": 300,
+            "anomaly_block": true,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 62.51,
+          "test_roi": 66.78,
+          "test_hit": 0.56,
+          "test_n": 12370,
+          "cfg": {
+            "min_ev": 1.5,
+            "odds_lo": 80,
+            "odds_hi": 300,
+            "anomaly_block": false,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 62.32,
+          "test_roi": 65.02,
+          "test_hit": 0.55,
+          "test_n": 8769,
+          "cfg": {
+            "min_ev": 2.5,
+            "odds_lo": 80,
+            "odds_hi": 300,
+            "anomaly_block": true,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 62.32,
+          "test_roi": 65.02,
+          "test_hit": 0.55,
+          "test_n": 8769,
+          "cfg": {
+            "min_ev": 2.5,
+            "odds_lo": 80,
+            "odds_hi": 300,
+            "anomaly_block": false,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 79.49,
+          "test_roi": 64.37,
+          "test_hit": 0.47,
+          "test_n": 7924,
+          "cfg": {
+            "min_ev": 2.5,
+            "odds_lo": 100,
+            "odds_hi": 400,
+            "anomaly_block": true,
+            "stadiums": "all"
+          }
+        }
+      ]
+    }
+  },
+  "portfolio_test": {
+    "selected": 13696,
+    "bets": 1609900,
+    "pay": 1185400,
+    "roi": 73.63190260264612,
+    "hit_rate": 1.3361565420560748
+  },
+  "locked": {
+    "honmei": {
+      "min_ev": 1.4,
+      "odds_lo": 10,
+      "odds_hi": 80,
+      "anomaly_block": false,
+      "stadiums": [
+        12,
+        13,
+        18,
+        19,
+        21,
+        24
+      ],
+      "validated_test_roi": 84.76886471787898,
+      "validated_test_hit_rate": 3.2970768184908223,
+      "validated_test_selected": 2942,
+      "meets_target": false
+    },
+    "oshi": {
+      "min_ev": 2.5,
+      "odds_lo": 30,
+      "odds_hi": 150,
+      "anomaly_block": true,
+      "stadiums": [
+        18,
+        19,
+        21,
+        24
+      ],
+      "validated_test_roi": 109.81886321049343,
+      "validated_test_hit_rate": 1.499063085571518,
+      "validated_test_selected": 1601,
+      "meets_target": false
+    },
+    "ana": {
+      "min_ev": 1.5,
+      "odds_lo": 80,
+      "odds_hi": 300,
+      "anomaly_block": true,
+      "stadiums": "all",
+      "validated_test_roi": 66.78334680679062,
+      "validated_test_hit_rate": 0.5578011317704122,
+      "validated_test_selected": 12370,
+      "meets_target": false
+    }
+  },
+  "disclaimer": "必ず勝てる保証はない。期待値フィルタ＋異常オッズ回避＋得意コースの検証結果。"
+}

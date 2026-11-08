@@ -1,0 +1,376 @@
+{
+  "train_n": 165835,
+  "test_n": 110479,
+  "bands": {
+    "oshi": {
+      "targets_met": 0,
+      "best": {
+        "train_roi": 73.49,
+        "test_roi": 75.29,
+        "test_hit": 11.11,
+        "test_n": 15799,
+        "cfg": {
+          "ticket": "exacta_21",
+          "min_stadium_innige": 0.45,
+          "min_c1_nat": 4.5,
+          "max_c1_nat": 6.8,
+          "min_c2_nat": 6.0,
+          "grades": [
+            4,
+            5
+          ]
+        }
+      },
+      "top8": [
+        {
+          "train_roi": 73.49,
+          "test_roi": 75.29,
+          "test_hit": 11.11,
+          "test_n": 15799,
+          "cfg": {
+            "ticket": "exacta_21",
+            "min_stadium_innige": 0.45,
+            "min_c1_nat": 4.5,
+            "max_c1_nat": 6.8,
+            "min_c2_nat": 6.0,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 73.17,
+          "test_roi": 75.02,
+          "test_hit": 11.18,
+          "test_n": 14413,
+          "cfg": {
+            "ticket": "exacta_21",
+            "min_stadium_innige": 0.5,
+            "min_c1_nat": 4.5,
+            "max_c1_nat": 6.8,
+            "min_c2_nat": 6.0,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 61.97,
+          "test_roi": 73.53,
+          "test_hit": 10.96,
+          "test_n": 6194,
+          "cfg": {
+            "ticket": "trifecta_2axis",
+            "min_stadium_innige": 0.45,
+            "min_c1_nat": 5.5,
+            "max_c1_nat": 7.2,
+            "min_c2_nat": 6.5,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 71.58,
+          "test_roi": 73.52,
+          "test_hit": 10.02,
+          "test_n": 13177,
+          "cfg": {
+            "ticket": "exacta_21",
+            "min_stadium_innige": 0.5,
+            "min_c1_nat": 5.0,
+            "max_c1_nat": 7.0,
+            "min_c2_nat": 6.0,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 72.81,
+          "test_roi": 72.87,
+          "test_hit": 12.79,
+          "test_n": 7248,
+          "cfg": {
+            "ticket": "exacta_21",
+            "min_stadium_innige": 0.5,
+            "min_c1_nat": 4.5,
+            "max_c1_nat": 6.8,
+            "min_c2_nat": 6.5,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 73.11,
+          "test_roi": 72.66,
+          "test_hit": 12.64,
+          "test_n": 7934,
+          "cfg": {
+            "ticket": "exacta_21",
+            "min_stadium_innige": 0.45,
+            "min_c1_nat": 4.5,
+            "max_c1_nat": 6.8,
+            "min_c2_nat": 6.5,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 66.76,
+          "test_roi": 72.05,
+          "test_hit": 14.87,
+          "test_n": 7934,
+          "cfg": {
+            "ticket": "trifecta_2axis",
+            "min_stadium_innige": 0.45,
+            "min_c1_nat": 4.5,
+            "max_c1_nat": 6.8,
+            "min_c2_nat": 6.5,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 72.86,
+          "test_roi": 72.05,
+          "test_hit": 10.43,
+          "test_n": 7248,
+          "cfg": {
+            "ticket": "trifecta_oshi_stream",
+            "min_stadium_innige": 0.5,
+            "min_c1_nat": 4.5,
+            "max_c1_nat": 6.8,
+            "min_c2_nat": 6.5,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        }
+      ]
+    },
+    "ana": {
+      "targets_met": 0,
+      "best": {
+        "train_roi": 64.58,
+        "test_roi": 62.59,
+        "test_hit": 6.51,
+        "test_n": 25000,
+        "cfg": {
+          "ticket": "exacta_ana",
+          "max_stadium_innige": 0.55,
+          "max_c1_nat": 5.0,
+          "require_weak_c1": true,
+          "min_c1_class_weak": 2,
+          "grades": [
+            4,
+            5
+          ]
+        }
+      },
+      "top8": [
+        {
+          "train_roi": 64.58,
+          "test_roi": 62.59,
+          "test_hit": 6.51,
+          "test_n": 25000,
+          "cfg": {
+            "ticket": "exacta_ana",
+            "max_stadium_innige": 0.55,
+            "max_c1_nat": 5.0,
+            "require_weak_c1": true,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 64.48,
+          "test_roi": 62.58,
+          "test_hit": 6.51,
+          "test_n": 25032,
+          "cfg": {
+            "ticket": "exacta_ana",
+            "max_stadium_innige": 0.55,
+            "max_c1_nat": 5.0,
+            "require_weak_c1": false,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 68.11,
+          "test_roi": 62.57,
+          "test_hit": 6.95,
+          "test_n": 11249,
+          "cfg": {
+            "ticket": "trifecta_ana_1axis_out",
+            "max_stadium_innige": 0.5,
+            "max_c1_nat": 5.5,
+            "require_weak_c1": false,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 67.68,
+          "test_roi": 62.4,
+          "test_hit": 6.94,
+          "test_n": 11180,
+          "cfg": {
+            "ticket": "trifecta_ana_1axis_out",
+            "max_stadium_innige": 0.5,
+            "max_c1_nat": 5.5,
+            "require_weak_c1": true,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 68.22,
+          "test_roi": 62.02,
+          "test_hit": 6.56,
+          "test_n": 8183,
+          "cfg": {
+            "ticket": "exacta_ana",
+            "max_stadium_innige": 0.5,
+            "max_c1_nat": 5.0,
+            "require_weak_c1": true,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 68.18,
+          "test_roi": 61.95,
+          "test_hit": 6.56,
+          "test_n": 8192,
+          "cfg": {
+            "ticket": "exacta_ana",
+            "max_stadium_innige": 0.5,
+            "max_c1_nat": 5.0,
+            "require_weak_c1": false,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 64.39,
+          "test_roi": 61.46,
+          "test_hit": 6.23,
+          "test_n": 30312,
+          "cfg": {
+            "ticket": "exacta_ana",
+            "max_stadium_innige": 0.58,
+            "max_c1_nat": 5.0,
+            "require_weak_c1": false,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "train_roi": 64.46,
+          "test_roi": 61.45,
+          "test_hit": 6.22,
+          "test_n": 30272,
+          "cfg": {
+            "ticket": "exacta_ana",
+            "max_stadium_innige": 0.58,
+            "max_c1_nat": 5.0,
+            "require_weak_c1": true,
+            "min_c1_class_weak": 2,
+            "grades": [
+              4,
+              5
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "locked": {
+    "honmei": {
+      "ticket": "trifecta_1_2_stream",
+      "min_stadium_innige": 0.6,
+      "max_c1_class": 1,
+      "min_c1_nat": 7.0,
+      "max_c1_st": 0.14,
+      "min_motor2": 35,
+      "min_gap_c2": 1.0,
+      "grades": [
+        4,
+        5
+      ],
+      "stadium_whitelist": [
+        18,
+        24
+      ],
+      "validated_test_roi": 174.3076923076923,
+      "validated_test_selected": 65,
+      "meets_target": true,
+      "source": "5y_innige_backtest"
+    },
+    "oshi": {
+      "ticket": "exacta_21",
+      "min_stadium_innige": 0.45,
+      "min_c1_nat": 4.5,
+      "max_c1_nat": 6.8,
+      "min_c2_nat": 6.0,
+      "grades": [
+        4,
+        5
+      ],
+      "validated_test_roi": 75.28514462940691,
+      "validated_test_hit_rate": 11.108297993543895,
+      "validated_test_selected": 15799,
+      "meets_target": false
+    },
+    "ana": {
+      "ticket": "exacta_ana",
+      "max_stadium_innige": 0.55,
+      "max_c1_nat": 5.0,
+      "require_weak_c1": true,
+      "min_c1_class_weak": 2,
+      "grades": [
+        4,
+        5
+      ],
+      "validated_test_roi": 62.592533333333336,
+      "validated_test_hit_rate": 6.508,
+      "validated_test_selected": 25000,
+      "meets_target": false
+    }
+  },
+  "disclaimer": "必ず勝てる保証はない。過去検証で条件を満たしたルールをロックしたもの。異常オッズは当日オッズ取得時に別途回避する。"
+}

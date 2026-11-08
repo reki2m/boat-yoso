@@ -1,0 +1,1032 @@
+{
+  "oshi_recheck": {
+    "train_roi": 131.61,
+    "test_roi": 185.07,
+    "test_hit": 22.86,
+    "test_n": 70,
+    "train_n": 135,
+    "avg_hit_pay": 3238.8,
+    "cfg": {
+      "ticket": "tri_oshi4",
+      "min_inn": 0.45,
+      "max_inn": null,
+      "c1_nat_lo": 4.5,
+      "c1_nat_hi": 6.8,
+      "min_c2_nat": 6.0,
+      "min_c2_skill": 0.22,
+      "min_c2_skill_n": 40,
+      "min_c2_top2": 0.3,
+      "max_c1_st": 0.18,
+      "require_c2_faster_st": false,
+      "min_c2_motor": 40,
+      "min_skill_gap_21": null,
+      "max_c1_skill": null,
+      "exclude_honmei": true,
+      "grades": [
+        4,
+        5
+      ],
+      "stadium_whitelist": [
+        18,
+        24
+      ],
+      "band": "oshi",
+      "validated_test_roi": 185.07,
+      "validated_test_hit_rate": 22.86,
+      "validated_test_selected": 70,
+      "validated_train_roi": 131.61,
+      "meets_target": true,
+      "odds_lo": 20,
+      "odds_hi": 150,
+      "anomaly_block": true
+    }
+  },
+  "oshi_variants_top": [
+    {
+      "train_roi": 123.62,
+      "test_roi": 156.08,
+      "test_hit": 19.28,
+      "test_n": 83,
+      "train_n": 147,
+      "avg_hit_pay": 3238.8,
+      "cfg": {
+        "ticket": "tri_oshi4",
+        "min_inn": 0.45,
+        "max_inn": null,
+        "c1_nat_lo": 4.5,
+        "c1_nat_hi": 6.8,
+        "min_c2_nat": 6.0,
+        "min_c2_skill": 0.22,
+        "min_c2_skill_n": 40,
+        "min_c2_top2": 0.3,
+        "max_c1_st": 0.2,
+        "require_c2_faster_st": false,
+        "min_c2_motor": 40,
+        "min_skill_gap_21": null,
+        "max_c1_skill": null,
+        "exclude_honmei": true,
+        "grades": [
+          4,
+          5
+        ],
+        "stadium_whitelist": [
+          18,
+          24
+        ],
+        "band": "oshi",
+        "validated_test_roi": 185.07,
+        "validated_test_hit_rate": 22.86,
+        "validated_test_selected": 70,
+        "validated_train_roi": 131.61,
+        "meets_target": true,
+        "odds_lo": 20,
+        "odds_hi": 150,
+        "anomaly_block": true
+      }
+    },
+    {
+      "train_roi": 131.61,
+      "test_roi": 185.07,
+      "test_hit": 22.86,
+      "test_n": 70,
+      "train_n": 135,
+      "avg_hit_pay": 3238.8,
+      "cfg": {
+        "ticket": "tri_oshi4",
+        "min_inn": 0.45,
+        "max_inn": null,
+        "c1_nat_lo": 4.5,
+        "c1_nat_hi": 6.8,
+        "min_c2_nat": 6.0,
+        "min_c2_skill": 0.22,
+        "min_c2_skill_n": 40,
+        "min_c2_top2": 0.3,
+        "max_c1_st": 0.18,
+        "require_c2_faster_st": false,
+        "min_c2_motor": 40,
+        "min_skill_gap_21": null,
+        "max_c1_skill": null,
+        "exclude_honmei": true,
+        "grades": [
+          4,
+          5
+        ],
+        "stadium_whitelist": [
+          18,
+          24
+        ],
+        "band": "oshi",
+        "validated_test_roi": 185.07,
+        "validated_test_hit_rate": 22.86,
+        "validated_test_selected": 70,
+        "validated_train_roi": 131.61,
+        "meets_target": true,
+        "odds_lo": 20,
+        "odds_hi": 150,
+        "anomaly_block": true
+      }
+    },
+    {
+      "train_roi": 108.25,
+      "test_roi": 143.28,
+      "test_hit": 17.92,
+      "test_n": 106,
+      "train_n": 193,
+      "avg_hit_pay": 3197.4,
+      "cfg": {
+        "ticket": "tri_oshi4",
+        "min_inn": 0.45,
+        "max_inn": null,
+        "c1_nat_lo": 4.5,
+        "c1_nat_hi": 6.8,
+        "min_c2_nat": 6.0,
+        "min_c2_skill": 0.2,
+        "min_c2_skill_n": 40,
+        "min_c2_top2": 0.3,
+        "max_c1_st": 0.18,
+        "require_c2_faster_st": false,
+        "min_c2_motor": 40,
+        "min_skill_gap_21": null,
+        "max_c1_skill": null,
+        "exclude_honmei": true,
+        "grades": [
+          4,
+          5
+        ],
+        "stadium_whitelist": [
+          18,
+          24
+        ],
+        "band": "oshi",
+        "validated_test_roi": 185.07,
+        "validated_test_hit_rate": 22.86,
+        "validated_test_selected": 70,
+        "validated_train_roi": 131.61,
+        "meets_target": true,
+        "odds_lo": 20,
+        "odds_hi": 150,
+        "anomaly_block": true
+      }
+    },
+    {
+      "train_roi": 102.38,
+      "test_roi": 87.13,
+      "test_hit": 11.42,
+      "test_n": 324,
+      "train_n": 476,
+      "avg_hit_pay": 1525.9,
+      "cfg": {
+        "ticket": "tri_213_214",
+        "min_inn": 0.45,
+        "max_inn": null,
+        "c1_nat_lo": 4.5,
+        "c1_nat_hi": 6.8,
+        "min_c2_nat": 6.0,
+        "min_c2_skill": 0.18,
+        "min_c2_skill_n": 40,
+        "min_c2_top2": 0.3,
+        "max_c1_st": 0.18,
+        "require_c2_faster_st": false,
+        "min_c2_motor": 35,
+        "min_skill_gap_21": null,
+        "max_c1_skill": null,
+        "exclude_honmei": true,
+        "grades": [
+          4,
+          5
+        ],
+        "stadium_whitelist": [
+          18,
+          24
+        ],
+        "band": "oshi",
+        "validated_test_roi": 185.07,
+        "validated_test_hit_rate": 22.86,
+        "validated_test_selected": 70,
+        "validated_train_roi": 131.61,
+        "meets_target": true,
+        "odds_lo": 20,
+        "odds_hi": 150,
+        "anomaly_block": true
+      }
+    }
+  ],
+  "oshi_good_top": [
+    {
+      "train_roi": 123.62,
+      "test_roi": 156.08,
+      "test_hit": 19.28,
+      "test_n": 83,
+      "train_n": 147,
+      "avg_hit_pay": 3238.8,
+      "cfg": {
+        "ticket": "tri_oshi4",
+        "min_inn": 0.45,
+        "max_inn": null,
+        "c1_nat_lo": 4.5,
+        "c1_nat_hi": 6.8,
+        "min_c2_nat": 6.0,
+        "min_c2_skill": 0.22,
+        "min_c2_skill_n": 40,
+        "min_c2_top2": 0.3,
+        "max_c1_st": 0.2,
+        "require_c2_faster_st": false,
+        "min_c2_motor": 40,
+        "min_skill_gap_21": null,
+        "max_c1_skill": null,
+        "exclude_honmei": true,
+        "grades": [
+          4,
+          5
+        ],
+        "stadium_whitelist": [
+          18,
+          24
+        ],
+        "band": "oshi",
+        "validated_test_roi": 185.07,
+        "validated_test_hit_rate": 22.86,
+        "validated_test_selected": 70,
+        "validated_train_roi": 131.61,
+        "meets_target": true,
+        "odds_lo": 20,
+        "odds_hi": 150,
+        "anomaly_block": true
+      }
+    },
+    {
+      "train_roi": 131.61,
+      "test_roi": 185.07,
+      "test_hit": 22.86,
+      "test_n": 70,
+      "train_n": 135,
+      "avg_hit_pay": 3238.8,
+      "cfg": {
+        "ticket": "tri_oshi4",
+        "min_inn": 0.45,
+        "max_inn": null,
+        "c1_nat_lo": 4.5,
+        "c1_nat_hi": 6.8,
+        "min_c2_nat": 6.0,
+        "min_c2_skill": 0.22,
+        "min_c2_skill_n": 40,
+        "min_c2_top2": 0.3,
+        "max_c1_st": 0.18,
+        "require_c2_faster_st": false,
+        "min_c2_motor": 40,
+        "min_skill_gap_21": null,
+        "max_c1_skill": null,
+        "exclude_honmei": true,
+        "grades": [
+          4,
+          5
+        ],
+        "stadium_whitelist": [
+          18,
+          24
+        ],
+        "band": "oshi",
+        "validated_test_roi": 185.07,
+        "validated_test_hit_rate": 22.86,
+        "validated_test_selected": 70,
+        "validated_train_roi": 131.61,
+        "meets_target": true,
+        "odds_lo": 20,
+        "odds_hi": 150,
+        "anomaly_block": true
+      }
+    }
+  ],
+  "ana": {
+    "targets_met": 6,
+    "best": {
+      "train_roi": 103.37,
+      "test_roi": 272.88,
+      "test_hit": 10.26,
+      "test_n": 39,
+      "train_n": 63,
+      "avg_hit_pay": 10642.5,
+      "cfg": {
+        "ticket": "tri_4_1_stream",
+        "axis": 4,
+        "max_inn": 0.55,
+        "max_c1_nat": 5.5,
+        "max_c1_skill": 0.32,
+        "min_c1_st": 0.18,
+        "min_axis_skill": 0.15,
+        "min_axis_n": 40,
+        "min_axis_nat": 6.5,
+        "min_wind": 4,
+        "require_axis_faster_st": true,
+        "min_axis_motor": 35,
+        "require_weak_c1_class": true,
+        "exclude_honmei": true,
+        "grades": [
+          4,
+          5
+        ],
+        "stadium_whitelist": null
+      }
+    },
+    "top12": [
+      {
+        "train_roi": 103.37,
+        "test_roi": 272.88,
+        "test_hit": 10.26,
+        "test_n": 39,
+        "train_n": 63,
+        "avg_hit_pay": 10642.5,
+        "cfg": {
+          "ticket": "tri_4_1_stream",
+          "axis": 4,
+          "max_inn": 0.55,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.15,
+          "min_axis_n": 40,
+          "min_axis_nat": 6.5,
+          "min_wind": 4,
+          "require_axis_faster_st": true,
+          "min_axis_motor": 35,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": null
+        }
+      },
+      {
+        "train_roi": 100.55,
+        "test_roi": 172.82,
+        "test_hit": 12.73,
+        "test_n": 55,
+        "train_n": 154,
+        "avg_hit_pay": 2715.7,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 105.16,
+        "test_roi": 154.59,
+        "test_hit": 13.11,
+        "test_n": 61,
+        "train_n": 152,
+        "avg_hit_pay": 2357.5,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            3,
+            4,
+            14,
+            16,
+            17
+          ]
+        }
+      },
+      {
+        "train_roi": 102.98,
+        "test_roi": 162.64,
+        "test_hit": 8.33,
+        "test_n": 36,
+        "train_n": 94,
+        "avg_hit_pay": 3903.3,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 100.69,
+        "test_roi": 159.71,
+        "test_hit": 9.3,
+        "test_n": 43,
+        "train_n": 58,
+        "avg_hit_pay": 6867.5,
+        "cfg": {
+          "ticket": "tri_5_1_stream",
+          "axis": 5,
+          "max_inn": 0.55,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.4,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.15,
+          "min_axis_n": 40,
+          "min_axis_nat": 6.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 115.14,
+        "test_roi": 156.46,
+        "test_hit": 9.76,
+        "test_n": 41,
+        "train_n": 110,
+        "avg_hit_pay": 3207.5,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 141.86,
+        "test_roi": 213.88,
+        "test_hit": 15.0,
+        "test_n": 20,
+        "train_n": 47,
+        "avg_hit_pay": 5703.3,
+        "cfg": {
+          "ticket": "tri_5_1_stream",
+          "axis": 5,
+          "max_inn": 0.5,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.15,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 125.8,
+        "test_roi": 185.98,
+        "test_hit": 13.04,
+        "test_n": 23,
+        "train_n": 53,
+        "avg_hit_pay": 5703.3,
+        "cfg": {
+          "ticket": "tri_5_1_stream",
+          "axis": 5,
+          "max_inn": 0.5,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.15,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 107.54,
+        "test_roi": 164.52,
+        "test_hit": 11.54,
+        "test_n": 26,
+        "train_n": 62,
+        "avg_hit_pay": 5703.3,
+        "cfg": {
+          "ticket": "tri_5_1_stream",
+          "axis": 5,
+          "max_inn": 0.55,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.15,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 104.21,
+        "test_roi": 129.68,
+        "test_hit": 12.66,
+        "test_n": 79,
+        "train_n": 170,
+        "avg_hit_pay": 2049.0,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.55,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            3,
+            4,
+            14,
+            16,
+            17
+          ]
+        }
+      },
+      {
+        "train_roi": 100.19,
+        "test_roi": 126.9,
+        "test_hit": 13.79,
+        "test_n": 29,
+        "train_n": 40,
+        "avg_hit_pay": 3680.0,
+        "cfg": {
+          "ticket": "tri_4axis",
+          "axis": 4,
+          "max_inn": 0.55,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.4,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 3,
+          "require_axis_faster_st": false,
+          "min_axis_motor": 35,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 116.72,
+        "test_roi": 102.82,
+        "test_hit": 15.38,
+        "test_n": 39,
+        "train_n": 67,
+        "avg_hit_pay": 1336.7,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.4,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 6.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      }
+    ],
+    "good_top": [
+      {
+        "train_roi": 103.37,
+        "test_roi": 272.88,
+        "test_hit": 10.26,
+        "test_n": 39,
+        "train_n": 63,
+        "avg_hit_pay": 10642.5,
+        "cfg": {
+          "ticket": "tri_4_1_stream",
+          "axis": 4,
+          "max_inn": 0.55,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.15,
+          "min_axis_n": 40,
+          "min_axis_nat": 6.5,
+          "min_wind": 4,
+          "require_axis_faster_st": true,
+          "min_axis_motor": 35,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": null
+        }
+      },
+      {
+        "train_roi": 100.55,
+        "test_roi": 172.82,
+        "test_hit": 12.73,
+        "test_n": 55,
+        "train_n": 154,
+        "avg_hit_pay": 2715.7,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 105.16,
+        "test_roi": 154.59,
+        "test_hit": 13.11,
+        "test_n": 61,
+        "train_n": 152,
+        "avg_hit_pay": 2357.5,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            3,
+            4,
+            14,
+            16,
+            17
+          ]
+        }
+      },
+      {
+        "train_roi": 102.98,
+        "test_roi": 162.64,
+        "test_hit": 8.33,
+        "test_n": 36,
+        "train_n": 94,
+        "avg_hit_pay": 3903.3,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 100.69,
+        "test_roi": 159.71,
+        "test_hit": 9.3,
+        "test_n": 43,
+        "train_n": 58,
+        "avg_hit_pay": 6867.5,
+        "cfg": {
+          "ticket": "tri_5_1_stream",
+          "axis": 5,
+          "max_inn": 0.55,
+          "max_c1_nat": 4.8,
+          "max_c1_skill": 0.4,
+          "min_c1_st": 0.16,
+          "min_axis_skill": 0.15,
+          "min_axis_n": 40,
+          "min_axis_nat": 6.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "train_roi": 115.14,
+        "test_roi": 156.46,
+        "test_hit": 9.76,
+        "test_n": 41,
+        "train_n": 110,
+        "avg_hit_pay": 3207.5,
+        "cfg": {
+          "ticket": "exa_45_54",
+          "axis": 4,
+          "max_inn": 0.5,
+          "max_c1_nat": 5.5,
+          "max_c1_skill": 0.32,
+          "min_c1_st": 0.18,
+          "min_axis_skill": 0.2,
+          "min_axis_n": 40,
+          "min_axis_nat": 5.5,
+          "min_wind": 0,
+          "require_axis_faster_st": false,
+          "min_axis_motor": null,
+          "require_weak_c1_class": true,
+          "exclude_honmei": true,
+          "grades": [
+            4,
+            5
+          ],
+          "stadium_whitelist": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      }
+    ]
+  },
+  "locked": {
+    "honmei": {
+      "ticket": "trifecta_1_2_stream",
+      "min_stadium_innige": 0.6,
+      "max_c1_class": 1,
+      "min_c1_nat": 7.0,
+      "max_c1_st": 0.14,
+      "min_motor2": 35,
+      "min_gap_c2": 1.0,
+      "grades": [
+        4,
+        5
+      ],
+      "stadium_whitelist": [
+        18,
+        24
+      ],
+      "validated_test_roi": 174.3076923076923,
+      "validated_test_selected": 65,
+      "band": "honmei",
+      "meets_target": true,
+      "odds_lo": 8,
+      "odds_hi": 80,
+      "anomaly_block": true
+    },
+    "oshi": {
+      "ticket": "tri_oshi4",
+      "min_inn": 0.45,
+      "max_inn": null,
+      "c1_nat_lo": 4.5,
+      "c1_nat_hi": 6.8,
+      "min_c2_nat": 6.0,
+      "min_c2_skill": 0.22,
+      "min_c2_skill_n": 40,
+      "min_c2_top2": 0.3,
+      "max_c1_st": 0.2,
+      "require_c2_faster_st": false,
+      "min_c2_motor": 40,
+      "min_skill_gap_21": null,
+      "max_c1_skill": null,
+      "exclude_honmei": true,
+      "grades": [
+        4,
+        5
+      ],
+      "stadium_whitelist": [
+        18,
+        24
+      ],
+      "band": "oshi",
+      "validated_test_roi": 156.0843373493976,
+      "validated_test_hit_rate": 19.27710843373494,
+      "validated_test_selected": 83,
+      "validated_train_roi": 123.62244897959182,
+      "meets_target": true,
+      "odds_lo": 20,
+      "odds_hi": 150,
+      "anomaly_block": true
+    },
+    "ana": {
+      "ticket": "tri_4_1_stream",
+      "axis": 4,
+      "max_inn": 0.55,
+      "max_c1_nat": 5.5,
+      "max_c1_skill": 0.32,
+      "min_c1_st": 0.18,
+      "min_axis_skill": 0.15,
+      "min_axis_n": 40,
+      "min_axis_nat": 6.5,
+      "min_wind": 4,
+      "require_axis_faster_st": true,
+      "min_axis_motor": 35,
+      "require_weak_c1_class": true,
+      "exclude_honmei": true,
+      "grades": [
+        4,
+        5
+      ],
+      "stadium_whitelist": null,
+      "band": "ana",
+      "validated_test_roi": 272.8846153846154,
+      "validated_test_hit_rate": 10.256410256410255,
+      "validated_test_selected": 39,
+      "validated_train_roi": 103.37301587301589,
+      "meets_target": true,
+      "odds_lo": 80,
+      "odds_hi": 400,
+      "anomaly_block": false
+    }
+  },
+  "disclaimer": "必ず勝てる保証はない。過去検証で条件を満たしたルールをロックしたもの。"
+}

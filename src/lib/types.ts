@@ -18,7 +18,7 @@ export type RacerRow = {
 };
 
 export type RacePayload = {
-  source: "kyoteibiyori" | "sample";
+  source: "kyoteibiyori" | "openapi" | "sample";
   date: string;
   placeNo: number;
   placeName: string;

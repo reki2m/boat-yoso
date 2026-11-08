@@ -335,6 +335,78 @@ th {
   padding: 1rem 0;
 }
 
+.badge.warn {
+  border-color: rgba(240, 180, 41, 0.55);
+  color: var(--accent-2);
+}
+
+.side-card.on {
+  border-color: rgba(58, 208, 196, 0.45);
+  background:
+    linear-gradient(135deg, rgba(58, 208, 196, 0.14), transparent 60%),
+    rgba(4, 22, 30, 0.72);
+}
+
+.side-card.band-oshi.on {
+  border-color: rgba(240, 180, 41, 0.45);
+}
+
+.side-card.band-ana.on {
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
+.anomaly {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(4, 22, 30, 0.7);
+}
+
+.anomaly.ok {
+  border-color: rgba(58, 208, 196, 0.35);
+}
+
+.anomaly.bad {
+  border-color: rgba(240, 180, 41, 0.5);
+  background:
+    linear-gradient(135deg, rgba(240, 180, 41, 0.12), transparent 55%),
+    rgba(4, 22, 30, 0.75);
+}
+
+.anomaly p {
+  margin: 0.35rem 0 0.5rem;
+  line-height: 1.6;
+}
+
+.odds-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.live-box {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+  background: rgba(3, 18, 26, 0.55);
+}
+
+.band-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+@media (max-width: 860px) {
+  .band-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 860px) {
   .controls {
     grid-template-columns: 1fr 1fr;

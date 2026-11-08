@@ -1,0 +1,662 @@
+{
+  "train_n": 27746,
+  "test_n": 20196,
+  "bands": {
+    "honmei": {
+      "best": {
+        "train": {
+          "band": "honmei",
+          "anomaly_block": false,
+          "odds_lo": 8,
+          "odds_hi": 40,
+          "stadiums": "all",
+          "selected": 5354,
+          "bets": 2029800,
+          "pay": 1636660,
+          "roi": 80.63158931914475,
+          "hit_races": 1128,
+          "hit_rate": 21.068360104594696
+        },
+        "test": {
+          "band": "honmei",
+          "anomaly_block": false,
+          "odds_lo": 8,
+          "odds_hi": 40,
+          "stadiums": "all",
+          "selected": 4328,
+          "bets": 1635800,
+          "pay": 1242040,
+          "roi": 75.9285976280719,
+          "hit_races": 858,
+          "hit_rate": 19.824399260628468
+        }
+      },
+      "best_meeting_target": null,
+      "candidates": [
+        {
+          "train_roi": 80.63,
+          "test_roi": 75.93,
+          "test_hit": 19.82,
+          "test_n": 4328,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 8,
+            "odds_hi": 40,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 78.73,
+          "test_roi": 75.05,
+          "test_hit": 13.69,
+          "test_n": 2505,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 12,
+            "odds_hi": 80,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 78.72,
+          "test_roi": 74.86,
+          "test_hit": 16.66,
+          "test_n": 2509,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 10,
+            "odds_hi": 60,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 80.16,
+          "test_roi": 74.13,
+          "test_hit": 15.67,
+          "test_n": 4327,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 10,
+            "odds_hi": 60,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 78.4,
+          "test_roi": 73.14,
+          "test_hit": 12.65,
+          "test_n": 4317,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 12,
+            "odds_hi": 80,
+            "stadiums": "all"
+          }
+        },
+        {
+          "train_roi": 78.43,
+          "test_roi": 70.97,
+          "test_hit": 19.38,
+          "test_n": 418,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 8,
+            "odds_hi": 40,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 85.86,
+          "test_roi": 68.76,
+          "test_hit": 14.32,
+          "test_n": 419,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 10,
+            "odds_hi": 60,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 79.29,
+          "test_roi": 66.63,
+          "test_hit": 10.98,
+          "test_n": 419,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 12,
+            "odds_hi": 80,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 78.75,
+          "test_roi": 64.38,
+          "test_hit": 17.99,
+          "test_n": 1195,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 8,
+            "odds_hi": 40,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 74.43,
+          "test_roi": 64.14,
+          "test_hit": 11.34,
+          "test_n": 626,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 12,
+            "odds_hi": 80,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        }
+      ],
+      "targets_met": 0
+    },
+    "oshi": {
+      "best": {
+        "train": {
+          "band": "oshi",
+          "anomaly_block": false,
+          "odds_lo": 30,
+          "odds_hi": 150,
+          "stadiums": [
+            12,
+            13,
+            18,
+            19,
+            21,
+            24
+          ],
+          "selected": 4556,
+          "bets": 615800,
+          "pay": 419800,
+          "roi": 68.17148424813251,
+          "hit_races": 88,
+          "hit_rate": 1.9315188762071993
+        },
+        "test": {
+          "band": "oshi",
+          "anomaly_block": false,
+          "odds_lo": 30,
+          "odds_hi": 150,
+          "stadiums": [
+            12,
+            13,
+            18,
+            19,
+            21,
+            24
+          ],
+          "selected": 3214,
+          "bets": 446000,
+          "pay": 388860,
+          "roi": 87.1883408071749,
+          "hit_races": 80,
+          "hit_rate": 2.4891101431238334
+        }
+      },
+      "best_meeting_target": null,
+      "candidates": [
+        {
+          "train_roi": 68.17,
+          "test_roi": 87.19,
+          "test_hit": 2.49,
+          "test_n": 3214,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 30,
+            "odds_hi": 150,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 69.36,
+          "test_roi": 85.5,
+          "test_hit": 2.57,
+          "test_n": 2417,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 30,
+            "odds_hi": 150,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 69.7,
+          "test_roi": 83.87,
+          "test_hit": 3.95,
+          "test_n": 2989,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 20,
+            "odds_hi": 80,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 66.94,
+          "test_roi": 83.76,
+          "test_hit": 3.68,
+          "test_n": 4099,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 20,
+            "odds_hi": 80,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 62.61,
+          "test_roi": 83.0,
+          "test_hit": 3.12,
+          "test_n": 2727,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 25,
+            "odds_hi": 120,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 61.62,
+          "test_roi": 81.67,
+          "test_hit": 2.89,
+          "test_n": 3667,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 25,
+            "odds_hi": 120,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 60.09,
+          "test_roi": 81.4,
+          "test_hit": 1.7,
+          "test_n": 2405,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 40,
+            "odds_hi": 180,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 61.22,
+          "test_roi": 79.3,
+          "test_hit": 1.72,
+          "test_n": 1863,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 40,
+            "odds_hi": 180,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 43.84,
+          "test_roi": 76.71,
+          "test_hit": 2.63,
+          "test_n": 1292,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 25,
+            "odds_hi": 120,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 46.24,
+          "test_roi": 74.18,
+          "test_hit": 2.67,
+          "test_n": 935,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 25,
+            "odds_hi": 120,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        }
+      ],
+      "targets_met": 0
+    },
+    "ana": {
+      "best": {
+        "train": {
+          "band": "ana",
+          "anomaly_block": true,
+          "odds_lo": 100,
+          "odds_hi": 350,
+          "stadiums": [
+            18,
+            24
+          ],
+          "selected": 2356,
+          "bets": 631200,
+          "pay": 404700,
+          "roi": 64.11596958174906,
+          "hit_races": 23,
+          "hit_rate": 0.9762308998302207
+        },
+        "test": {
+          "band": "ana",
+          "anomaly_block": true,
+          "odds_lo": 100,
+          "odds_hi": 350,
+          "stadiums": [
+            18,
+            24
+          ],
+          "selected": 1675,
+          "bets": 455600,
+          "pay": 423240,
+          "roi": 92.8972783143108,
+          "hit_races": 24,
+          "hit_rate": 1.4328358208955223
+        }
+      },
+      "best_meeting_target": null,
+      "candidates": [
+        {
+          "train_roi": 64.12,
+          "test_roi": 92.9,
+          "test_hit": 1.43,
+          "test_n": 1675,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 100,
+            "odds_hi": 350,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 64.12,
+          "test_roi": 92.9,
+          "test_hit": 1.43,
+          "test_n": 1675,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 100,
+            "odds_hi": 350,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 64.96,
+          "test_roi": 89.73,
+          "test_hit": 1.21,
+          "test_n": 1647,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 120,
+            "odds_hi": 400,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 64.96,
+          "test_roi": 89.73,
+          "test_hit": 1.21,
+          "test_n": 1647,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 120,
+            "odds_hi": 400,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 63.41,
+          "test_roi": 77.57,
+          "test_hit": 1.43,
+          "test_n": 1684,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 80,
+            "odds_hi": 250,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 63.41,
+          "test_roi": 77.57,
+          "test_hit": 1.43,
+          "test_n": 1684,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 80,
+            "odds_hi": 250,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 54.22,
+          "test_roi": 72.81,
+          "test_hit": 0.76,
+          "test_n": 1587,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 150,
+            "odds_hi": 500,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 54.22,
+          "test_roi": 72.81,
+          "test_hit": 0.76,
+          "test_n": 1587,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 150,
+            "odds_hi": 500,
+            "stadiums": [
+              18,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 58.98,
+          "test_roi": 69.34,
+          "test_hit": 1.11,
+          "test_n": 4971,
+          "cfg": {
+            "anomaly_block": true,
+            "odds_lo": 100,
+            "odds_hi": 350,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "train_roi": 58.98,
+          "test_roi": 69.34,
+          "test_hit": 1.11,
+          "test_n": 4971,
+          "cfg": {
+            "anomaly_block": false,
+            "odds_lo": 100,
+            "odds_hi": 350,
+            "stadiums": [
+              12,
+              13,
+              18,
+              19,
+              21,
+              24
+            ]
+          }
+        }
+      ],
+      "targets_met": 0
+    }
+  },
+  "portfolio_test": {
+    "selected_races": 7116,
+    "bets": 2537300,
+    "pay": 2054140,
+    "roi": 80.95771095258739,
+    "hit_rate": 13.518830803822372,
+    "note": "過去検証の合算であり将来の勝利を保証しない"
+  },
+  "locked": {
+    "honmei": {
+      "anomaly_block": false,
+      "odds_lo": 8,
+      "odds_hi": 40,
+      "stadiums": "all",
+      "validated_test_roi": 75.9285976280719,
+      "validated_test_hit_rate": 19.824399260628468,
+      "validated_test_selected": 4328,
+      "meets_target": false
+    },
+    "oshi": {
+      "anomaly_block": false,
+      "odds_lo": 30,
+      "odds_hi": 150,
+      "stadiums": [
+        12,
+        13,
+        18,
+        19,
+        21,
+        24
+      ],
+      "validated_test_roi": 87.1883408071749,
+      "validated_test_hit_rate": 2.4891101431238334,
+      "validated_test_selected": 3214,
+      "meets_target": false
+    },
+    "ana": {
+      "anomaly_block": true,
+      "odds_lo": 100,
+      "odds_hi": 350,
+      "stadiums": [
+        18,
+        24
+      ],
+      "validated_test_roi": 92.8972783143108,
+      "validated_test_hit_rate": 1.4328358208955223,
+      "validated_test_selected": 1675,
+      "meets_target": false
+    }
+  },
+  "disclaimer": "的中・回収を保証するシステムではない。異常オッズ回避＋得意コース＋オッズ帯で期待値寄りの買い目を出す検証済みルール。"
+}

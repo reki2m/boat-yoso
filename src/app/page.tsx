@@ -17,10 +17,32 @@ type Racer = {
   avgStart: number;
   score?: number;
   reasons?: string[];
+  courseSkill?: {
+    winRate: number;
+    top2Rate: number;
+    starts: number;
+    bestCourse: number | null;
+    label: string;
+    isSpecialist: boolean;
+  };
+};
+
+type Band = {
+  band: "honmei" | "oshi" | "ana";
+  label: string;
+  ok: boolean;
+  reasons: string[];
+  tickets: string[];
+  ticketLabel: string;
+  betType: string;
+  validatedRoi?: number;
+  validatedHit?: number;
+  meetsTarget?: boolean;
+  blockedByOdds?: boolean;
 };
 
 type RaceResponse = {
-  source: "kyoteibiyori" | "sample";
+  source: "kyoteibiyori" | "openapi" | "sample";
   date: string;
   placeNo: number;
   placeName: string;
@@ -38,13 +60,38 @@ type RaceResponse = {
     confidence: string;
     summary: string;
   };
-  honmeiSystem?: {
-    ok: boolean;
-    reasons: string[];
-    tickets: string[];
-    ticketLabel: string;
+  odds?: {
+    source: string;
+    trifectaCount: number;
+    sample: Array<{ combo: string; odds: number }>;
+  };
+  courseSkills?: Array<{
+    course: number;
+    name: string;
+    skill?: Racer["courseSkill"];
+  }>;
+  tripleSystem?: {
+    bands: Band[];
+    active: Band[];
+    anomaly: {
+      ok: boolean;
+      favorite: string | null;
+      favOdds: number | null;
+      overbet: boolean;
+      moneyConcentrate: boolean;
+      top3ShareProxy: number;
+      advice: string;
+      flags: string[];
+    };
+    live: {
+      status: string;
+      message: string;
+      exhibitionNotes: Array<{ boat: number; name: string; score: number; notes: string[] }>;
+      stream?: { url: string; status: string; message: string };
+    };
+    portfolioTickets: string[];
     focus: string;
-    rule: { validated_test_roi: number; stadium_whitelist: number[] };
+    disclaimer: string;
   };
 };
 
@@ -58,12 +105,27 @@ type Research = {
     max_c1_st: number;
     min_motor2: number;
   };
+  lockedTriple?: {
+    oshi?: {
+      ticketLabel?: string;
+      validated_test_roi?: number;
+      validated_test_hit_rate?: number;
+      meets_target?: boolean;
+      ticket?: string;
+    } | null;
+    ana?: {
+      ticketLabel?: string;
+      validated_test_roi?: number;
+      validated_test_hit_rate?: number;
+      meets_target?: boolean;
+      ticket?: string;
+    } | null;
+  };
   stadiumInnige: Record<string, { rate: number; stadium: number }>;
   hotRacers: {
     as_of: string;
     windows: {
       "1m": Array<{ name: string; win_rate: number; best_course: number | null; starts: number }>;
-      "3m": Array<{ name: string; win_rate: number; best_course: number | null; starts: number }>;
     };
   };
   backtestSummary: {
@@ -73,6 +135,7 @@ type Research = {
   };
   sources: Record<string, string>;
   exhibition: { note: string };
+  oddsAnomaly?: { note: string };
 };
 
 export default function Home() {
@@ -124,13 +187,15 @@ export default function Home() {
   const maxScore = data
     ? Math.max(...data.prediction.rankings.map((r) => r.score ?? 0), 1)
     : 1;
+  const triple = data?.tripleSystem;
+  const activeBand = triple?.active?.[0];
 
   return (
     <main className="shell">
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          ボートレース日和＋艇国後継DB＋過去5年検証。いまは本命（イン逃げ高確率）の買い目システムを稼働中。
+          本命・押し目・穴の3段システム。得意コースと異常オッズ回避のうえで、イン戦からの買い目を出す。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={load} disabled={pending}>
@@ -200,59 +265,85 @@ export default function Home() {
               <span className="badge">{data.raceName || "番組"}</span>
               <span className="badge">{data.raceRank || "一般"}</span>
               <span className="badge">
-                データ: {data.source === "kyoteibiyori" ? "ボートレース日和" : "サンプル"}
+                データ:{" "}
+                {data.source === "kyoteibiyori"
+                  ? "ボートレース日和"
+                  : data.source === "openapi"
+                    ? "OpenAPI"
+                    : "サンプル"}
               </span>
               <span className="badge">信頼度 {data.prediction.confidence}</span>
+              <span className={`badge ${triple?.anomaly.ok ? "" : "warn"}`}>
+                オッズ: {triple?.anomaly.ok ? "妥当" : "要注意"}
+              </span>
             </div>
 
             <div className="pick">
               <div className="pick-main">
-                <span className="badge">
-                  {data.honmeiSystem?.ok ? "本命システム採用" : "本命条件外・参考スコア"}
-                </span>
+                <span className="badge">{triple?.focus ?? "参考スコア"}</span>
                 <h2>
-                  {data.prediction.honmei.course}号 {data.prediction.honmei.name}
+                  {activeBand
+                    ? `${activeBand.label}採用`
+                    : `${data.prediction.honmei.course}号 ${data.prediction.honmei.name}`}
                 </h2>
-                <p>{data.prediction.summary}</p>
-                {data.honmeiSystem?.ok ? (
-                  <>
-                    <div className="sanren">{data.honmeiSystem.tickets.join(" / ")}</div>
-                    <p className="note" style={{ marginTop: "0.4rem" }}>
-                      {data.honmeiSystem.ticketLabel}（検証ROI{" "}
-                      {data.honmeiSystem.rule.validated_test_roi.toFixed(1)}%）
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="sanren">{data.prediction.sanrentan}</div>
-                    <p className="note" style={{ marginTop: "0.4rem" }}>
-                      {(data.honmeiSystem?.reasons ?? []).join(" / ") || "参考3連単"}
-                    </p>
-                  </>
-                )}
+                <p>
+                  {activeBand
+                    ? `${activeBand.ticketLabel} / ${(activeBand.tickets || []).join(" · ") || "見送り"}`
+                    : data.prediction.summary}
+                </p>
+                <div className="sanren">
+                  {(activeBand?.tickets?.length
+                    ? activeBand.tickets
+                    : [data.prediction.sanrentan]
+                  ).join(" / ")}
+                </div>
+                <p className="note" style={{ marginTop: "0.4rem" }}>
+                  {triple?.disclaimer}
+                </p>
               </div>
               <div className="side-picks">
-                <div className="side-card">
-                  <span>対抗</span>
-                  <strong>
-                    {data.prediction.taikou.course}号 {data.prediction.taikou.name}
-                  </strong>
-                </div>
-                <div className="side-card">
-                  <span>穴</span>
-                  <strong>
-                    {data.prediction.ana.course}号 {data.prediction.ana.name}
-                  </strong>
-                </div>
-                <div className="side-card">
-                  <span>注目材料</span>
-                  <strong>
-                    {(data.prediction.honmei.reasons ?? []).slice(0, 2).join(" / ") ||
-                      "総合スコア"}
-                  </strong>
-                </div>
+                {(triple?.bands ?? []).map((b) => (
+                  <div key={b.band} className={`side-card band-${b.band} ${b.ok ? "on" : ""}`}>
+                    <span>
+                      {b.label}
+                      {b.meetsTarget ? " ★目標達成ルール" : ""}
+                      {b.blockedByOdds ? " / 異常オッズ回避" : ""}
+                    </span>
+                    <strong>
+                      {b.ok ? b.tickets.join(" · ") : "見送り"}
+                    </strong>
+                    <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                      {b.ok
+                        ? `${b.ticketLabel}${b.validatedRoi != null ? ` / 検証ROI ${b.validatedRoi.toFixed(1)}%` : ""}${b.validatedHit != null ? ` / 的中 ${b.validatedHit.toFixed(1)}%` : ""}`
+                        : b.reasons.slice(0, 2).join(" / ")}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {triple ? (
+              <div className={`anomaly ${triple.anomaly.ok ? "ok" : "bad"}`}>
+                <strong>異常オッズ監視</strong>
+                <p>{triple.anomaly.advice}</p>
+                <div className="note" style={{ margin: 0 }}>
+                  1番人気 {triple.anomaly.favorite ?? "—"} @ {triple.anomaly.favOdds ?? "—"} /
+                  上位占有 {((triple.anomaly.top3ShareProxy ?? 0) * 100).toFixed(1)}% /
+                  フラグ {(triple.anomaly.flags || []).join(", ") || "なし"}
+                </div>
+                {data.odds?.sample?.length ? (
+                  <div className="odds-row">
+                    {data.odds.sample.map((o) => (
+                      <span key={o.combo} className="badge">
+                        {o.combo} {o.odds.toFixed(1)}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="note">当日オッズ未取得（履歴ルールのみ適用）</p>
+                )}
+              </div>
+            ) : null}
 
             <div className="table-wrap">
               <table>
@@ -264,8 +355,8 @@ export default function Home() {
                     <th>全国</th>
                     <th>当地</th>
                     <th>M2連</th>
-                    <th>B2連</th>
                     <th>ST</th>
+                    <th>得意コース</th>
                     <th>スコア</th>
                   </tr>
                 </thead>
@@ -290,8 +381,16 @@ export default function Home() {
                       </td>
                       <td>{r.localWin.toFixed(2)}</td>
                       <td>{r.motorTop2.toFixed(1)}%</td>
-                      <td>{r.boatTop2.toFixed(1)}%</td>
                       <td>{r.avgStart.toFixed(2)}</td>
+                      <td>
+                        {r.courseSkill?.label ?? "—"}
+                        <div className="note" style={{ margin: 0 }}>
+                          勝率 {((r.courseSkill?.winRate ?? 0) * 100).toFixed(1)}%
+                          {r.courseSkill?.bestCourse
+                            ? ` / 最得意${r.courseSkill.bestCourse}`
+                            : ""}
+                        </div>
+                      </td>
                       <td style={{ minWidth: 110 }}>
                         {(r.score ?? 0).toFixed(1)}
                         <div className="scorebar">
@@ -308,10 +407,39 @@ export default function Home() {
               </table>
             </div>
 
+            {triple?.live ? (
+              <div className="live-box">
+                <strong>ライブ解析フック</strong>
+                <p className="note" style={{ marginTop: "0.35rem" }}>
+                  {triple.live.message}
+                </p>
+                {triple.live.exhibitionNotes?.length ? (
+                  <div className="odds-row">
+                    {triple.live.exhibitionNotes.slice(0, 6).map((n) => (
+                      <span key={n.boat} className="badge">
+                        {n.boat}号 {n.notes.join("·") || "標準"} ({n.score})
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {triple.live.stream ? (
+                  <a
+                    className="btn ghost"
+                    style={{ display: "inline-flex", marginTop: "0.75rem" }}
+                    href={triple.live.stream.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    公式結果/ライブ導線
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+
             <p className="note">
               {data.note
                 ? data.note
-                : "出走データはボートレース日和＋艇国後継（艇愛DB）＋OpenAPI履歴です。予想は娯楽・参考用で、的中や回収率を保証しません。"}
+                : "出走はボートレース日和、履歴・得意コースはOpenAPI/艇愛DB。予想は娯楽・参考用で的中や回収を保証しません。"}
             </p>
           </>
         ) : null}
@@ -319,17 +447,52 @@ export default function Home() {
 
       {research ? (
         <section className="panel" style={{ marginTop: "1rem" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>検証と全場分析</h2>
+          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>3段検証レポート</h2>
           <p className="note">
             学習 {research.backtestSummary.train_n.toLocaleString()} レース /
             検証 {research.backtestSummary.test_n.toLocaleString()} レース /
-            検証ROI150%超 {research.backtestSummary.strategies_ge_150_test} 本
+            本命ROI150%超 {research.backtestSummary.strategies_ge_150_test} 本
           </p>
-          <p className="note">
-            ロック本命: {research.lockedHonmei.ticketLabel} / 検証ROI{" "}
-            {research.lockedHonmei.validated_test_roi.toFixed(1)}% / 対象場{" "}
-            {research.lockedHonmei.stadium_whitelist.join(",")}
-          </p>
+          <div className="band-grid">
+            <div className="side-card on">
+              <span>本命</span>
+              <strong>
+                ROI {research.lockedHonmei.validated_test_roi.toFixed(1)}%
+              </strong>
+              <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                {research.lockedHonmei.ticketLabel} / 場{" "}
+                {research.lockedHonmei.stadium_whitelist.join(",")}
+              </div>
+            </div>
+            <div className={`side-card ${research.lockedTriple?.oshi?.meets_target ? "on" : ""}`}>
+              <span>押し目</span>
+              <strong>
+                ROI {(research.lockedTriple?.oshi?.validated_test_roi ?? 0).toFixed(1)}%
+                {research.lockedTriple?.oshi?.validated_test_hit_rate != null
+                  ? ` / 的中 ${research.lockedTriple.oshi.validated_test_hit_rate.toFixed(1)}%`
+                  : ""}
+              </strong>
+              <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                {research.lockedTriple?.oshi?.ticketLabel ?? "探索中"}
+                {research.lockedTriple?.oshi?.meets_target ? " / 目標達成" : " / 目標未達・最良候補"}
+              </div>
+            </div>
+            <div className={`side-card ${research.lockedTriple?.ana?.meets_target ? "on" : ""}`}>
+              <span>穴目</span>
+              <strong>
+                ROI {(research.lockedTriple?.ana?.validated_test_roi ?? 0).toFixed(1)}%
+                {research.lockedTriple?.ana?.validated_test_hit_rate != null
+                  ? ` / 的中 ${research.lockedTriple.ana.validated_test_hit_rate.toFixed(1)}%`
+                  : ""}
+              </strong>
+              <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                {research.lockedTriple?.ana?.ticketLabel ?? "探索中"}
+                {research.lockedTriple?.ana?.meets_target ? " / 目標達成" : " / 目標未達・最良候補"}
+              </div>
+            </div>
+          </div>
+          <p className="note">{research.oddsAnomaly?.note}</p>
+          <p className="note">{research.exhibition.note}</p>
           <div className="table-wrap">
             <table>
               <thead>
@@ -378,14 +541,8 @@ export default function Home() {
               </tbody>
             </table>
           </div>
-          <p className="note">{research.exhibition.note}</p>
-          <p className="note">
-            更新: {research.sources.kyoteibiyori} / {research.sources.teikoku_successor} /
-            夜中に1日おき (`scripts/nightly_update.py`)
-          </p>
         </section>
       ) : null}
     </main>
   );
 }
-

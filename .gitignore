@@ -44,5 +44,8 @@ next-env.d.ts
 /data/results/
 /data/programs/
 /data/teikoku/
+/data/turnmark/
 /data/api/
 /data/update_state.json
+scripts/__pycache__/
+**/__pycache__/
