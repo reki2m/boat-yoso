@@ -1,0 +1,384 @@
+{
+  "date": "20261025",
+  "phase": "manual",
+  "generated_at": "2026-11-09T04:49:20.663263+09:00",
+  "picks": [
+    {
+      "date": "20261025",
+      "stadium": 24,
+      "stadium_name": "大村",
+      "race": 7,
+      "title": "夜の九州スポーツ杯",
+      "grade": 5,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命S",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 143.3224457733687,
+      "score_gap": 19.793,
+      "elite": true,
+      "validated_roi": 90.8,
+      "innige": 0.6022076288947883,
+      "entries": {
+        "1": {
+          "name": "小野 生奈",
+          "regno": 4530,
+          "nat": 7.28,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 39.78
+        },
+        "2": {
+          "name": "寳田 亮治",
+          "regno": 3523,
+          "nat": 4.71,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 19.75
+        },
+        "3": {
+          "name": "永松 良教",
+          "regno": 5237,
+          "nat": 5.41,
+          "st": 0.16,
+          "class": 4,
+          "motor2": 27.06
+        },
+        "4": {
+          "name": "中島 航",
+          "regno": 5070,
+          "nat": 4.34,
+          "st": 0.22,
+          "class": 3,
+          "motor2": 26.8
+        },
+        "5": {
+          "name": "小澤 和也",
+          "regno": 4110,
+          "nat": 3.86,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 32.93
+        },
+        "6": {
+          "name": "滝沢 織寧",
+          "regno": 5287,
+          "nat": 3.82,
+          "st": 0.16,
+          "class": 3,
+          "motor2": 20.69
+        }
+      },
+      "why": "大村はイン戦の本命形。1号の小野 生奈が相対最強（A1・勝率7.28・ST0.15）のため、本命Sとして3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "大村イン逃げ率 60.2%（本命向き）",
+        "1号 小野 生奈 A1 / 勝率 7.28 / ST 0.15",
+        "1号が相対最強（スコア差 19.79）",
+        "モーター2連対 39.8%、2号勝率差 2.57",
+        "本命S6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    },
+    {
+      "date": "20261025",
+      "stadium": 21,
+      "stadium_name": "芦屋",
+      "race": 10,
+      "title": "KBCラジオ杯",
+      "grade": 5,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命S",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 138.00183779229386,
+      "score_gap": 14.153,
+      "elite": true,
+      "validated_roi": 90.8,
+      "innige": 0.5947174098267538,
+      "entries": {
+        "1": {
+          "name": "北野 輝季",
+          "regno": 4483,
+          "nat": 7.05,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 35.71
+        },
+        "2": {
+          "name": "出畑 孝成",
+          "regno": 5337,
+          "nat": 4.0,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 39.37
+        },
+        "3": {
+          "name": "渡邊 伸太郎",
+          "regno": 3284,
+          "nat": 5.35,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 30.36
+        },
+        "4": {
+          "name": "小野 信樹",
+          "regno": 3305,
+          "nat": 3.78,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 34.21
+        },
+        "5": {
+          "name": "山下 友貴",
+          "regno": 4464,
+          "nat": 6.13,
+          "st": 0.19,
+          "class": 1,
+          "motor2": 16.81
+        },
+        "6": {
+          "name": "立間 充宏",
+          "regno": 3717,
+          "nat": 5.48,
+          "st": 0.18,
+          "class": 2,
+          "motor2": 24.78
+        }
+      },
+      "why": "芦屋はイン戦の本命形。1号の北野 輝季が相対最強（A1・勝率7.05・ST0.15）のため、本命Sとして3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "芦屋イン逃げ率 59.5%（本命向き）",
+        "1号 北野 輝季 A1 / 勝率 7.05 / ST 0.15",
+        "1号が相対最強（スコア差 14.15）",
+        "モーター2連対 35.7%、2号勝率差 3.05",
+        "本命S6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    },
+    {
+      "date": "20261025",
+      "stadium": 21,
+      "stadium_name": "芦屋",
+      "race": 5,
+      "title": "KBCラジオ杯",
+      "grade": 5,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命S",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 132.3306711256272,
+      "score_gap": 8.247,
+      "elite": true,
+      "validated_roi": 90.8,
+      "innige": 0.5947174098267538,
+      "entries": {
+        "1": {
+          "name": "古結 宏",
+          "regno": 4002,
+          "nat": 6.84,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 37.19
+        },
+        "2": {
+          "name": "中嶋 世奈",
+          "regno": 5362,
+          "nat": 3.3,
+          "st": 0.22,
+          "class": 4,
+          "motor2": 43.97
+        },
+        "3": {
+          "name": "松山 裕基",
+          "regno": 5046,
+          "nat": 3.45,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 26.67
+        },
+        "4": {
+          "name": "出畑 孝成",
+          "regno": 5337,
+          "nat": 4.0,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 39.37
+        },
+        "5": {
+          "name": "石原 翼",
+          "regno": 4989,
+          "nat": 5.77,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 38.98
+        },
+        "6": {
+          "name": "北野 輝季",
+          "regno": 4483,
+          "nat": 7.05,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 35.71
+        }
+      },
+      "why": "芦屋はイン戦の本命形。1号の古結 宏が相対最強（A1・勝率6.84・ST0.14）のため、本命Sとして3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "芦屋イン逃げ率 59.5%（本命向き）",
+        "1号 古結 宏 A1 / 勝率 6.84 / ST 0.14",
+        "1号が相対最強（スコア差 8.25）",
+        "モーター2連対 37.2%、2号勝率差 3.54",
+        "本命S6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    },
+    {
+      "date": "20261025",
+      "stadium": 8,
+      "stadium_name": "常滑",
+      "race": 1,
+      "title": "スポーツ報知杯争奪第17回ビクトリーカップ",
+      "grade": 5,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 57.143066666666655,
+      "score_gap": 15.308,
+      "elite": false,
+      "validated_roi": 90.8,
+      "innige": 0.55,
+      "entries": {
+        "1": {
+          "name": "飯島 昌弘",
+          "regno": 3679,
+          "nat": 6.75,
+          "st": 0.17,
+          "class": 2,
+          "motor2": 50.0
+        },
+        "2": {
+          "name": "宮嵜 隆太郎",
+          "regno": 3825,
+          "nat": 3.78,
+          "st": 0.12,
+          "class": 3,
+          "motor2": 37.5
+        },
+        "3": {
+          "name": "日笠 勝弘",
+          "regno": 4666,
+          "nat": 4.37,
+          "st": 0.16,
+          "class": 3,
+          "motor2": 36.36
+        },
+        "4": {
+          "name": "松下 誉士",
+          "regno": 4693,
+          "nat": 4.23,
+          "st": 0.19,
+          "class": 3,
+          "motor2": 60.0
+        },
+        "5": {
+          "name": "池田 美優",
+          "regno": 5442,
+          "nat": 1.78,
+          "st": 0.2,
+          "class": 4,
+          "motor2": 25.0
+        },
+        "6": {
+          "name": "黒柳 浩孝",
+          "regno": 4161,
+          "nat": 5.38,
+          "st": 0.16,
+          "class": 3,
+          "motor2": 33.33
+        }
+      },
+      "why": "常滑はイン戦の本命形。1号の飯島 昌弘が相対最強（A2・勝率6.75・ST0.17）のため、本命として3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "常滑イン逃げ率 55.0%（本命向き）",
+        "1号 飯島 昌弘 A2 / 勝率 6.75 / ST 0.17",
+        "1号が相対最強（スコア差 15.31）",
+        "モーター2連対 50.0%、2号勝率差 2.97",
+        "本命6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    }
+  ],
+  "count": 4,
+  "status": "ok",
+  "mode": "honmei",
+  "daily_target": 8,
+  "pool_size": 4,
+  "elite_count": 3,
+  "points_per_race": 6,
+  "feasibility": {
+    "target_races_per_day": "5-10",
+    "chosen_races_per_day": 8,
+    "points_per_race": 6,
+    "validated_test_roi": 90.8,
+    "validated_train_roi": 82.4,
+    "validated_test_hit_rate": 39.5,
+    "period": "train<=20250630 / test>=20250701"
+  },
+  "note": "本命6点。1号が相対最強のレースのみ。展示確認後に確定し、進入変更・異常はスキップ。"
+}

@@ -3,15 +3,21 @@ import stadiumRates from "@/data/stadium_innige_rates.json";
 
 export type HonmeiRule = {
   ticket: string;
+  tickets?: string[];
+  points?: number;
   min_stadium_innige: number;
   max_c1_class: number;
   min_c1_nat: number;
   max_c1_st: number;
   min_motor2: number;
   min_gap_c2: number;
+  require_leading_score?: boolean;
+  min_score_gap?: number;
   grades: number[];
   stadium_whitelist: number[] | null;
   validated_test_roi: number;
+  validated_train_roi?: number;
+  validated_test_hit_rate?: number;
   validated_test_selected: number;
 };
 
@@ -22,6 +28,7 @@ export const STADIUM_INNIGE = stadiumRates as Record<
 >;
 
 export const TICKET_LABEL: Record<string, string> = {
+  tri_1axis_6: "3連単 1軸6点",
   trifecta_1_2_stream: "3連単 1-2-流し(3〜6)",
   tri_12_narrow: "3連単 1-2-3 / 1-2-4",
   trifecta_123: "3連単 1-2-3",
@@ -30,19 +37,23 @@ export const TICKET_LABEL: Record<string, string> = {
   exa_12: "2連単 1-2",
 };
 
+const DEFAULT_SIX = ["1-2-3", "1-2-4", "1-2-5", "1-2-6", "1-3-2", "1-3-4"];
+
 function innigeRate(placeNo: number): number {
   const hit = Object.values(STADIUM_INNIGE).find((v) => v.stadium === placeNo);
   return hit?.rate ?? 0;
 }
 
 export function buildHonmeiTickets(rule: HonmeiRule = HONMEI_RULE): string[] {
+  if (Array.isArray(rule.tickets) && rule.tickets.length > 0) return [...rule.tickets];
+  if (rule.ticket === "tri_1axis_6") return [...DEFAULT_SIX];
   if (rule.ticket === "trifecta_1_2_stream") {
     return ["1-2-3", "1-2-4", "1-2-5", "1-2-6"];
   }
   if (rule.ticket === "tri_12_narrow") return ["1-2-3", "1-2-4"];
   if (rule.ticket === "trifecta_123") return ["1-2-3"];
   if (rule.ticket === "exacta_12" || rule.ticket === "exa_12") return ["1-2"];
-  return ["1-2-3", "1-2-4"];
+  return [...DEFAULT_SIX];
 }
 
 export function evaluateHonmeiEligibility(input: {
@@ -83,7 +94,7 @@ export function evaluateHonmeiEligibility(input: {
       ? [
           `イン逃げ率 ${(rate * 100).toFixed(1)}%`,
           `1号 ${input.className} / 勝率 ${input.nationalWin.toFixed(2)} / ST ${input.avgStart.toFixed(2)}`,
-          `volume本命条件を充足`,
+          `本命6点条件を充足`,
         ]
       : reasons,
     tickets: ok ? buildHonmeiTickets() : [],

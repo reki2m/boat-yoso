@@ -1,0 +1,384 @@
+{
+  "date": "20261029",
+  "phase": "manual",
+  "generated_at": "2026-11-09T04:49:20.786574+09:00",
+  "picks": [
+    {
+      "date": "20261029",
+      "stadium": 8,
+      "stadium_name": "常滑",
+      "race": 1,
+      "title": "スポーツ報知杯争奪第17回ビクトリーカップ",
+      "grade": 5,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命S",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 139.32850000000002,
+      "score_gap": 18.43,
+      "elite": true,
+      "validated_roi": 90.8,
+      "innige": 0.55,
+      "entries": {
+        "1": {
+          "name": "尾上 雅也",
+          "regno": 4953,
+          "nat": 6.83,
+          "st": 0.16,
+          "class": 1,
+          "motor2": 45.45
+        },
+        "2": {
+          "name": "木下 陽介",
+          "regno": 4104,
+          "nat": 4.55,
+          "st": 0.15,
+          "class": 3,
+          "motor2": 22.22
+        },
+        "3": {
+          "name": "伊藤 紘章",
+          "regno": 4626,
+          "nat": 4.03,
+          "st": 0.22,
+          "class": 3,
+          "motor2": 6.25
+        },
+        "4": {
+          "name": "正木 聖賢",
+          "regno": 3920,
+          "nat": 4.53,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 10.0
+        },
+        "5": {
+          "name": "金山 立樹",
+          "regno": 4976,
+          "nat": 4.87,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 72.73
+        },
+        "6": {
+          "name": "鈴木 茂高",
+          "regno": 3967,
+          "nat": 4.11,
+          "st": 0.19,
+          "class": 3,
+          "motor2": 22.22
+        }
+      },
+      "why": "常滑はイン戦の本命形。1号の尾上 雅也が相対最強（A1・勝率6.83・ST0.16）のため、本命Sとして3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "常滑イン逃げ率 55.0%（本命向き）",
+        "1号 尾上 雅也 A1 / 勝率 6.83 / ST 0.16",
+        "1号が相対最強（スコア差 18.43）",
+        "モーター2連対 45.5%、2号勝率差 2.28",
+        "本命S6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    },
+    {
+      "date": "20261029",
+      "stadium": 18,
+      "stadium_name": "徳山",
+      "race": 1,
+      "title": "マスターズリーグ第7戦",
+      "grade": 4,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 51.19992012276488,
+      "score_gap": 12.016,
+      "elite": false,
+      "validated_roi": 90.8,
+      "innige": 0.6014144649052575,
+      "entries": {
+        "1": {
+          "name": "三嶌 誠司",
+          "regno": 3541,
+          "nat": 6.75,
+          "st": 0.17,
+          "class": 2,
+          "motor2": 34.72
+        },
+        "2": {
+          "name": "松田 憲幸",
+          "regno": 3901,
+          "nat": 4.86,
+          "st": 0.22,
+          "class": 4,
+          "motor2": 36.72
+        },
+        "3": {
+          "name": "岩津 徹郎",
+          "regno": 3935,
+          "nat": 5.61,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 35.34
+        },
+        "4": {
+          "name": "中島 友和",
+          "regno": 3784,
+          "nat": 4.74,
+          "st": 0.16,
+          "class": 3,
+          "motor2": 37.31
+        },
+        "5": {
+          "name": "渡 修平",
+          "regno": 3535,
+          "nat": 3.83,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 22.05
+        },
+        "6": {
+          "name": "樋口 範政",
+          "regno": 4081,
+          "nat": 5.8,
+          "st": 0.19,
+          "class": 3,
+          "motor2": 34.9
+        }
+      },
+      "why": "徳山はイン戦の本命形。1号の三嶌 誠司が相対最強（A2・勝率6.75・ST0.17）のため、本命として3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "徳山イン逃げ率 60.1%（本命向き）",
+        "1号 三嶌 誠司 A2 / 勝率 6.75 / ST 0.17",
+        "1号が相対最強（スコア差 12.02）",
+        "モーター2連対 34.7%、2号勝率差 1.89",
+        "本命6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    },
+    {
+      "date": "20261029",
+      "stadium": 18,
+      "stadium_name": "徳山",
+      "race": 3,
+      "title": "マスターズリーグ第7戦",
+      "grade": 4,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 47.95512012276488,
+      "score_gap": 6.479,
+      "elite": false,
+      "validated_roi": 90.8,
+      "innige": 0.6014144649052575,
+      "entries": {
+        "1": {
+          "name": "丸岡 正典",
+          "regno": 4042,
+          "nat": 7.09,
+          "st": 0.17,
+          "class": 2,
+          "motor2": 29.2
+        },
+        "2": {
+          "name": "松尾 宣邦",
+          "regno": 3434,
+          "nat": 4.48,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 39.86
+        },
+        "3": {
+          "name": "江本 真治",
+          "regno": 3711,
+          "nat": 5.66,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 26.98
+        },
+        "4": {
+          "name": "今出 晋二",
+          "regno": 3949,
+          "nat": 3.69,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 31.25
+        },
+        "5": {
+          "name": "君島 秀三",
+          "regno": 4137,
+          "nat": 6.49,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 22.22
+        },
+        "6": {
+          "name": "浦田 信義",
+          "regno": 3226,
+          "nat": 4.8,
+          "st": 0.19,
+          "class": 3,
+          "motor2": 39.02
+        }
+      },
+      "why": "徳山はイン戦の本命形。1号の丸岡 正典が相対最強（A2・勝率7.09・ST0.17）のため、本命として3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "徳山イン逃げ率 60.1%（本命向き）",
+        "1号 丸岡 正典 A2 / 勝率 7.09 / ST 0.17",
+        "1号が相対最強（スコア差 6.48）",
+        "モーター2連対 29.2%、2号勝率差 2.61",
+        "本命6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    },
+    {
+      "date": "20261029",
+      "stadium": 18,
+      "stadium_name": "徳山",
+      "race": 12,
+      "title": "マスターズリーグ第7戦",
+      "grade": 4,
+      "status": "provisional",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "mode": "honmei",
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-3-4"
+      ],
+      "ticket": "tri_1axis_6",
+      "points": 6,
+      "score": 44.9545534560982,
+      "score_gap": 5.754,
+      "elite": false,
+      "validated_roi": 90.8,
+      "innige": 0.6014144649052575,
+      "entries": {
+        "1": {
+          "name": "原田 篤志",
+          "regno": 4064,
+          "nat": 6.67,
+          "st": 0.17,
+          "class": 1,
+          "motor2": 28.97
+        },
+        "2": {
+          "name": "服部 幸男",
+          "regno": 3422,
+          "nat": 5.71,
+          "st": 0.14,
+          "class": 2,
+          "motor2": 31.82
+        },
+        "3": {
+          "name": "馬袋 義則",
+          "regno": 3612,
+          "nat": 6.76,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 30.34
+        },
+        "4": {
+          "name": "丸岡 正典",
+          "regno": 4042,
+          "nat": 7.09,
+          "st": 0.17,
+          "class": 2,
+          "motor2": 29.2
+        },
+        "5": {
+          "name": "須藤 博倫",
+          "regno": 3983,
+          "nat": 6.41,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 35.24
+        },
+        "6": {
+          "name": "吉村 正明",
+          "regno": 4108,
+          "nat": 5.88,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 22.96
+        }
+      },
+      "why": "徳山はイン戦の本命形。1号の原田 篤志が相対最強（A1・勝率6.67・ST0.17）のため、本命として3連単6点（1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4）を採用。",
+      "reasons": [
+        "徳山イン逃げ率 60.1%（本命向き）",
+        "1号 原田 篤志 A1 / 勝率 6.67 / ST 0.17",
+        "1号が相対最強（スコア差 5.75）",
+        "モーター2連対 29.0%、2号勝率差 0.96",
+        "本命6点 1-2-3, 1-2-4, 1-2-5, 1-2-6, 1-3-2, 1-3-4"
+      ]
+    }
+  ],
+  "count": 4,
+  "status": "ok",
+  "mode": "honmei",
+  "daily_target": 8,
+  "pool_size": 4,
+  "elite_count": 1,
+  "points_per_race": 6,
+  "feasibility": {
+    "target_races_per_day": "5-10",
+    "chosen_races_per_day": 8,
+    "points_per_race": 6,
+    "validated_test_roi": 90.8,
+    "validated_train_roi": 82.4,
+    "validated_test_hit_rate": 39.5,
+    "period": "train<=20250630 / test>=20250701"
+  },
+  "note": "本命6点。1号が相対最強のレースのみ。展示確認後に確定し、進入変更・異常はスキップ。"
+}

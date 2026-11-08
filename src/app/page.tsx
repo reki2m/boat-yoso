@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          本命専用。イン戦の本命を1日12レース前後抽出する。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
+          本命6点。1号が相対最強のレースを1日8レース前後抽出し、3連単6点で出す。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -756,9 +756,9 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命再構築</strong>
+            <strong>本命6点</strong>
             <p>
-              押し目・穴は出さない。標準本命は 3連単 1-2-3 / 1-2-4、条件が揃った本命Sのみ 1-2流し4点。
+              押し目・穴は出さない。検証上ベストは 1日8R・3連単6点（1-2-3/4/5/6 + 1-3-2/4）。軸は1号固定だが、1号が相対最強のレースだけ採用。
             </p>
           </div>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (

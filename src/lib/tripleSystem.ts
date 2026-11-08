@@ -43,6 +43,7 @@ const STADIUM_INNIGE = stadiumRates as Record<string, { rate: number; stadium: n
 
 export const BAND_TICKET_LABEL: Record<string, string> = {
   ...HONMEI_TICKET_LABEL,
+  tri_1axis_6: "3連単 1軸6点",
   tri_12_narrow: "3連単 1-2-3 / 1-2-4",
   exa_12: "2連単 1-2",
   exa_21: "2連単 2-1",
@@ -106,6 +107,8 @@ function ticketsFromKind(kind: string | undefined): string[] {
       return ["4-1-2", "4-1-3", "4-5-1", "4-5-6"];
     case "tri_12_narrow":
       return ["1-2-3", "1-2-4"];
+    case "tri_1axis_6":
+      return buildHonmeiTickets({ ...HONMEI_RULE, ticket: "tri_1axis_6" });
     case "trifecta_1_2_stream":
       return buildHonmeiTickets();
     default:

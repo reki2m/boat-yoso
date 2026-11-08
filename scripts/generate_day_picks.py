@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-本命専用の前日〜当日買い目生成。
+本命6点の前日〜当日買い目生成。
 
-- 押し目・穴は出さない
-- 標準本命: 3連単 1-2-3 / 1-2-4
-- 本命S(elite): 徳山・大村超厳選時のみ 1-2流し4点
-- 1日スコア上位12レース
+検証結論（5〜10R/日向け）:
+- 軸は1号固定が最強軸より有利
+- ただし1号が相対最強のレースに限定
+- 2点より 4〜6点の方が回収・的中が安定
+- 採用: 1日8R / 3連単6点
+  1-2-3 / 1-2-4 / 1-2-5 / 1-2-6 / 1-3-2 / 1-3-4
 """
 
 from __future__ import annotations
@@ -27,10 +29,11 @@ STADIUMS = {
     19: "下関", 20: "若松", 21: "芦屋", 22: "福岡", 23: "唐津", 24: "大村",
 }
 CLASS_LABEL = {1: "A1", 2: "A2", 3: "B1", 4: "B2"}
+DEFAULT_TICKETS = ["1-2-3", "1-2-4", "1-2-5", "1-2-6", "1-3-2", "1-3-4"]
 
 
 def fetch_json(url: str):
-    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoHonmei/3.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoHonmei/4.0"})
     with urllib.request.urlopen(req, timeout=60) as res:
         return json.loads(res.read())
 
@@ -41,10 +44,10 @@ def load_json(path: Path, default=None):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def skill_win(skills: dict, regno: int, course: int) -> float:
+def skill_rates(skills: dict, regno: int, course: int) -> tuple[float, float]:
     rec = skills.get(str(regno)) or {}
     c = (rec.get("courses") or {}).get(str(course)) or {}
-    return float(c.get("win_rate") or 0)
+    return float(c.get("win_rate") or 0), float(c.get("top2_rate") or 0)
 
 
 def innige_map(stadium_rates: dict) -> dict[int, float]:
@@ -55,34 +58,50 @@ def class_label(n: int) -> str:
     return CLASS_LABEL.get(int(n), f"級{n}")
 
 
-def passes(rule: dict, place: int, e1: dict, e2: dict, inn: float) -> bool:
+def boat_strength(entry: dict, course: int, skills: dict) -> float:
+    cw, _ = skill_rates(skills, int(entry.get("regno") or 0), course)
+    return (
+        float(entry.get("nat") or 0) * 3
+        + (0.2 - float(entry.get("st") or 0.2)) * 40
+        + float(entry.get("motor2") or 0) / 25
+        + cw * 12
+        - (int(entry.get("class") or 4) - 1) * 2
+    )
+
+
+def passes(rule: dict, place: int, e1: dict, e2: dict, inn: float, score_gap: float) -> bool:
+    if not rule:
+        return False
     wl = rule.get("stadium_whitelist")
     if isinstance(wl, list) and wl and place not in wl:
+        return False
+    if rule.get("require_leading_score", True) and score_gap < float(rule.get("min_score_gap") or 0):
         return False
     return (
         float(e1.get("nat") or 0) >= float(rule.get("min_c1_nat") or 5.8)
         and float(e1.get("st") or 9) <= float(rule.get("max_c1_st") or 0.18)
-        and inn >= float(rule.get("min_inn") or rule.get("min_stadium_innige") or 0.5)
+        and inn >= float(rule.get("min_inn") or rule.get("min_stadium_innige") or 0.55)
         and int(e1.get("class") or 99) <= int(rule.get("max_c1_class") or 2)
         and float(e1.get("motor2") or 0) >= float(rule.get("min_motor2") or 28)
-        and float(e1.get("nat") or 0) - float(e2.get("nat") or 0) >= float(rule.get("min_gap_c2") or 0.3)
+        and float(e1.get("nat") or 0) - float(e2.get("nat") or 0) >= float(rule.get("min_gap_c2") or 0.8)
         and int(e1.get("grade") or 5) in (rule.get("grades") or [4, 5])
     )
 
 
-def explain(place: int, e1: dict, e2: dict, inn: float, tickets: list[str], elite: bool) -> dict:
+def explain(place: int, e1: dict, e2: dict, inn: float, tickets: list[str], elite: bool, score_gap: float) -> dict:
     name = STADIUMS.get(place, f"場{place}")
     tier = "本命S" if elite else "本命"
     reasons = [
         f"{name}イン逃げ率 {(inn * 100):.1f}%（本命向き）",
         f"1号 {e1.get('name')} {class_label(e1.get('class'))} / 勝率 {float(e1.get('nat') or 0):.2f} / ST {float(e1.get('st') or 0):.2f}",
-        f"モーター2連対 {float(e1.get('motor2') or 0):.1f}%、2号差 {float(e1.get('nat') or 0) - float(e2.get('nat') or 0):.2f}",
-        f"{tier}買い目 {', '.join(tickets)}",
+        f"1号が相対最強（スコア差 {score_gap:.2f}）",
+        f"モーター2連対 {float(e1.get('motor2') or 0):.1f}%、2号勝率差 {float(e1.get('nat') or 0) - float(e2.get('nat') or 0):.2f}",
+        f"{tier}6点 {', '.join(tickets)}",
     ]
     why = (
-        f"{name}はイン戦の本命形。1号の{e1.get('name')}が"
-        f"{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}のため、"
-        f"{tier}として {', '.join(tickets)} を採用。"
+        f"{name}はイン戦の本命形。1号の{e1.get('name')}が相対最強"
+        f"（{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}）のため、"
+        f"{tier}として3連単6点（{', '.join(tickets)}）を採用。"
     )
     return {"why": why, "reasons": reasons}
 
@@ -112,7 +131,7 @@ def generate(date_key: str, phase: str) -> dict:
     rules = load_json(REPORTS / "honmei_rules.json", {}) or {}
     standard = rules.get("standard") or {}
     elite = rules.get("elite") or {}
-    skills = load_json(REPORTS / "course_skills.json", {})
+    skills = load_json(REPORTS / "course_skills.json", {}) or {}
     innige = innige_map(load_json(REPORTS / "stadium_innige_rates.json", {}) or {})
     programs = load_programs_for(date_key)
     if not programs:
@@ -126,7 +145,7 @@ def generate(date_key: str, phase: str) -> dict:
             "note": "番組未公開。夜中再取得待ち。",
         }
 
-    daily_target = int(rules.get("daily_target") or 12)
+    daily_target = int(rules.get("daily_target") or 8)
     cands = []
     stadiums = (programs.get("programs") or {}).get("stadiums") or {}
     for sid, st in stadiums.items():
@@ -152,20 +171,20 @@ def generate(date_key: str, phase: str) -> dict:
                 }
             if len(entries) < 6 or 1 not in entries or 2 not in entries:
                 continue
+
+            strengths = {e: boat_strength(v, e, skills) for e, v in entries.items()}
+            score_gap = strengths[1] - max(strengths[e] for e in strengths if e != 1)
             e1, e2 = entries[1], entries[2]
-            is_elite = passes(elite, place, e1, e2, inn)
-            is_standard = passes(standard, place, e1, e2, inn)
+            is_elite = passes(elite, place, e1, e2, inn, score_gap)
+            is_standard = passes(standard, place, e1, e2, inn, score_gap)
             if not (is_elite or is_standard):
                 continue
-            if is_elite:
-                tickets = list(elite.get("tickets") or ["1-2-3", "1-2-4", "1-2-5", "1-2-6"])
-                ticket = elite.get("ticket") or "trifecta_1_2_stream"
-                label = elite.get("label") or "本命S"
-            else:
-                tickets = list(standard.get("tickets") or ["1-2-3", "1-2-4"])
-                ticket = standard.get("ticket") or "tri_12_narrow"
-                label = standard.get("label") or "本命"
-            c1w = skill_win(skills, int(e1.get("regno") or 0), 1)
+
+            rule = elite if is_elite else standard
+            tickets = list(rule.get("tickets") or DEFAULT_TICKETS)
+            ticket = rule.get("ticket") or "tri_1axis_6"
+            label = rule.get("label") or ("本命S" if is_elite else "本命")
+            c1w, c1t2 = skill_rates(skills, int(e1.get("regno") or 0), 1)
             score = (
                 float(e1["nat"]) * 3
                 + (0.2 - float(e1["st"])) * 50
@@ -173,9 +192,11 @@ def generate(date_key: str, phase: str) -> dict:
                 + inn * 6
                 + c1w * 10
                 + (float(e1["nat"]) - float(e2["nat"]))
-                + (120 if is_elite else 0)
+                + c1t2 * 5
+                + max(0.0, score_gap)
+                + (80 if is_elite else 0)
             )
-            expl = explain(place, e1, e2, inn, tickets, is_elite)
+            expl = explain(place, e1, e2, inn, tickets, is_elite, score_gap)
             cands.append(
                 {
                     "date": date_key,
@@ -191,9 +212,11 @@ def generate(date_key: str, phase: str) -> dict:
                     "label": label,
                     "tickets": tickets,
                     "ticket": ticket,
+                    "points": len(tickets),
                     "score": score,
+                    "score_gap": round(score_gap, 3),
                     "elite": is_elite,
-                    "validated_roi": elite.get("validated_test_roi") if is_elite else None,
+                    "validated_roi": rule.get("validated_test_roi"),
                     "innige": inn,
                     "entries": {
                         str(k): {
@@ -223,7 +246,9 @@ def generate(date_key: str, phase: str) -> dict:
         "daily_target": daily_target,
         "pool_size": len(cands),
         "elite_count": sum(1 for p in picks if p.get("elite")),
-        "note": "本命専用。押し目・穴は出さない。展示確認後に確定し、進入変更・異常はスキップ。",
+        "points_per_race": 6,
+        "feasibility": rules.get("feasibility"),
+        "note": "本命6点。1号が相対最強のレースのみ。展示確認後に確定し、進入変更・異常はスキップ。",
     }
 
 
@@ -276,6 +301,8 @@ def main():
         "note": active.get("note"),
         "mode": "honmei",
         "daily_target": active.get("daily_target"),
+        "points_per_race": active.get("points_per_race") or 6,
+        "feasibility": active.get("feasibility"),
         "today": today_doc,
         "tomorrow": tomorrow_doc,
     }
@@ -285,7 +312,7 @@ def main():
         src = REPORTS / name
         if src.exists():
             (SRC_DATA / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-    print("board", board.get("date"), board.get("count"))
+    print("board", board.get("date"), board.get("count"), "pts", board.get("points_per_race"))
 
 
 if __name__ == "__main__":

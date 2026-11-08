@@ -57,7 +57,7 @@ def load_results(date_key: str) -> dict[tuple[int, int], dict]:
     return out
 
 
-def score_date(date_key: str) -> dict:
+def score_date(date_key: str, ignore_exhibition: bool = False) -> dict:
     picks_path = REPORTS / f"picks_{date_key}.json"
     if not picks_path.exists():
         return {"date": date_key, "status": "no_picks"}
@@ -89,7 +89,7 @@ def score_date(date_key: str) -> dict:
             )
             continue
         # 展示未確認のまま結果が出た場合も再計算対象外（スルー）
-        if p.get("status") == "provisional":
+        if p.get("status") == "provisional" and not ignore_exhibition:
             skipped += 1
             rows.append({**p, "result": "skipped_no_exhibition", "hit": False})
             continue
@@ -142,6 +142,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="YYYYMMDD")
     ap.add_argument("--days", type=int, default=3, help="score last N days if --date omitted")
+    ap.add_argument("--ignore-exhibition", action="store_true", help="score provisional picks too (historical backfill)")
     args = ap.parse_args()
 
     now = datetime.now(JST)
@@ -155,7 +156,7 @@ def main():
     reports = []
     for d in dates:
         print("score", d)
-        rep = score_date(d)
+        rep = score_date(d, ignore_exhibition=args.ignore_exhibition)
         reports.append(rep)
         (REPORTS / f"accuracy_{d}.json").write_text(
             json.dumps(rep, ensure_ascii=False, indent=2), encoding="utf-8"
