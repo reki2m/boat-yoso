@@ -1,0 +1,32 @@
+{
+  "mode": "honmei",
+  "system_name": "本命",
+  "daily_target": 12,
+  "note": "押し目・穴は使わず、イン戦の本命だけを出す。日次はスコア上位12R。",
+  "grades": [4, 5],
+  "standard": {
+    "label": "本命",
+    "ticket": "tri_12_narrow",
+    "tickets": ["1-2-3", "1-2-4"],
+    "min_c1_nat": 5.8,
+    "max_c1_st": 0.18,
+    "min_inn": 0.5,
+    "max_c1_class": 2,
+    "min_motor2": 28,
+    "min_gap_c2": 0.3,
+    "stadium_whitelist": null
+  },
+  "elite": {
+    "label": "本命S",
+    "ticket": "trifecta_1_2_stream",
+    "tickets": ["1-2-3", "1-2-4", "1-2-5", "1-2-6"],
+    "min_c1_nat": 7.0,
+    "max_c1_st": 0.14,
+    "min_inn": 0.6,
+    "max_c1_class": 1,
+    "min_motor2": 35,
+    "min_gap_c2": 1.0,
+    "stadium_whitelist": [18, 24],
+    "validated_test_roi": 174.3
+  }
+}

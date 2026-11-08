@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          夜中に最新データを取り、1日12レース前後の買い目を出す（volumeルール）。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
+          本命専用。イン戦の本命を1日12レース前後抽出する。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -755,18 +755,12 @@ export default function Home() {
               : ""}
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
-          {picksPayload.board.feasibility ? (
-            <div className="anomaly bad" style={{ marginTop: "0.75rem" }}>
-              <strong>目標の両立について</strong>
-              <p>
-                「1日10レース以上」と「回収率150%超」は、2024-2025の検証では同時には見つかりませんでした。
-                いまは件数確保のvolume（検証回収おおよそ{" "}
-                {picksPayload.board.feasibility.best_volume_test_roi ?? 84}%）を主軸し、
-                elite該当のみ厳選流し（履歴回収おおよそ{" "}
-                {picksPayload.board.feasibility.elite_historical_roi ?? 174}%・低頻度）です。
-              </p>
-            </div>
-          ) : null}
+          <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
+            <strong>本命再構築</strong>
+            <p>
+              押し目・穴は出さない。標準本命は 3連単 1-2-3 / 1-2-4、条件が揃った本命Sのみ 1-2流し4点。
+            </p>
+          </div>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (
             <p className="status">本日の条件該当はまだありません。直近の採用例と理由を下に表示します。</p>
           ) : (

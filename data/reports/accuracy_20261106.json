@@ -1,14 +1,14 @@
 {
   "date": "20261106",
-  "scored_at": "2026-11-09T03:49:56.276635+09:00",
+  "scored_at": "2026-11-09T03:52:54.488014+09:00",
   "selected": 9,
   "skipped": 3,
-  "hits": 3,
-  "hit_rate": 33.33333333333333,
-  "bets": 900,
-  "pay": 1270,
-  "pnl": 370,
-  "roi": 141.11111111111111,
+  "hits": 2,
+  "hit_rate": 22.22222222222222,
+  "bets": 1800,
+  "pay": 1990,
+  "pnl": 190,
+  "roi": 110.55555555555556,
   "rows": [
     {
       "date": "20261106",
@@ -23,16 +23,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 40.72101445683602,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5552801872504475,
       "entries": {
         "1": {
@@ -84,12 +85,12 @@
           "motor2": 0.0
         }
       },
-      "why": "宮島はイン寄りで1号の中 亮太が勝率7.01/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "宮島はイン戦の本命形。1号の中 亮太がA1・勝率7.01・ST0.14のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "宮島のイン逃げ率 55.5%",
-        "1号 中 亮太 はA1・勝率 7.01・ST 0.14",
-        "モーター2連対 100.0%、2号との勝率差 3.06",
-        "買い目 1-2（volume本命）"
+        "宮島イン逃げ率 55.5%（本命向き）",
+        "1号 中 亮太 A1 / 勝率 7.01 / ST 0.14",
+        "モーター2連対 100.0%、2号差 3.06",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -144,11 +145,11 @@
       },
       "skip_reason": null,
       "result": "hit",
-      "pay": 620,
-      "stake": 100,
+      "pay": 1490,
+      "stake": 200,
       "hit": true,
       "hit_tickets": [
-        "1-2"
+        "1-2-3"
       ]
     },
     {
@@ -164,16 +165,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 39.47162318840579,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5044927536231885,
       "entries": {
         "1": {
@@ -225,12 +227,12 @@
           "motor2": 40.5
         }
       },
-      "why": "桐生はイン寄りで1号の平田 忠則が勝率8.11/ST0.17と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "桐生はイン戦の本命形。1号の平田 忠則がA1・勝率8.11・ST0.17のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "桐生のイン逃げ率 50.4%",
-        "1号 平田 忠則 はA1・勝率 8.11・ST 0.17",
-        "モーター2連対 39.4%、2号との勝率差 1.85",
-        "買い目 1-2（volume本命）"
+        "桐生イン逃げ率 50.4%（本命向き）",
+        "1号 平田 忠則 A1 / 勝率 8.11 / ST 0.17",
+        "モーター2連対 39.4%、2号差 1.85",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -285,11 +287,11 @@
       },
       "skip_reason": null,
       "result": "hit",
-      "pay": 220,
-      "stake": 100,
+      "pay": 500,
+      "stake": 200,
       "hit": true,
       "hit_tickets": [
-        "1-2"
+        "1-2-4"
       ]
     },
     {
@@ -305,16 +307,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 39.45228985507246,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5044927536231885,
       "entries": {
         "1": {
@@ -366,12 +369,12 @@
           "motor2": 35.06
         }
       },
-      "why": "桐生はイン寄りで1号の佐々木 康幸が勝率6.89/ST0.12と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "桐生はイン戦の本命形。1号の佐々木 康幸がA1・勝率6.89・ST0.12のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "桐生のイン逃げ率 50.4%",
-        "1号 佐々木 康幸 はA1・勝率 6.89・ST 0.12",
-        "モーター2連対 39.0%、2号との勝率差 2.97",
-        "買い目 1-2（volume本命）"
+        "桐生イン逃げ率 50.4%（本命向き）",
+        "1号 佐々木 康幸 A1 / 勝率 6.89 / ST 0.12",
+        "モーター2連対 39.0%、2号差 2.97",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -441,16 +444,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 39.01077545729512,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5187959095491862,
       "entries": {
         "1": {
@@ -502,12 +506,12 @@
           "motor2": 37.04
         }
       },
-      "why": "唐津はイン寄りで1号の茅原 悠紀が勝率7.54/ST0.13と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "唐津はイン戦の本命形。1号の茅原 悠紀がA1・勝率7.54・ST0.13のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "唐津のイン逃げ率 51.9%",
-        "1号 茅原 悠紀 はA1・勝率 7.54・ST 0.13",
-        "モーター2連対 41.9%、2号との勝率差 0.57",
-        "買い目 1-2（volume本命）"
+        "唐津イン逃げ率 51.9%（本命向き）",
+        "1号 茅原 悠紀 A1 / 勝率 7.54 / ST 0.13",
+        "モーター2連対 41.9%、2号差 0.57",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -563,7 +567,7 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 100,
+      "stake": 200,
       "hit": false,
       "hit_tickets": []
     },
@@ -580,16 +584,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 38.235348014304535,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5156691134952005,
       "entries": {
         "1": {
@@ -641,12 +646,12 @@
           "motor2": 37.58
         }
       },
-      "why": "福岡はイン寄りで1号の三浦 永理が勝率7.21/ST0.15と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "福岡はイン戦の本命形。1号の三浦 永理がA1・勝率7.21・ST0.15のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "福岡のイン逃げ率 51.6%",
-        "1号 三浦 永理 はA1・勝率 7.21・ST 0.15",
-        "モーター2連対 28.9%、2号との勝率差 2.75",
-        "買い目 1-2（volume本命）"
+        "福岡イン逃げ率 51.6%（本命向き）",
+        "1号 三浦 永理 A1 / 勝率 7.21 / ST 0.15",
+        "モーター2連対 28.9%、2号差 2.75",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -702,7 +707,7 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 100,
+      "stake": 200,
       "hit": false,
       "hit_tickets": []
     },
@@ -719,16 +724,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 37.26268134763787,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5156691134952005,
       "entries": {
         "1": {
@@ -780,12 +786,12 @@
           "motor2": 33.86
         }
       },
-      "why": "福岡はイン寄りで1号の石丸 海渡が勝率6.82/ST0.11と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "福岡はイン戦の本命形。1号の石丸 海渡がA1・勝率6.82・ST0.11のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "福岡のイン逃げ率 51.6%",
-        "1号 石丸 海渡 はA1・勝率 6.82・ST 0.11",
-        "モーター2連対 30.9%、2号との勝率差 0.81",
-        "買い目 1-2（volume本命）"
+        "福岡イン逃げ率 51.6%（本命向き）",
+        "1号 石丸 海渡 A1 / 勝率 6.82 / ST 0.11",
+        "モーター2連対 30.9%、2号差 0.81",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -841,7 +847,7 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 100,
+      "stake": 200,
       "hit": false,
       "hit_tickets": []
     },
@@ -858,16 +864,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 37.017144508670526,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5041907514450867,
       "entries": {
         "1": {
@@ -919,12 +926,12 @@
           "motor2": 35.94
         }
       },
-      "why": "多摩川はイン寄りで1号の倉持 莉々が勝率7.20/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "多摩川はイン戦の本命形。1号の倉持 莉々がA1・勝率7.20・ST0.14のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "多摩川のイン逃げ率 50.4%",
-        "1号 倉持 莉々 はA1・勝率 7.20・ST 0.14",
-        "モーター2連対 36.4%、2号との勝率差 1.17",
-        "買い目 1-2（volume本命）"
+        "多摩川イン逃げ率 50.4%（本命向き）",
+        "1号 倉持 莉々 A1 / 勝率 7.20 / ST 0.14",
+        "モーター2連対 36.4%、2号差 1.17",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -978,13 +985,11 @@
         "wind_speed": 1
       },
       "skip_reason": null,
-      "result": "hit",
-      "pay": 430,
-      "stake": 100,
-      "hit": true,
-      "hit_tickets": [
-        "1-2"
-      ]
+      "result": "miss",
+      "pay": 0,
+      "stake": 200,
+      "hit": false,
+      "hit_tickets": []
     },
     {
       "date": "20261106",
@@ -999,16 +1004,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 36.98868134763787,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5156691134952005,
       "entries": {
         "1": {
@@ -1060,12 +1066,12 @@
           "motor2": 21.23
         }
       },
-      "why": "福岡はイン寄りで1号の川原 祐明が勝率6.86/ST0.15と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "福岡はイン戦の本命形。1号の川原 祐明がA1・勝率6.86・ST0.15のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "福岡のイン逃げ率 51.6%",
-        "1号 川原 祐明 はA1・勝率 6.86・ST 0.15",
-        "モーター2連対 39.3%、2号との勝率差 2.26",
-        "買い目 1-2（volume本命）"
+        "福岡イン逃げ率 51.6%（本命向き）",
+        "1号 川原 祐明 A1 / 勝率 6.86 / ST 0.15",
+        "モーター2連対 39.3%、2号差 2.26",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -1121,7 +1127,7 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 100,
+      "stake": 200,
       "hit": false,
       "hit_tickets": []
     },
@@ -1138,16 +1144,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 36.89266666666667,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.55,
       "entries": {
         "1": {
@@ -1199,12 +1206,12 @@
           "motor2": 27.27
         }
       },
-      "why": "常滑はイン寄りで1号の池永 太が勝率6.43/ST0.13と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "常滑はイン戦の本命形。1号の池永 太がA1・勝率6.43・ST0.13のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "常滑のイン逃げ率 55.0%",
-        "1号 池永 太 はA1・勝率 6.43・ST 0.13",
-        "モーター2連対 59.1%、2号との勝率差 1.34",
-        "買い目 1-2（volume本命）"
+        "常滑イン逃げ率 55.0%（本命向き）",
+        "1号 池永 太 A1 / 勝率 6.43 / ST 0.13",
+        "モーター2連対 59.1%、2号差 1.34",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": false,
@@ -1274,16 +1281,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 36.64052238805971,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5192537313432836,
       "entries": {
         "1": {
@@ -1335,12 +1343,12 @@
           "motor2": 35.29
         }
       },
-      "why": "三国はイン寄りで1号の下寺 秀和が勝率6.78/ST0.16と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "三国はイン戦の本命形。1号の下寺 秀和がA1・勝率6.78・ST0.16のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "三国のイン逃げ率 51.9%",
-        "1号 下寺 秀和 はA1・勝率 6.78・ST 0.16",
-        "モーター2連対 32.9%、2号との勝率差 2.20",
-        "買い目 1-2（volume本命）"
+        "三国イン逃げ率 51.9%（本命向き）",
+        "1号 下寺 秀和 A1 / 勝率 6.78 / ST 0.16",
+        "モーター2連対 32.9%、2号差 2.20",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -1396,7 +1404,7 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 100,
+      "stake": 200,
       "hit": false,
       "hit_tickets": []
     },
@@ -1413,16 +1421,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 35.6105223880597,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.5192537313432836,
       "entries": {
         "1": {
@@ -1474,12 +1483,12 @@
           "motor2": 40.79
         }
       },
-      "why": "三国はイン寄りで1号の鈴谷 一平が勝率6.30/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "三国はイン戦の本命形。1号の鈴谷 一平がA1・勝率6.30・ST0.14のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "三国のイン逃げ率 51.9%",
-        "1号 鈴谷 一平 はA1・勝率 6.30・ST 0.14",
-        "モーター2連対 31.7%、2号との勝率差 2.73",
-        "買い目 1-2（volume本命）"
+        "三国イン逃げ率 51.9%（本命向き）",
+        "1号 鈴谷 一平 A1 / 勝率 6.30 / ST 0.14",
+        "モーター2連対 31.7%、2号差 2.73",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": true,
@@ -1535,7 +1544,7 @@
       "skip_reason": null,
       "result": "miss",
       "pay": 0,
-      "stake": 100,
+      "stake": 200,
       "hit": false,
       "hit_tickets": []
     },
@@ -1552,16 +1561,17 @@
         "exhibition_missing",
         "unexpected_event"
       ],
-      "mode": "volume_max_roi",
+      "mode": "honmei",
       "band": "honmei",
       "label": "本命",
       "tickets": [
-        "1-2"
+        "1-2-3",
+        "1-2-4"
       ],
-      "ticket": "exa_12",
+      "ticket": "tri_12_narrow",
       "score": 35.39066666666667,
       "elite": false,
-      "validated_roi": 83.8,
+      "validated_roi": null,
       "innige": 0.55,
       "entries": {
         "1": {
@@ -1613,12 +1623,12 @@
           "motor2": 55.56
         }
       },
-      "why": "常滑はイン寄りで1号の船岡 洋一郎が勝率6.28/ST0.14と本命形。1日10R以上を確保するvolume枠として 1-2 を採用。",
+      "why": "常滑はイン戦の本命形。1号の船岡 洋一郎がA1・勝率6.28・ST0.14のため、本命として 1-2-3, 1-2-4 を採用。",
       "reasons": [
-        "常滑のイン逃げ率 55.0%",
-        "1号 船岡 洋一郎 はA1・勝率 6.28・ST 0.14",
-        "モーター2連対 42.9%、2号との勝率差 1.39",
-        "買い目 1-2（volume本命）"
+        "常滑イン逃げ率 55.0%（本命向き）",
+        "1号 船岡 洋一郎 A1 / 勝率 6.28 / ST 0.14",
+        "モーター2連対 42.9%、2号差 1.39",
+        "本命買い目 1-2-3, 1-2-4"
       ],
       "exhibition": {
         "ready": false,

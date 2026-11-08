@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
-前日〜当日の番組から、場×レースの買い目を生成する。
+本命専用の前日〜当日買い目生成。
 
-方針:
-- 1日10〜12レースを確保（volume）
-- 検証上いちばん回収が良かった本命寄り exacta 1-2 を主軸
-- 旧elite（徳山・大村超厳選）に当てはまるレースは elite バッジ＋流し券に切替
-- 1日10R以上かつ回収150%は歴史検証で両立せず（feasibility 参照）
+- 押し目・穴は出さない
+- 標準本命: 3連単 1-2-3 / 1-2-4
+- 本命S(elite): 徳山・大村超厳選時のみ 1-2流し4点
+- 1日スコア上位12レース
 """
 
 from __future__ import annotations
 
 import json
 import urllib.request
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -32,7 +30,7 @@ CLASS_LABEL = {1: "A1", 2: "A2", 3: "B1", 4: "B2"}
 
 
 def fetch_json(url: str):
-    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoNightly/2.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoHonmei/3.0"})
     with urllib.request.urlopen(req, timeout=60) as res:
         return json.loads(res.read())
 
@@ -57,62 +55,51 @@ def class_label(n: int) -> str:
     return CLASS_LABEL.get(int(n), f"級{n}")
 
 
-def elite_match(place: int, entries: dict, elite: dict, inn: float) -> bool:
-    h = elite.get("honmei") or {}
-    e1, e2 = entries.get(1), entries.get(2)
-    if not e1 or not e2:
+def passes(rule: dict, place: int, e1: dict, e2: dict, inn: float) -> bool:
+    wl = rule.get("stadium_whitelist")
+    if isinstance(wl, list) and wl and place not in wl:
         return False
-    wl = h.get("stadium_whitelist") or []
     return (
-        place in wl
-        and int(e1.get("class") or 99) <= int(h.get("max_c1_class") or 1)
-        and float(e1.get("nat") or 0) >= float(h.get("min_c1_nat") or 7)
-        and float(e1.get("st") or 9) <= float(h.get("max_c1_st") or 0.14)
-        and float(e1.get("motor2") or 0) >= float(h.get("min_motor2") or 35)
-        and float(e1.get("nat") or 0) - float(e2.get("nat") or 0) >= float(h.get("min_gap_c2") or 1)
-        and inn >= float(h.get("min_stadium_innige") or 0.6)
-        and int(e1.get("grade") or 5) in (h.get("grades") or [4, 5])
+        float(e1.get("nat") or 0) >= float(rule.get("min_c1_nat") or 5.8)
+        and float(e1.get("st") or 9) <= float(rule.get("max_c1_st") or 0.18)
+        and inn >= float(rule.get("min_inn") or rule.get("min_stadium_innige") or 0.5)
+        and int(e1.get("class") or 99) <= int(rule.get("max_c1_class") or 2)
+        and float(e1.get("motor2") or 0) >= float(rule.get("min_motor2") or 28)
+        and float(e1.get("nat") or 0) - float(e2.get("nat") or 0) >= float(rule.get("min_gap_c2") or 0.3)
+        and int(e1.get("grade") or 5) in (rule.get("grades") or [4, 5])
     )
 
 
 def explain(place: int, e1: dict, e2: dict, inn: float, tickets: list[str], elite: bool) -> dict:
     name = STADIUMS.get(place, f"場{place}")
+    tier = "本命S" if elite else "本命"
     reasons = [
-        f"{name}のイン逃げ率 {(inn * 100):.1f}%",
-        f"1号 {e1.get('name')} は{class_label(e1.get('class'))}・勝率 {float(e1.get('nat') or 0):.2f}・ST {float(e1.get('st') or 0):.2f}",
-        f"モーター2連対 {float(e1.get('motor2') or 0):.1f}%、2号との勝率差 {float(e1.get('nat') or 0) - float(e2.get('nat') or 0):.2f}",
-        f"買い目 {', '.join(tickets)}" + ("（elite厳選）" if elite else "（volume本命）"),
+        f"{name}イン逃げ率 {(inn * 100):.1f}%（本命向き）",
+        f"1号 {e1.get('name')} {class_label(e1.get('class'))} / 勝率 {float(e1.get('nat') or 0):.2f} / ST {float(e1.get('st') or 0):.2f}",
+        f"モーター2連対 {float(e1.get('motor2') or 0):.1f}%、2号差 {float(e1.get('nat') or 0) - float(e2.get('nat') or 0):.2f}",
+        f"{tier}買い目 {', '.join(tickets)}",
     ]
-    if elite:
-        why = (
-            f"{name}はelite条件（イン高・1号が強い）を満たすため厳選流し "
-            f"{', '.join(tickets)} を採用。件数より回収を優先する枠。"
-        )
-    else:
-        why = (
-            f"{name}はイン寄りで1号の{e1.get('name')}が勝率{float(e1.get('nat') or 0):.2f}/"
-            f"ST{float(e1.get('st') or 0):.2f}と本命形。1日10R以上を確保するvolume枠として "
-            f"{', '.join(tickets)} を採用。"
-        )
+    why = (
+        f"{name}はイン戦の本命形。1号の{e1.get('name')}が"
+        f"{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}のため、"
+        f"{tier}として {', '.join(tickets)} を採用。"
+    )
     return {"why": why, "reasons": reasons}
 
 
 def load_programs_for(date_key: str) -> dict | None:
     year = date_key[:4]
     local = ROOT / "data" / "api" / f"{date_key}.json"
-    urls = [
-        f"https://boatraceopenapi.github.io/api/v1/{year}/{date_key}.json",
-        "https://boatraceopenapi.github.io/api/v1/today.json",
-    ]
     if local.exists():
         return json.loads(local.read_text(encoding="utf-8"))
-    for url in urls:
+    for url in [
+        f"https://boatraceopenapi.github.io/api/v1/{year}/{date_key}.json",
+        "https://boatraceopenapi.github.io/api/v1/today.json",
+    ]:
         try:
             data = fetch_json(url)
-            if url.endswith("today.json"):
-                today = datetime.now(JST).strftime("%Y%m%d")
-                if date_key != today:
-                    continue
+            if url.endswith("today.json") and date_key != datetime.now(JST).strftime("%Y%m%d"):
+                continue
             (ROOT / "data" / "api").mkdir(parents=True, exist_ok=True)
             local.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
             return data
@@ -122,8 +109,9 @@ def load_programs_for(date_key: str) -> dict | None:
 
 
 def generate(date_key: str, phase: str) -> dict:
-    volume = load_json(REPORTS / "volume_rules.json", {}) or {}
-    elite = load_json(REPORTS / "elite_locked_triple_rules.json", {}) or {}
+    rules = load_json(REPORTS / "honmei_rules.json", {}) or {}
+    standard = rules.get("standard") or {}
+    elite = rules.get("elite") or {}
     skills = load_json(REPORTS / "course_skills.json", {})
     innige = innige_map(load_json(REPORTS / "stadium_innige_rates.json", {}) or {})
     programs = load_programs_for(date_key)
@@ -134,13 +122,11 @@ def generate(date_key: str, phase: str) -> dict:
             "generated_at": datetime.now(JST).isoformat(),
             "picks": [],
             "status": "programs_unavailable",
-            "mode": "volume_max_roi",
+            "mode": "honmei",
             "note": "番組未公開。夜中再取得待ち。",
-            "feasibility": volume.get("feasibility"),
         }
 
-    h = volume.get("honmei") or {}
-    daily_target = int((volume.get("selection") or {}).get("daily_target") or volume.get("daily_target") or 12)
+    daily_target = int(rules.get("daily_target") or 12)
     cands = []
     stadiums = (programs.get("programs") or {}).get("stadiums") or {}
     for sid, st in stadiums.items():
@@ -148,7 +134,7 @@ def generate(date_key: str, phase: str) -> dict:
         inn = innige.get(place, 0.5)
         for rid, race in (st.get("races") or {}).items():
             grade = int(race.get("grade_number") or 5)
-            if grade not in (volume.get("grades") or [4, 5]):
+            if grade not in (rules.get("grades") or [4, 5]):
                 continue
             entries = {}
             for _, r in (race.get("racers") or {}).items():
@@ -167,27 +153,18 @@ def generate(date_key: str, phase: str) -> dict:
             if len(entries) < 6 or 1 not in entries or 2 not in entries:
                 continue
             e1, e2 = entries[1], entries[2]
-            is_elite = elite_match(place, entries, elite, inn)
-            ok_volume = (
-                float(e1.get("nat") or 0) >= float(h.get("min_c1_nat") or 5.8)
-                and float(e1.get("st") or 9) <= float(h.get("max_c1_st") or 0.18)
-                and inn >= float(h.get("min_inn") or 0.5)
-                and int(e1.get("class") or 99) <= int(h.get("max_c1_class") or 2)
-                and float(e1.get("motor2") or 0) >= float(h.get("min_motor2") or 28)
-                and float(e1.get("nat") or 0) - float(e2.get("nat") or 0) >= float(h.get("min_gap_c2") or 0.3)
-            )
-            if not (ok_volume or is_elite):
+            is_elite = passes(elite, place, e1, e2, inn)
+            is_standard = passes(standard, place, e1, e2, inn)
+            if not (is_elite or is_standard):
                 continue
             if is_elite:
-                tickets = ["1-2-3", "1-2-4", "1-2-5", "1-2-6"]
-                ticket = "trifecta_1_2_stream"
-                band = "honmei"
-                label = "本命elite"
+                tickets = list(elite.get("tickets") or ["1-2-3", "1-2-4", "1-2-5", "1-2-6"])
+                ticket = elite.get("ticket") or "trifecta_1_2_stream"
+                label = elite.get("label") or "本命S"
             else:
-                tickets = list(h.get("tickets") or ["1-2"])
-                ticket = h.get("ticket") or "exa_12"
-                band = "honmei"
-                label = h.get("label") or "本命"
+                tickets = list(standard.get("tickets") or ["1-2-3", "1-2-4"])
+                ticket = standard.get("ticket") or "tri_12_narrow"
+                label = standard.get("label") or "本命"
             c1w = skill_win(skills, int(e1.get("regno") or 0), 1)
             score = (
                 float(e1["nat"]) * 3
@@ -196,7 +173,7 @@ def generate(date_key: str, phase: str) -> dict:
                 + inn * 6
                 + c1w * 10
                 + (float(e1["nat"]) - float(e2["nat"]))
-                + (100 if is_elite else 0)
+                + (120 if is_elite else 0)
             )
             expl = explain(place, e1, e2, inn, tickets, is_elite)
             cands.append(
@@ -209,16 +186,14 @@ def generate(date_key: str, phase: str) -> dict:
                     "grade": grade,
                     "status": "provisional",
                     "skip_on": ["entry_change", "exhibition_missing", "unexpected_event"],
-                    "mode": "volume_max_roi",
-                    "band": band,
+                    "mode": "honmei",
+                    "band": "honmei",
                     "label": label,
                     "tickets": tickets,
                     "ticket": ticket,
                     "score": score,
                     "elite": is_elite,
-                    "validated_roi": (elite.get("honmei") or {}).get("validated_test_roi")
-                    if is_elite
-                    else h.get("validated_test_roi"),
+                    "validated_roi": elite.get("validated_test_roi") if is_elite else None,
                     "innige": inn,
                     "entries": {
                         str(k): {
@@ -244,17 +219,11 @@ def generate(date_key: str, phase: str) -> dict:
         "picks": picks,
         "count": len(picks),
         "status": "ok",
-        "mode": "volume_max_roi",
+        "mode": "honmei",
         "daily_target": daily_target,
         "pool_size": len(cands),
         "elite_count": sum(1 for p in picks if p.get("elite")),
-        "feasibility": volume.get("feasibility"),
-        "note": (
-            f"volume_max_roi: 1日目標{daily_target}R。"
-            "歴史検証では『10R以上かつ回収150%』は両立せず。"
-            "件数確保の本命exactaを主軸し、elite該当のみ厳選流し。"
-            "展示確認後に確定。進入変更・異常はスキップ。"
-        ),
+        "note": "本命専用。押し目・穴は出さない。展示確認後に確定し、進入変更・異常はスキップ。",
     }
 
 
@@ -262,7 +231,7 @@ def main():
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--date", help="YYYYMMDD")
+    ap.add_argument("--date")
     ap.add_argument("--phase", default="nightly", choices=["nightly", "morning", "manual"])
     args = ap.parse_args()
 
@@ -286,8 +255,7 @@ def main():
     def usable(doc):
         return bool(doc) and doc.get("status") != "programs_unavailable"
 
-    tomorrow_doc = bundle["targets"].get(tomorrow)
-    today_doc = bundle["targets"].get(today)
+    tomorrow_doc, today_doc = bundle["targets"].get(tomorrow), bundle["targets"].get(today)
     if args.date and args.date in bundle["targets"]:
         active = bundle["targets"][args.date]
     elif usable(tomorrow_doc):
@@ -306,17 +274,17 @@ def main():
         "count": active.get("count") or 0,
         "status": active.get("status"),
         "note": active.get("note"),
-        "mode": active.get("mode"),
+        "mode": "honmei",
         "daily_target": active.get("daily_target"),
-        "feasibility": active.get("feasibility"),
         "today": today_doc,
         "tomorrow": tomorrow_doc,
     }
     (REPORTS / "picks_board.json").write_text(json.dumps(board, ensure_ascii=False, indent=2), encoding="utf-8")
     (SRC_DATA / "picks_board.json").write_text(json.dumps(board, ensure_ascii=False, indent=2), encoding="utf-8")
-    vol = load_json(REPORTS / "volume_rules.json", {})
-    if vol:
-        (SRC_DATA / "volume_rules.json").write_text(json.dumps(vol, ensure_ascii=False, indent=2), encoding="utf-8")
+    for name in ("honmei_rules.json", "volume_rules.json", "locked_triple_rules.json", "locked_honmei_rule.json"):
+        src = REPORTS / name
+        if src.exists():
+            (SRC_DATA / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
     print("board", board.get("date"), board.get("count"))
 
 

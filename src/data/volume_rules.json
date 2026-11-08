@@ -1,69 +1,12 @@
 {
-  "mode": "volume_max_roi",
+  "mode": "honmei",
   "daily_target": 12,
-  "note": "1日10R以上と回収率150%の同時達成は、2024-2025の学習/検証では見つからず。件数確保しつつ検証回収が最良だった本命寄りexacta方針。",
+  "note": "本命再構築。押し目・穴は出さない。詳細は honmei_rules.json。",
+  "alias_of": "honmei_rules.json",
   "feasibility": {
     "ten_races_and_roi_150": false,
-    "evidence": "train 2024-01〜2025-06 / test 2025-07〜2026-11。volume条件でtest ROI上限おおよそ84〜86%。elite（徳山・大村超厳選）は150%超の履歴ありだが日次0〜1件級。",
-    "best_volume_test_roi": 83.8,
-    "best_volume_test_hit_rate": 24.7,
-    "elite_historical_roi": 174.3,
-    "elite_typical_daily": "<1"
-  },
-  "grades": [
-    4,
-    5
-  ],
-  "selection": {
-    "type": "top_n_score",
-    "daily_target": 12,
-    "min_fill": 10
-  },
-  "honmei": {
-    "label": "本命",
-    "ticket": "exa_12",
-    "tickets": [
-      "1-2"
-    ],
-    "min_c1_nat": 5.8,
-    "max_c1_st": 0.18,
-    "min_inn": 0.5,
-    "max_c1_class": 2,
-    "min_motor2": 28,
-    "min_gap_c2": 0.3,
-    "stadium_whitelist": null,
-    "validated_test_roi": 83.8,
-    "validated_test_hit_rate": 24.7
-  },
-  "oshi": {
-    "label": "押し目",
-    "ticket": "exa_oshi2",
-    "tickets": [
-      "2-1",
-      "3-1"
-    ],
-    "enabled": false,
-    "reason": "volume時は回収を落とすため既定オフ。elite該当時のみ別枠。"
-  },
-  "ana": {
-    "label": "穴目",
-    "ticket": "exa_ana2",
-    "tickets": [
-      "4-1",
-      "5-1"
-    ],
-    "enabled": false,
-    "reason": "volume時は回収を落とすため既定オフ。elite該当時のみ別枠。"
-  },
-  "quotas": {
-    "honmei": 12,
-    "oshi": 0,
-    "ana": 0
-  },
-  "elite_overlay": true,
-  "validated_7d_previous_mixed_quotas": {
-    "hit_rate": 10.9,
-    "roi": 39.6,
-    "note": "本命7/押し目4/穴1の混合は件数は足りるが回収が悪い"
+    "evidence": "本命日次12R運用。elite本命Sのみ履歴回収150%超だが低頻度。",
+    "best_volume_test_roi": 73.2,
+    "elite_historical_roi": 174.3
   }
 }

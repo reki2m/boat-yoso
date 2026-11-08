@@ -1,17 +1,14 @@
 {
-  "ticket": "exa_12",
+  "ticket": "tri_12_narrow",
   "min_stadium_innige": 0.5,
   "max_c1_class": 2,
   "min_c1_nat": 5.8,
   "max_c1_st": 0.18,
   "min_motor2": 28,
   "min_gap_c2": 0.3,
-  "grades": [
-    4,
-    5
-  ],
+  "grades": [4, 5],
   "stadium_whitelist": null,
-  "validated_test_roi": 83.8,
-  "validated_test_selected": 65,
-  "note": "volume_max_roi exacta 1-2"
+  "validated_test_roi": 73.2,
+  "validated_test_selected": 299,
+  "note": "本命標準（日次）。elite本命Sは elite_locked_triple_rules / honmei_rules.elite"
 }

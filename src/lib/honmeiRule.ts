@@ -42,7 +42,7 @@ export function buildHonmeiTickets(rule: HonmeiRule = HONMEI_RULE): string[] {
   if (rule.ticket === "tri_12_narrow") return ["1-2-3", "1-2-4"];
   if (rule.ticket === "trifecta_123") return ["1-2-3"];
   if (rule.ticket === "exacta_12" || rule.ticket === "exa_12") return ["1-2"];
-  return ["1-2"];
+  return ["1-2-3", "1-2-4"];
 }
 
 export function evaluateHonmeiEligibility(input: {

@@ -24,12 +24,14 @@ export async function GET() {
       openapi: "boatraceopenapi results/programs/odds 2021-2026",
     },
     update: {
-      cadence: "毎晩（最新データ取得→前日買い目→展示確認→的中再計算）",
+      cadence: "毎晩（最新データ取得→本命買い目→展示確認→的中再計算）",
       script: "scripts/nightly_update.py",
       policy: {
+        mode: "honmei",
         day_before_picks: true,
         skip_on_entry_change: true,
         require_start_exhibition: true,
+        no_oshi_ana: true,
       },
     },
     lockedHonmei: {

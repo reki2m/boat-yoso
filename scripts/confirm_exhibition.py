@@ -162,6 +162,8 @@ def refresh_board(today_doc: dict | None, tomorrow_doc: dict | None) -> None:
         "count": active.get("count") or 0,
         "status": active.get("status"),
         "note": active.get("note"),
+        "mode": active.get("mode") or "honmei",
+        "daily_target": active.get("daily_target"),
         "confirmed": active.get("confirmed"),
         "skipped": active.get("skipped"),
         "provisional": active.get("provisional"),

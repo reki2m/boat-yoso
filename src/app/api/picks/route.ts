@@ -58,7 +58,8 @@ export async function GET() {
       day_before: true,
       skip_on_entry_change: true,
       require_start_exhibition: true,
-      note: "前日に買い目を出し、当日はスタート展示確認。進入変更・予期しない事態はスキップ。各買い目には採用理由の説明文を付与。",
+      mode: "honmei",
+      note: "本命専用。押し目・穴は出さない。前日に本命を出し、当日はスタート展示確認。進入変更・異常はスキップ。",
     },
   });
 }
