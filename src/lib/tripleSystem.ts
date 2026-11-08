@@ -43,9 +43,12 @@ const STADIUM_INNIGE = stadiumRates as Record<string, { rate: number; stadium: n
 
 export const BAND_TICKET_LABEL: Record<string, string> = {
   ...HONMEI_TICKET_LABEL,
+  tri_12_narrow: "3連単 1-2-3 / 1-2-4",
   exa_21: "2連単 2-1",
   exa_21_23: "2連単 2-1 / 2-3",
   exa_31: "2連単 3-1",
+  exa_oshi2: "2連単 2-1 / 3-1",
+  exa_ana2: "2連単 4-1 / 5-1",
   tri_213: "3連単 2-1-3",
   tri_213_214: "3連単 2-1-3 / 2-1-4",
   tri_oshi4: "3連単 押し目4点",
@@ -72,6 +75,10 @@ function ticketsFromKind(kind: string | undefined): string[] {
       return ["2-1", "2-3"];
     case "exa_31":
       return ["3-1"];
+    case "exa_oshi2":
+      return ["2-1", "3-1"];
+    case "exa_ana2":
+      return ["4-1", "5-1"];
     case "tri_213":
       return ["2-1-3"];
     case "tri_213_214":
@@ -94,6 +101,8 @@ function ticketsFromKind(kind: string | undefined): string[] {
       return ["4-5-6", "5-4-6"];
     case "tri_4axis":
       return ["4-1-2", "4-1-3", "4-5-1", "4-5-6"];
+    case "tri_12_narrow":
+      return ["1-2-3", "1-2-4"];
     case "trifecta_1_2_stream":
       return buildHonmeiTickets();
     default:
@@ -112,7 +121,7 @@ function passesOshi(placeNo: number, racers: RacerRow[], rule: BandRule): { ok: 
   if (!c1 || !c2) return { ok: false, reasons: ["出走データ不足"] };
 
   const wl = rule.stadium_whitelist;
-  if (Array.isArray(wl) && wl.length && !wl.includes(placeNo)) {
+  if (Array.isArray(wl) && wl.length > 0 && !wl.includes(placeNo)) {
     reasons.push("押し目対象場外");
   }
   const rate = innigeRate(placeNo);
@@ -174,7 +183,7 @@ function passesAna(
   if (!c1 || !ax) return { ok: false, reasons: ["出走データ不足"] };
 
   const wl = rule.stadium_whitelist;
-  if (Array.isArray(wl) && wl.length && !wl.includes(placeNo)) {
+  if (Array.isArray(wl) && wl.length > 0 && !wl.includes(placeNo)) {
     reasons.push("穴目対象場外");
   }
   const rate = innigeRate(placeNo);

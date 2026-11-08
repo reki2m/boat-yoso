@@ -1,0 +1,53 @@
+{
+  "mode": "volume",
+  "daily_target": 12,
+  "note": "旧ロック（徳山・大村超厳選）は日次0件になりがち。全場ソフト条件でスコア上位12Rを出す。回収率は厳選より下がる。",
+  "grades": [4, 5],
+  "honmei": {
+    "label": "本命",
+    "ticket": "tri_12_narrow",
+    "tickets": ["1-2-3", "1-2-4"],
+    "min_c1_nat": 5.6,
+    "max_c1_st": 0.19,
+    "min_inn": 0.45,
+    "max_c1_class": 2,
+    "min_motor2": 25
+  },
+  "oshi": {
+    "label": "押し目",
+    "ticket": "exa_oshi2",
+    "tickets": ["2-1", "3-1"],
+    "c1_nat_lo": 4.0,
+    "c1_nat_hi": 7.2,
+    "min_c2_nat": 4.8,
+    "min_c2_skill": 0.08
+  },
+  "ana": {
+    "label": "穴目",
+    "ticket": "exa_ana2",
+    "tickets": ["4-1", "5-1"],
+    "max_inn": 0.6,
+    "max_c1_nat": 6.5,
+    "min_axis_nat": 5.0,
+    "min_axis_skill": 0.06,
+    "axis": 4
+  },
+  "quotas": { "honmei": 7, "oshi": 4, "ana": 1 },
+  "validated_7d": {
+    "period": "20261102-20261108",
+    "picks_per_day": 12,
+    "selected": 64,
+    "skipped": 20,
+    "hits": 7,
+    "hit_rate": 10.9,
+    "roi": 39.6,
+    "note": "volume移行後の直近1週間。厳選eliteより件数優先のため回収は下がる。"
+  },
+  "validated_30d": {
+    "selected": 297,
+    "hit_rate": 14.1,
+    "roi": 63.5,
+    "note": "設計時のクォータ混合概算。"
+  },
+  "elite_note": "旧locked_triple_rulesはeliteバッジ用に残す（該当時のみ強調）"
+}

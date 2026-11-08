@@ -10,7 +10,7 @@ export type HonmeiRule = {
   min_motor2: number;
   min_gap_c2: number;
   grades: number[];
-  stadium_whitelist: number[];
+  stadium_whitelist: number[] | null;
   validated_test_roi: number;
   validated_test_selected: number;
 };
@@ -23,18 +23,25 @@ export const STADIUM_INNIGE = stadiumRates as Record<
 
 export const TICKET_LABEL: Record<string, string> = {
   trifecta_1_2_stream: "3連単 1-2-流し(3〜6)",
+  tri_12_narrow: "3連単 1-2-3 / 1-2-4",
   trifecta_123: "3連単 1-2-3",
   trifecta_1axis_23: "3連単 1軸 2/3相手",
   exacta_12: "2連単 1-2",
 };
 
+function innigeRate(placeNo: number): number {
+  const hit = Object.values(STADIUM_INNIGE).find((v) => v.stadium === placeNo);
+  return hit?.rate ?? 0;
+}
+
 export function buildHonmeiTickets(rule: HonmeiRule = HONMEI_RULE): string[] {
   if (rule.ticket === "trifecta_1_2_stream") {
     return ["1-2-3", "1-2-4", "1-2-5", "1-2-6"];
   }
+  if (rule.ticket === "tri_12_narrow") return ["1-2-3", "1-2-4"];
   if (rule.ticket === "trifecta_123") return ["1-2-3"];
   if (rule.ticket === "exacta_12") return ["1-2"];
-  return ["1-2-3"];
+  return ["1-2-3", "1-2-4"];
 }
 
 export function evaluateHonmeiEligibility(input: {
@@ -48,9 +55,14 @@ export function evaluateHonmeiEligibility(input: {
   const reasons: string[] = [];
   const classMap: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
   const c1class = classMap[input.className] ?? 4;
-  const inWhite = HONMEI_RULE.stadium_whitelist.includes(input.placeNo);
-  if (!inWhite) reasons.push("場のイン逃げ率が閾値未満（現行ロックは徳山・大村）");
-  if (c1class > HONMEI_RULE.max_c1_class) reasons.push("1号艇がA1以外");
+  const wl = HONMEI_RULE.stadium_whitelist;
+  const rate = innigeRate(input.placeNo);
+  if (Array.isArray(wl) && wl.length > 0) {
+    if (!wl.includes(input.placeNo)) reasons.push("本命対象場外");
+  } else if (rate < HONMEI_RULE.min_stadium_innige) {
+    reasons.push(`イン逃げ率不足 (${(rate * 100).toFixed(1)}%)`);
+  }
+  if (c1class > HONMEI_RULE.max_c1_class) reasons.push("1号艇の級別が条件外");
   if (input.nationalWin < HONMEI_RULE.min_c1_nat) {
     reasons.push(`全国勝率不足 (${input.nationalWin} < ${HONMEI_RULE.min_c1_nat})`);
   }
@@ -66,7 +78,13 @@ export function evaluateHonmeiEligibility(input: {
   const ok = reasons.length === 0;
   return {
     ok,
-    reasons: ok ? ["ロック済み本命条件を充足"] : reasons,
+    reasons: ok
+      ? [
+          `イン逃げ率 ${(rate * 100).toFixed(1)}%`,
+          `1号 ${input.className} / 勝率 ${input.nationalWin.toFixed(2)} / ST ${input.avgStart.toFixed(2)}`,
+          `volume本命条件を充足`,
+        ]
+      : reasons,
     tickets: ok ? buildHonmeiTickets() : [],
   };
 }

@@ -399,7 +399,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          夜中に最新データを取り、前日に場×レースの買い目を出す。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
+          夜中に最新データを取り、1日12レース前後の買い目を出す（volumeルール）。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
