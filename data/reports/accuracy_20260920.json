@@ -1,0 +1,253 @@
+{
+  "date": "20260920",
+  "scored_at": "2026-11-09T03:28:22.091388+09:00",
+  "selected": 1,
+  "skipped": 1,
+  "hits": 0,
+  "hit_rate": 0.0,
+  "bets": 400,
+  "pay": 0,
+  "pnl": -400,
+  "roi": 0.0,
+  "rows": [
+    {
+      "date": "20260920",
+      "stadium": 6,
+      "stadium_name": "浜名湖",
+      "race": 7,
+      "title": "オラレ浜松4周年記念スポーツニッポン菊花杯",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "entries": {
+        "1": {
+          "name": "熊本 英一",
+          "regno": 3989,
+          "nat": 4.27,
+          "st": 0.21
+        },
+        "2": {
+          "name": "前田 聖文",
+          "regno": 4570,
+          "nat": 5.98,
+          "st": 0.16
+        },
+        "3": {
+          "name": "廣部 大明",
+          "regno": 5379,
+          "nat": 3.24,
+          "st": 0.2
+        },
+        "4": {
+          "name": "下條 雄太郎",
+          "regno": 4352,
+          "nat": 7.34,
+          "st": 0.15
+        },
+        "5": {
+          "name": "西丸 敦基",
+          "regno": 5299,
+          "nat": 6.15,
+          "st": 0.15
+        },
+        "6": {
+          "name": "小林 甘寧",
+          "regno": 5348,
+          "nat": 5.76,
+          "st": 0.16
+        }
+      },
+      "band": "ana",
+      "label": "穴目",
+      "tickets": [
+        "4-1-2",
+        "4-1-3",
+        "4-1-5",
+        "4-1-6"
+      ],
+      "ticket": "tri_4_1_stream",
+      "validated_roi": 272.8846153846154,
+      "validated_hit": 10.256410256410255,
+      "needs_wind_confirm": true,
+      "min_wind": 4,
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.09,
+            "lapTime": 6.75,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.02,
+            "lapTime": 6.75,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": 0.06,
+            "lapTime": 6.78,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.06,
+            "lapTime": 6.78,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.17,
+            "lapTime": 6.79,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": -0.02,
+            "lapTime": 6.72,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 3
+      },
+      "skip_reason": null,
+      "result": "skipped_entry_change",
+      "hit": false
+    },
+    {
+      "date": "20260920",
+      "stadium": 24,
+      "stadium_name": "大村",
+      "race": 11,
+      "title": "ミッドナイトボートレースin大村 9",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "entries": {
+        "1": {
+          "name": "篠崎 元志",
+          "regno": 4350,
+          "nat": 8.02,
+          "st": 0.13
+        },
+        "2": {
+          "name": "溝口 海義也",
+          "regno": 4958,
+          "nat": 6.27,
+          "st": 0.13
+        },
+        "3": {
+          "name": "大山 千広",
+          "regno": 4885,
+          "nat": 7.29,
+          "st": 0.15
+        },
+        "4": {
+          "name": "高野 哲史",
+          "regno": 4512,
+          "nat": 6.84,
+          "st": 0.15
+        },
+        "5": {
+          "name": "山口 裕二",
+          "regno": 3944,
+          "nat": 5.9,
+          "st": 0.17
+        },
+        "6": {
+          "name": "上條 嘉嗣",
+          "regno": 4514,
+          "nat": 6.43,
+          "st": 0.19
+        }
+      },
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6"
+      ],
+      "ticket": "trifecta_1_2_stream",
+      "validated_roi": 174.3076923076923,
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": -0.01,
+            "lapTime": 6.91,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.08,
+            "lapTime": 6.94,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": 0.02,
+            "lapTime": 6.85,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.01,
+            "lapTime": 6.9,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.08,
+            "lapTime": 6.96,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.03,
+            "lapTime": 6.94,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 6
+      },
+      "skip_reason": null,
+      "result": "miss",
+      "pay": 0,
+      "stake": 400,
+      "hit": false,
+      "hit_tickets": []
+    }
+  ],
+  "note": "進入変更レースはスキップとして再計算。保証ではない。"
+}

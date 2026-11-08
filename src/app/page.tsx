@@ -120,6 +120,8 @@ type RaceResponse = {
     focus: string;
     disclaimer: string;
     ticketsLocked?: boolean;
+    skipped?: boolean;
+    skipReason?: string | null;
     liveUrls?: {
       mediaTop: string;
       raceIndex: string;
@@ -175,6 +177,65 @@ type Research = {
   };
 };
 
+type LiveStadium = {
+  id: number;
+  name: string;
+  open: boolean;
+  liveUrl: string;
+  raceIndex: string;
+  beforeInfo: string;
+};
+
+type DayPick = {
+  date: string;
+  stadium: number;
+  stadium_name: string;
+  race: number;
+  band: string;
+  label: string;
+  tickets: string[];
+  status: string;
+  skip_reason?: string | null;
+  validated_roi?: number;
+};
+
+type PicksPayload = {
+  board: {
+    active_date?: string;
+    date?: string;
+    count?: number;
+    status?: string;
+    note?: string;
+    picks?: DayPick[];
+    confirmed?: number;
+    skipped?: number;
+    provisional?: number;
+  };
+  accuracy: {
+    scored_at?: string;
+    aggregate?: {
+      selected: number;
+      hits: number;
+      bets: number;
+      pay: number;
+      skipped: number;
+      hit_rate: number;
+      roi: number;
+      pnl: number;
+    };
+    days?: Array<{
+      date: string;
+      selected?: number;
+      hits?: number;
+      hit_rate?: number;
+      roi?: number;
+      skipped?: number;
+      status?: string;
+    }>;
+  };
+  policy?: { note?: string };
+};
+
 function EquityMiniChart({
   curve,
   color,
@@ -216,6 +277,10 @@ export default function Home() {
   const [pending, startTransition] = useTransition();
   const [purchased, setPurchased] = useState(false);
   const [demoExhibition, setDemoExhibition] = useState(false);
+  const [liveStadiums, setLiveStadiums] = useState<LiveStadium[]>([]);
+  const [liveDate, setLiveDate] = useState("");
+  const [activeLive, setActiveLive] = useState<LiveStadium | null>(null);
+  const [picksPayload, setPicksPayload] = useState<PicksPayload | null>(null);
 
   useEffect(() => {
     fetch("/api/schedule")
@@ -231,6 +296,19 @@ export default function Home() {
     fetch("/api/research")
       .then((r) => r.json())
       .then((json) => setResearch(json))
+      .catch(() => undefined);
+    fetch("/api/live")
+      .then((r) => r.json())
+      .then((json) => {
+        setLiveStadiums(json.stadiums ?? []);
+        setLiveDate(json.date ?? "");
+        const firstOpen = (json.stadiums as LiveStadium[] | undefined)?.find((s) => s.open);
+        if (firstOpen) setActiveLive(firstOpen);
+      })
+      .catch(() => undefined);
+    fetch("/api/picks")
+      .then((r) => r.json())
+      .then((json) => setPicksPayload(json))
       .catch(() => undefined);
   }, []);
 
@@ -280,7 +358,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          朝1Rから監視。進入・スリット・周回タイムが出てから本命/押し目/穴の買い目を出す。
+          夜中に最新データを取り、前日に場×レースの買い目を出す。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -358,13 +436,17 @@ export default function Home() {
               </span>
             </div>
 
-            <div className={`anomaly ${data.exhibition?.ready ? "ok" : "bad"}`}>
-              <strong>展示ゲート</strong>
+            <div
+              className={`anomaly ${
+                triple?.skipped ? "bad" : data.exhibition?.ready ? "ok" : "bad"
+              }`}
+            >
+              <strong>スタート展示ゲート</strong>
               <p>{data.exhibition?.reason ?? triple?.focus}</p>
-              {data.exhibition?.entryChanged ? (
+              {data.exhibition?.entryChanged || triple?.skipped ? (
                 <div className="note" style={{ margin: 0 }}>
-                  進入変更を検知 → 実コースで買い目を再計算します。
-                  {data.exhibition.changes
+                  進入変更・予期しない事態を検知 → このレースはスキップします。
+                  {(data.exhibition?.changes ?? [])
                     .map((c) => `${c.boat}号 ${c.from}→${c.to}`)
                     .join(" / ")}
                 </div>
@@ -401,28 +483,36 @@ export default function Home() {
               <div className="pick-main">
                 <span className="badge">{triple?.focus ?? "参考スコア"}</span>
                 <h2>
-                  {triple?.ticketsLocked
-                    ? "買い目ロック中"
-                    : activeBand
-                      ? `${activeBand.label}採用`
-                      : "見送り"}
+                  {triple?.skipped
+                    ? "スキップ"
+                    : triple?.ticketsLocked
+                      ? "買い目ロック中"
+                      : activeBand
+                        ? `${activeBand.label}採用`
+                        : "見送り"}
                 </h2>
                 <p>
-                  {triple?.ticketsLocked
-                    ? "進入状況・スリット・周回タイムの確定後に買い目を出します。"
-                    : activeBand
-                      ? `${activeBand.ticketLabel} / ${activeBand.tickets.join(" · ")}`
-                      : data.prediction.summary}
+                  {triple?.skipped
+                    ? "進入変更または予期しない事態のため、このレースは買いません。"
+                    : triple?.ticketsLocked
+                      ? "進入状況・スリット・周回タイムの確定後に買い目を出します。"
+                      : activeBand
+                        ? `${activeBand.ticketLabel} / ${activeBand.tickets.join(" · ")}`
+                        : data.prediction.summary}
                 </p>
                 <div className="sanren">
-                  {triple?.ticketsLocked
-                    ? "WAIT"
-                    : (activeBand?.tickets?.length
-                        ? activeBand.tickets
-                        : ["見送り"]
-                      ).join(" / ")}
+                  {triple?.skipped
+                    ? "SKIP"
+                    : triple?.ticketsLocked
+                      ? "WAIT"
+                      : (activeBand?.tickets?.length
+                          ? activeBand.tickets
+                          : ["見送り"]
+                        ).join(" / ")}
                 </div>
-                {!triple?.ticketsLocked && (triple?.portfolioTickets?.length ?? 0) > 0 ? (
+                {!triple?.ticketsLocked &&
+                !triple?.skipped &&
+                (triple?.portfolioTickets?.length ?? 0) > 0 ? (
                   <div className="cta-row" style={{ marginTop: "1rem" }}>
                     <button
                       className="btn"
@@ -539,6 +629,174 @@ export default function Home() {
           </>
         ) : null}
       </section>
+
+      <section className="panel" style={{ marginTop: "1rem" }}>
+        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>全場ライブ</h2>
+        <p className="note">
+          {liveDate || "本日"} — 場を押すとその場の公式ライブ入口が開きます。開催中の場を優先表示。
+        </p>
+        <div className="stadium-live-grid">
+          {liveStadiums.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={`stadium-live-btn ${s.open ? "open" : ""} ${
+                activeLive?.id === s.id ? "active" : ""
+              }`}
+              onClick={() => {
+                setActiveLive(s);
+                setPlace(s.id);
+              }}
+            >
+              <span>{s.name}</span>
+              <strong>{s.open ? "開催中" : "休催"}</strong>
+            </button>
+          ))}
+        </div>
+        {activeLive ? (
+          <div className="live-box purchased">
+            <strong>{activeLive.name} ライブ</strong>
+            <div className="cta-row" style={{ marginTop: "0.65rem" }}>
+              <a className="btn" href={activeLive.liveUrl} target="_blank" rel="noreferrer">
+                公式ライブを開く
+              </a>
+              <a className="btn ghost" href={activeLive.beforeInfo} target="_blank" rel="noreferrer">
+                直前情報
+              </a>
+              <a className="btn ghost" href={activeLive.raceIndex} target="_blank" rel="noreferrer">
+                レース一覧
+              </a>
+            </div>
+            <iframe
+              title={`${activeLive.name}-live`}
+              className="live-frame"
+              src={activeLive.liveUrl}
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        ) : null}
+      </section>
+
+      {picksPayload ? (
+        <section className="panel" style={{ marginTop: "1rem" }}>
+          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>
+            前日〜当日の買い目ボード
+          </h2>
+          <p className="note">
+            対象 {picksPayload.board.active_date || picksPayload.board.date || "—"} /{" "}
+            {picksPayload.board.count ?? 0} レース / 状態 {picksPayload.board.status || "—"}
+            {picksPayload.board.confirmed != null
+              ? ` / 確定 ${picksPayload.board.confirmed}・スキップ ${picksPayload.board.skipped ?? 0}・展示待ち ${picksPayload.board.provisional ?? 0}`
+              : ""}
+          </p>
+          <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
+          {(picksPayload.board.picks?.length ?? 0) === 0 ? (
+            <p className="status">条件該当の買い目はまだありません（番組未公開か、厳選ルール外）。</p>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>場</th>
+                    <th>R</th>
+                    <th>帯</th>
+                    <th>買い目</th>
+                    <th>状態</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {picksPayload.board.picks?.map((p) => (
+                    <tr key={`${p.stadium}-${p.race}-${p.band}`}>
+                      <td>{p.stadium_name}</td>
+                      <td>{p.race}R</td>
+                      <td>{p.label || p.band}</td>
+                      <td>{(p.tickets || []).join(" · ")}</td>
+                      <td>
+                        {p.status === "confirmed"
+                          ? "確定"
+                          : p.status === "skipped"
+                            ? "スキップ"
+                            : "展示待ち"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {picksPayload?.accuracy ? (
+        <section className="panel" style={{ marginTop: "1rem" }}>
+          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>
+            予想の的中再計算
+          </h2>
+          <p className="note">
+            夜間ジョブが結果と突き合わせ、進入変更はスキップ扱い。保証ではありません。
+          </p>
+          {picksPayload.accuracy.aggregate ? (
+            <div className="band-grid">
+              <div className="side-card on">
+                <span>的中率</span>
+                <strong>{picksPayload.accuracy.aggregate.hit_rate.toFixed(1)}%</strong>
+                <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                  {picksPayload.accuracy.aggregate.hits}/
+                  {picksPayload.accuracy.aggregate.selected}R（スキップ{" "}
+                  {picksPayload.accuracy.aggregate.skipped}）
+                </div>
+              </div>
+              <div className="side-card on">
+                <span>ROI</span>
+                <strong>{picksPayload.accuracy.aggregate.roi.toFixed(1)}%</strong>
+                <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                  投資 {picksPayload.accuracy.aggregate.bets.toLocaleString()} / 払戻{" "}
+                  {picksPayload.accuracy.aggregate.pay.toLocaleString()}
+                </div>
+              </div>
+              <div className="side-card on">
+                <span>損益</span>
+                <strong>
+                  {picksPayload.accuracy.aggregate.pnl.toLocaleString()}円
+                </strong>
+                <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                  更新 {picksPayload.accuracy.scored_at || "—"}
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>日付</th>
+                  <th>対象</th>
+                  <th>的中</th>
+                  <th>ROI</th>
+                  <th>スキップ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(picksPayload.accuracy.days || [])
+                  .filter((d) => d.status !== "no_picks" || (d.selected ?? 0) > 0)
+                  .slice(0, 14)
+                  .map((d) => (
+                    <tr key={d.date}>
+                      <td>{d.date}</td>
+                      <td>{d.selected ?? 0}</td>
+                      <td>
+                        {d.hits ?? 0}
+                        {d.hit_rate != null ? ` (${d.hit_rate.toFixed(0)}%)` : ""}
+                      </td>
+                      <td>{d.roi != null ? `${d.roi.toFixed(1)}%` : "—"}</td>
+                      <td>{d.skipped ?? 0}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {research?.equity10k ? (
         <section className="panel" style={{ marginTop: "1rem" }}>

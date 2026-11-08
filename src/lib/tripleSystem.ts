@@ -15,10 +15,7 @@ import {
 } from "./oddsAnomaly";
 import type { RacerRow } from "./types";
 import { analyzeLive, type LiveAnalysisResult } from "./liveAnalysis";
-import {
-  remapRacersToExhibitionCourses,
-  type ExhibitionStatus,
-} from "./exhibition";
+import { type ExhibitionStatus } from "./exhibition";
 import { liveBroadcastUrls } from "./liveBroadcast";
 
 type BandRule = Record<string, unknown> & {
@@ -232,6 +229,8 @@ export type TriplePrediction = {
   exhibition: ExhibitionStatus;
   ticketsLocked: boolean;
   liveUrls: ReturnType<typeof liveBroadcastUrls>;
+  skipped: boolean;
+  skipReason: string | null;
 };
 
 function betTypeOf(tickets: string[]): "trifecta" | "exacta" {
@@ -250,14 +249,22 @@ export function buildTriplePrediction(input: {
 }): TriplePrediction {
   const anomaly = detectOddsAnomaly(input.trifectaOdds ?? {});
   const liveUrls = liveBroadcastUrls(input.placeNo, input.dateKey, input.raceNo);
-  const ticketsLocked = !input.exhibition.ready;
-  const racers = input.exhibition.ready
-    ? remapRacersToExhibitionCourses(input.racers, input.exhibition)
-    : input.racers;
+  const entryChanged = Boolean(input.exhibition.entryChanged);
+  const ticketsLocked = !input.exhibition.ready || entryChanged;
+  // 進入変更時は再マップせずスルー（見送り）
+  const racers = input.racers;
   const c1 = byCourse(racers, 1);
   const c2 = byCourse(racers, 2);
 
-  const waitingReason = ["展示未完了のため買い目ロック中", input.exhibition.reason];
+  const waitingReason = entryChanged
+    ? [
+        "進入変更のためスキップ",
+        input.exhibition.reason,
+        ...input.exhibition.changes.map(
+          (c) => `${c.boat}号 ${c.from}→${c.to}`,
+        ),
+      ]
+    : ["展示未完了のため買い目ロック中", input.exhibition.reason];
 
   const honmeiEval = ticketsLocked
     ? { ok: false, reasons: waitingReason, tickets: [] as string[] }
@@ -391,7 +398,8 @@ export function buildTriplePrediction(input: {
   });
 
   let focus = "条件外のため見送り（無理に買わない）";
-  if (ticketsLocked) focus = "展示待ち（進入・スリット・周回タイム）";
+  if (entryChanged) focus = "進入変更のためスキップ";
+  else if (!input.exhibition.ready) focus = "展示待ち（進入・スリット・周回タイム）";
   else if (active.some((b) => b.band === "honmei")) focus = "本命（イン戦）優先";
   else if (active.some((b) => b.band === "oshi")) focus = "押し目（2/3コース反撃）";
   else if (active.some((b) => b.band === "ana")) focus = "穴目（アウト・センター）";
@@ -404,10 +412,12 @@ export function buildTriplePrediction(input: {
     portfolioTickets,
     focus,
     disclaimer:
-      "必ず勝てる保証はない。展示確定後に本命/押し目/穴を出す。進入変更時は実コースで再計算。",
+      "必ず勝てる保証はない。スタート展示確認後に買い目確定。進入変更・予期しない事態はスキップ。",
     exhibition: input.exhibition,
     ticketsLocked,
     liveUrls,
+    skipped: entryChanged,
+    skipReason: entryChanged ? "entry_change" : null,
   };
 }
 

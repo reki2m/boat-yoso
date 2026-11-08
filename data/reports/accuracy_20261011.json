@@ -1,0 +1,134 @@
+{
+  "date": "20261011",
+  "scored_at": "2026-11-09T03:28:22.037029+09:00",
+  "selected": 0,
+  "skipped": 1,
+  "hits": 0,
+  "hit_rate": 0,
+  "bets": 0,
+  "pay": 0,
+  "pnl": 0,
+  "roi": 0,
+  "rows": [
+    {
+      "date": "20261011",
+      "stadium": 2,
+      "stadium_name": "戸田",
+      "race": 9,
+      "title": "第11回加藤峻二杯",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "entries": {
+        "1": {
+          "name": "吉田 祐貴",
+          "regno": 4724,
+          "nat": 3.67,
+          "st": 0.18
+        },
+        "2": {
+          "name": "石井 伸長",
+          "regno": 5339,
+          "nat": 4.94,
+          "st": 0.18
+        },
+        "3": {
+          "name": "古賀 智之",
+          "regno": 4789,
+          "nat": 5.38,
+          "st": 0.16
+        },
+        "4": {
+          "name": "村上 遼",
+          "regno": 4715,
+          "nat": 6.93,
+          "st": 0.15
+        },
+        "5": {
+          "name": "相馬 翔",
+          "regno": 5122,
+          "nat": 3.82,
+          "st": 0.17
+        },
+        "6": {
+          "name": "生方 靖亜",
+          "regno": 5090,
+          "nat": 5.63,
+          "st": 0.15
+        }
+      },
+      "band": "ana",
+      "label": "穴目",
+      "tickets": [
+        "4-1-2",
+        "4-1-3",
+        "4-1-5",
+        "4-1-6"
+      ],
+      "ticket": "tri_4_1_stream",
+      "validated_roi": 272.8846153846154,
+      "validated_hit": 10.256410256410255,
+      "needs_wind_confirm": true,
+      "min_wind": 4,
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.11,
+            "lapTime": 6.73,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": -0.05,
+            "lapTime": 6.68,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": 0.01,
+            "lapTime": 6.81,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.05,
+            "lapTime": 6.71,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.08,
+            "lapTime": 6.84,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.11,
+            "lapTime": 6.85,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 0
+      },
+      "skip_reason": null,
+      "result": "skipped_entry_change",
+      "hit": false
+    }
+  ],
+  "note": "進入変更レースはスキップとして再計算。保証ではない。"
+}

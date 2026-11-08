@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Nightly / every-other-day updater for:
-- ボートレース日和 (via OpenAPI today cache + optional kyotei sample)
-- 艇国後継 艇愛DB (boatrace-db.jp)
-- hot racers rebuild
-- optional backtest refresh
+毎晩の最新データ取得パイプライン（JST 想定）
 
-Intended cron (JST): 2:30 AM every other day
-  30 2 */2 * * cd /path/to/boat-yoso && python3 scripts/nightly_update.py
+1. 昨日〜今日の OpenAPI programs/results を取得
+2. 艇愛DB同期・得意コース・ホット選手を更新
+3. 翌日（なければ当日）の場×レース買い目を生成
+4. 直近買い目の的中を再計算
+
+cron 例（毎日 2:15 JST）:
+  15 2 * * * cd /path/to/boat-yoso && python3 scripts/nightly_update.py --force
 """
 
 from __future__ import annotations
@@ -29,76 +30,117 @@ def jst_now() -> datetime:
     return datetime.now(JST)
 
 
-def should_run(force: bool = False) -> bool:
-    if force:
-        return True
-    if not STATE.exists():
-        return True
-    st = json.loads(STATE.read_text(encoding="utf-8"))
-    last = st.get("last_success_date")
-    if not last:
-        return True
-    last_d = date.fromisoformat(last)
-    return (jst_now().date() - last_d).days >= 2
-
-
 def fetch_json(url: str):
-    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoNightly/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoNightly/2.0"})
     with urllib.request.urlopen(req, timeout=60) as res:
         return json.loads(res.read())
 
 
-def update_openapi_today() -> None:
+def save_kind(kind: str, key: str, url: str) -> bool:
+    try:
+        data = fetch_json(url)
+    except Exception as e:
+        print("skip", kind, key, e)
+        return False
+    path = DATA / kind / f"{key}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    print("saved", path)
+    time.sleep(0.15)
+    return True
+
+
+def update_openapi_range(days_back: int = 2, days_forward: int = 1) -> dict:
     today = jst_now().date()
-    key = today.strftime("%Y%m%d")
-    year = today.year
-    for kind, url in [
-        ("results", f"https://boatraceopenapi.github.io/results/v3/{year}/{key}.json"),
-        ("programs", f"https://boatraceopenapi.github.io/programs/v3/{year}/{key}.json"),
-        ("api", f"https://boatraceopenapi.github.io/api/v1/{year}/{key}.json"),
-    ]:
-        try:
-            data = fetch_json(url)
-        except Exception as e:
-            print("skip", kind, e)
-            continue
-        path = DATA / kind / f"{key}.json"
+    stats = {"ok": 0, "fail": 0}
+    for delta in range(-days_back, days_forward + 1):
+        d = today + timedelta(days=delta)
+        key = d.strftime("%Y%m%d")
+        year = d.year
+        pairs = [
+            ("results", f"https://boatraceopenapi.github.io/results/v3/{year}/{key}.json"),
+            ("programs", f"https://boatraceopenapi.github.io/programs/v3/{year}/{key}.json"),
+            ("api", f"https://boatraceopenapi.github.io/api/v1/{year}/{key}.json"),
+        ]
+        for kind, url in pairs:
+            ok = save_kind(kind, key, url)
+            stats["ok" if ok else "fail"] += 1
+    # always refresh today.json alias
+    try:
+        data = fetch_json("https://boatraceopenapi.github.io/api/v1/today.json")
+        path = DATA / "api" / "today.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         print("saved", path)
-        time.sleep(0.2)
+    except Exception as e:
+        print("today.json fail", e)
+        stats["fail"] += 1
+    return stats
+
+
+def run(cmd: list[str]) -> None:
+    print("+", " ".join(cmd))
+    subprocess.check_call(cmd, cwd=ROOT)
 
 
 def main() -> None:
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--force", action="store_true")
+    ap.add_argument("--force", action="store_true", help="毎回実行（既定も毎日実行）")
     args = ap.parse_args()
-    if not should_run(args.force):
-        print("skip: last update within 1 day window")
-        return
+    _ = args  # daily by default now
 
     DATA.mkdir(parents=True, exist_ok=True)
-    update_openapi_today()
-    subprocess.check_call(["python3", str(ROOT / "scripts" / "sync_teikoku.py")], cwd=ROOT)
-    subprocess.check_call(["python3", str(ROOT / "scripts" / "hot_racers.py")], cwd=ROOT)
-    # refresh stadium rates if enough history
+    print("nightly start", jst_now().isoformat())
+
+    stats = update_openapi_range(days_back=2, days_forward=1)
+
+    # 艇愛DB（失敗しても継続）
     try:
-        subprocess.check_call(["python3", str(ROOT / "scripts" / "backtest_innige.py")], cwd=ROOT)
+        run(["python3", str(ROOT / "scripts" / "sync_teikoku.py")])
     except subprocess.CalledProcessError as e:
-        print("backtest deferred", e)
+        print("teikoku deferred", e)
+
+    try:
+        run(["python3", str(ROOT / "scripts" / "build_course_skills.py")])
+    except subprocess.CalledProcessError as e:
+        print("course skills deferred", e)
+
+    try:
+        run(["python3", str(ROOT / "scripts" / "hot_racers.py")])
+    except subprocess.CalledProcessError as e:
+        print("hot racers deferred", e)
+
+    # 前日〜翌日買い目
+    run(["python3", str(ROOT / "scripts" / "generate_day_picks.py")])
+
+    # スタート展示確認（進入変更・異常はスキップ）
+    try:
+        run(["python3", str(ROOT / "scripts" / "confirm_exhibition.py")])
+    except subprocess.CalledProcessError as e:
+        print("exhibition confirm deferred", e)
+
+    # 的中再計算
+    run(["python3", str(ROOT / "scripts" / "score_picks.py"), "--days", "14"])
 
     STATE.write_text(
         json.dumps(
             {
                 "last_success_date": jst_now().date().isoformat(),
                 "last_success_at": jst_now().isoformat(),
+                "openapi_stats": stats,
+                "cadence": "nightly_daily",
                 "sources": [
                     "boatraceopenapi results/programs/api",
-                    "boatrace-db.jp (艇国後継)",
-                    "kyoteibiyori via app runtime",
+                    "boatrace-db.jp",
+                    "course_skills / hot_racers / day_picks / accuracy",
                 ],
+                "policy": {
+                    "day_before_picks": True,
+                    "skip_on_entry_change": True,
+                    "require_start_exhibition": True,
+                },
             },
             ensure_ascii=False,
             indent=2,

@@ -1,0 +1,134 @@
+{
+  "date": "20260904",
+  "scored_at": "2026-11-09T03:28:22.137189+09:00",
+  "selected": 1,
+  "skipped": 0,
+  "hits": 0,
+  "hit_rate": 0.0,
+  "bets": 400,
+  "pay": 0,
+  "pnl": -400,
+  "roi": 0.0,
+  "rows": [
+    {
+      "date": "20260904",
+      "stadium": 24,
+      "stadium_name": "大村",
+      "race": 9,
+      "title": "ミッドナイトボートレースin大村 8",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "entries": {
+        "1": {
+          "name": "永田 啓二",
+          "regno": 4288,
+          "nat": 7.65,
+          "st": 0.12
+        },
+        "2": {
+          "name": "宮本 夏樹",
+          "regno": 4498,
+          "nat": 4.67,
+          "st": 0.17
+        },
+        "3": {
+          "name": "青木 蓮",
+          "regno": 5220,
+          "nat": 6.59,
+          "st": 0.12
+        },
+        "4": {
+          "name": "三苫 晃幸",
+          "regno": 4463,
+          "nat": 6.28,
+          "st": 0.15
+        },
+        "5": {
+          "name": "浮田 圭浩",
+          "regno": 4202,
+          "nat": 4.55,
+          "st": 0.19
+        },
+        "6": {
+          "name": "牟田 奨太",
+          "regno": 4988,
+          "nat": 4.22,
+          "st": 0.15
+        }
+      },
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6"
+      ],
+      "ticket": "trifecta_1_2_stream",
+      "validated_roi": 174.3076923076923,
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.07,
+            "lapTime": 6.95,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.18,
+            "lapTime": 6.94,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": -0.01,
+            "lapTime": 6.88,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.12,
+            "lapTime": 6.96,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.22,
+            "lapTime": 6.93,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.25,
+            "lapTime": 6.95,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 1
+      },
+      "skip_reason": null,
+      "result": "miss",
+      "pay": 0,
+      "stake": 400,
+      "hit": false,
+      "hit_tickets": []
+    }
+  ],
+  "note": "進入変更レースはスキップとして再計算。保証ではない。"
+}

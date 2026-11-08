@@ -1,0 +1,128 @@
+{
+  "date": "20260917",
+  "phase": "manual",
+  "generated_at": "2026-11-09T03:28:19.740901+09:00",
+  "picks": [
+    {
+      "date": "20260917",
+      "stadium": 24,
+      "stadium_name": "大村",
+      "race": 12,
+      "title": "ミッドナイトボートレースin大村 9",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "entries": {
+        "1": {
+          "name": "篠崎 元志",
+          "regno": 4350,
+          "nat": 8.02,
+          "st": 0.13
+        },
+        "2": {
+          "name": "山口 裕二",
+          "regno": 3944,
+          "nat": 5.9,
+          "st": 0.17
+        },
+        "3": {
+          "name": "大山 千広",
+          "regno": 4885,
+          "nat": 7.29,
+          "st": 0.15
+        },
+        "4": {
+          "name": "高野 哲史",
+          "regno": 4512,
+          "nat": 6.84,
+          "st": 0.15
+        },
+        "5": {
+          "name": "新田 泰章",
+          "regno": 4471,
+          "nat": 6.46,
+          "st": 0.15
+        },
+        "6": {
+          "name": "上條 嘉嗣",
+          "regno": 4514,
+          "nat": 6.43,
+          "st": 0.19
+        }
+      },
+      "band": "honmei",
+      "label": "本命",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6"
+      ],
+      "ticket": "trifecta_1_2_stream",
+      "validated_roi": 174.3076923076923,
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.2,
+            "lapTime": 6.88,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.1,
+            "lapTime": 6.95,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": 0.12,
+            "lapTime": 6.9,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": 0.17,
+            "lapTime": 6.94,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.14,
+            "lapTime": 6.92,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": 0.05,
+            "lapTime": 6.88,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 1
+      },
+      "skip_reason": null
+    }
+  ],
+  "count": 1,
+  "status": "ok",
+  "note": "スタート展示確認後に確定。進入変更・予期しない事態はスキップ。",
+  "confirmed": 1,
+  "skipped": 0,
+  "provisional": 0,
+  "confirmed_at": "2026-11-09T03:28:19.785405+09:00"
+}

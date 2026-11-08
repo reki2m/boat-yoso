@@ -1,0 +1,129 @@
+{
+  "date": "20260922",
+  "phase": "manual",
+  "generated_at": "2026-11-09T03:28:19.188323+09:00",
+  "picks": [
+    {
+      "date": "20260922",
+      "stadium": 18,
+      "stadium_name": "徳山",
+      "race": 11,
+      "title": "マンスリーBOATRACE杯争奪戦",
+      "grade": 5,
+      "status": "confirmed",
+      "skip_on": [
+        "entry_change",
+        "exhibition_missing",
+        "unexpected_event"
+      ],
+      "entries": {
+        "1": {
+          "name": "籾山 佳岳",
+          "regno": 4663,
+          "nat": 5.73,
+          "st": 0.16
+        },
+        "2": {
+          "name": "四宮 与寛",
+          "regno": 4839,
+          "nat": 6.18,
+          "st": 0.15
+        },
+        "3": {
+          "name": "中村 尊",
+          "regno": 4090,
+          "nat": 6.08,
+          "st": 0.16
+        },
+        "4": {
+          "name": "香月 大輝",
+          "regno": 5338,
+          "nat": 4.58,
+          "st": 0.16
+        },
+        "5": {
+          "name": "村松 修二",
+          "regno": 4816,
+          "nat": 5.63,
+          "st": 0.16
+        },
+        "6": {
+          "name": "片岡 大地",
+          "regno": 4911,
+          "nat": 4.72,
+          "st": 0.14
+        }
+      },
+      "band": "oshi",
+      "label": "押し目",
+      "tickets": [
+        "2-1-3",
+        "2-1-4",
+        "3-1-2",
+        "3-1-4"
+      ],
+      "ticket": "tri_oshi4",
+      "validated_roi": 156.0843373493976,
+      "validated_hit": 19.27710843373494,
+      "exhibition": {
+        "ready": true,
+        "reason": "スタート展示確認済み",
+        "entryChanged": false,
+        "unexpected": false,
+        "boats": [
+          {
+            "entry": 1,
+            "course": 1,
+            "slit": 0.04,
+            "lapTime": 6.89,
+            "entryChanged": false
+          },
+          {
+            "entry": 2,
+            "course": 2,
+            "slit": 0.14,
+            "lapTime": 6.91,
+            "entryChanged": false
+          },
+          {
+            "entry": 3,
+            "course": 3,
+            "slit": -0.04,
+            "lapTime": 6.96,
+            "entryChanged": false
+          },
+          {
+            "entry": 4,
+            "course": 4,
+            "slit": -0.07,
+            "lapTime": 6.9,
+            "entryChanged": false
+          },
+          {
+            "entry": 5,
+            "course": 5,
+            "slit": 0.06,
+            "lapTime": 6.9,
+            "entryChanged": false
+          },
+          {
+            "entry": 6,
+            "course": 6,
+            "slit": -0.01,
+            "lapTime": 6.97,
+            "entryChanged": false
+          }
+        ],
+        "wind_speed": 4
+      },
+      "skip_reason": null
+    }
+  ],
+  "count": 1,
+  "status": "ok",
+  "note": "スタート展示確認後に確定。進入変更・予期しない事態はスキップ。",
+  "confirmed": 1,
+  "skipped": 0,
+  "provisional": 0,
+  "confirmed_at": "2026-11-09T03:28:19.230358+09:00"
+}

@@ -35,9 +35,11 @@ export async function GET(req: NextRequest) {
       ? Number(windParam)
       : payload.windSpeed ?? exhibition.windSpeed;
 
-  const racersForScore = exhibition.ready
-    ? remapRacersToExhibitionCourses(payload.racers, exhibition)
-    : payload.racers;
+  // 進入変更時は買い目スキップ方針のため再マップしない（表示は実進入を別途 exhibition で出す）
+  const racersForScore =
+    exhibition.ready && !exhibition.entryChanged
+      ? remapRacersToExhibitionCourses(payload.racers, exhibition)
+      : payload.racers;
   const prediction = scoreRace(racersForScore);
   const { odds, source: oddsSource } = await fetchTrifectaOdds(place, race, date);
   const triple = buildTriplePrediction({

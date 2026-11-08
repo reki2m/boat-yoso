@@ -24,8 +24,13 @@ export async function GET() {
       openapi: "boatraceopenapi results/programs/odds 2021-2026",
     },
     update: {
-      cadence: "1日おき・夜間",
+      cadence: "毎晩（最新データ取得→前日買い目→展示確認→的中再計算）",
       script: "scripts/nightly_update.py",
+      policy: {
+        day_before_picks: true,
+        skip_on_entry_change: true,
+        require_start_exhibition: true,
+      },
     },
     lockedHonmei: {
       ...locked,
@@ -63,7 +68,7 @@ export async function GET() {
     },
     exhibition: {
       status: "numeric_ready",
-      note: "展示タイム/STは数値解析済み。YouTube・公式ライブ映像の進入解析は配信URL連携後に拡張。",
+      note: "スタート展示（進入・スリット・周回）を必ず確認。進入変更や予期しない事態はスキップ。",
     },
     oddsAnomaly: {
       overbet_threshold: 6,
