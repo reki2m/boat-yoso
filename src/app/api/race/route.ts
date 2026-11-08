@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchKyoteiRace } from "@/lib/kyotei";
 import { scoreRace } from "@/lib/predict";
+import {
+  evaluateHonmeiEligibility,
+  HONMEI_RULE,
+  TICKET_LABEL,
+} from "@/lib/honmeiRule";
 import { jstDateKey } from "@/lib/stadiums";
 
 export const dynamic = "force-dynamic";
@@ -22,5 +27,28 @@ export async function GET(req: NextRequest) {
 
   const payload = await fetchKyoteiRace(place, race, date);
   const prediction = scoreRace(payload.racers);
-  return NextResponse.json({ ...payload, prediction });
+  const c1 = payload.racers.find((r) => r.course === 1);
+  const c2 = payload.racers.find((r) => r.course === 2);
+  const honmei = c1
+    ? evaluateHonmeiEligibility({
+        placeNo: place,
+        className: c1.className,
+        nationalWin: c1.nationalWin,
+        avgStart: c1.avgStart,
+        motorTop2: c1.motorTop2,
+        secondNationalWin: c2?.nationalWin ?? 0,
+      })
+    : { ok: false, reasons: ["1コースデータなし"], tickets: [] };
+
+  return NextResponse.json({
+    ...payload,
+    prediction,
+    honmeiSystem: {
+      rule: HONMEI_RULE,
+      ticketLabel: TICKET_LABEL[HONMEI_RULE.ticket],
+      ...honmei,
+      focus: "本命（イン逃げ高確率場）",
+      nextPhases: ["押し目", "穴", "選手別得意コース", "展示ライブ解析"],
+    },
+  });
 }

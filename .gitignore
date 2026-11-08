@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# large historical caches (regenerate via scripts/collect_history.py)
+/data/results/
+/data/programs/
+/data/teikoku/
+/data/api/
+/data/update_state.json

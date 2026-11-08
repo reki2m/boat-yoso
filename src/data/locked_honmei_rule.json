@@ -1,0 +1,19 @@
+{
+  "ticket": "trifecta_1_2_stream",
+  "min_stadium_innige": 0.6,
+  "max_c1_class": 1,
+  "min_c1_nat": 7.0,
+  "max_c1_st": 0.14,
+  "min_motor2": 35,
+  "min_gap_c2": 1.0,
+  "grades": [
+    4,
+    5
+  ],
+  "stadium_whitelist": [
+    18,
+    24
+  ],
+  "validated_test_roi": 174.3076923076923,
+  "validated_test_selected": 65
+}

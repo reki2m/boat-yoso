@@ -38,6 +38,41 @@ type RaceResponse = {
     confidence: string;
     summary: string;
   };
+  honmeiSystem?: {
+    ok: boolean;
+    reasons: string[];
+    tickets: string[];
+    ticketLabel: string;
+    focus: string;
+    rule: { validated_test_roi: number; stadium_whitelist: number[] };
+  };
+};
+
+type Research = {
+  lockedHonmei: {
+    ticketLabel: string;
+    validated_test_roi: number;
+    validated_test_selected: number;
+    stadium_whitelist: number[];
+    min_c1_nat: number;
+    max_c1_st: number;
+    min_motor2: number;
+  };
+  stadiumInnige: Record<string, { rate: number; stadium: number }>;
+  hotRacers: {
+    as_of: string;
+    windows: {
+      "1m": Array<{ name: string; win_rate: number; best_course: number | null; starts: number }>;
+      "3m": Array<{ name: string; win_rate: number; best_course: number | null; starts: number }>;
+    };
+  };
+  backtestSummary: {
+    train_n: number;
+    test_n: number;
+    strategies_ge_150_test: number;
+  };
+  sources: Record<string, string>;
+  exhibition: { note: string };
 };
 
 export default function Home() {
@@ -47,6 +82,7 @@ export default function Home() {
   const [place, setPlace] = useState(2);
   const [race, setRace] = useState(1);
   const [data, setData] = useState<RaceResponse | null>(null);
+  const [research, setResearch] = useState<Research | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -60,6 +96,10 @@ export default function Home() {
         if (json.stadiums?.[0]?.id) setPlace(json.stadiums[0].id);
       })
       .catch(() => setError("開催場の取得に失敗しました"));
+    fetch("/api/research")
+      .then((r) => r.json())
+      .then((json) => setResearch(json))
+      .catch(() => undefined);
   }, []);
 
   function load() {
@@ -90,7 +130,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          ボートレース日和の出走データをもとに、勝率・モーター・STを合成した参考予想を出します。
+          ボートレース日和＋艇国後継DB＋過去5年検証。いまは本命（イン逃げ高確率）の買い目システムを稼働中。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={load} disabled={pending}>
@@ -167,15 +207,29 @@ export default function Home() {
 
             <div className="pick">
               <div className="pick-main">
-                <span className="badge">本命フォーカス</span>
+                <span className="badge">
+                  {data.honmeiSystem?.ok ? "本命システム採用" : "本命条件外・参考スコア"}
+                </span>
                 <h2>
                   {data.prediction.honmei.course}号 {data.prediction.honmei.name}
                 </h2>
                 <p>{data.prediction.summary}</p>
-                <div className="sanren">{data.prediction.sanrentan}</div>
-                <p className="note" style={{ marginTop: "0.4rem" }}>
-                  参考3連単（本命-対抗-穴）
-                </p>
+                {data.honmeiSystem?.ok ? (
+                  <>
+                    <div className="sanren">{data.honmeiSystem.tickets.join(" / ")}</div>
+                    <p className="note" style={{ marginTop: "0.4rem" }}>
+                      {data.honmeiSystem.ticketLabel}（検証ROI{" "}
+                      {data.honmeiSystem.rule.validated_test_roi.toFixed(1)}%）
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="sanren">{data.prediction.sanrentan}</div>
+                    <p className="note" style={{ marginTop: "0.4rem" }}>
+                      {(data.honmeiSystem?.reasons ?? []).join(" / ") || "参考3連単"}
+                    </p>
+                  </>
+                )}
               </div>
               <div className="side-picks">
                 <div className="side-card">
@@ -257,11 +311,81 @@ export default function Home() {
             <p className="note">
               {data.note
                 ? data.note
-                : "出走データはボートレース日和の公開エンドポイントから取得しています。予想は娯楽・参考用で、的中を保証しません。"}
+                : "出走データはボートレース日和＋艇国後継（艇愛DB）＋OpenAPI履歴です。予想は娯楽・参考用で、的中や回収率を保証しません。"}
             </p>
           </>
         ) : null}
       </section>
+
+      {research ? (
+        <section className="panel" style={{ marginTop: "1rem" }}>
+          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>検証と全場分析</h2>
+          <p className="note">
+            学習 {research.backtestSummary.train_n.toLocaleString()} レース /
+            検証 {research.backtestSummary.test_n.toLocaleString()} レース /
+            検証ROI150%超 {research.backtestSummary.strategies_ge_150_test} 本
+          </p>
+          <p className="note">
+            ロック本命: {research.lockedHonmei.ticketLabel} / 検証ROI{" "}
+            {research.lockedHonmei.validated_test_roi.toFixed(1)}% / 対象場{" "}
+            {research.lockedHonmei.stadium_whitelist.join(",")}
+          </p>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>場</th>
+                  <th>イン逃げ率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(research.stadiumInnige)
+                  .sort((a, b) => b[1].rate - a[1].rate)
+                  .map(([name, v]) => (
+                    <tr key={name}>
+                      <td>
+                        {name}
+                        {research.lockedHonmei.stadium_whitelist.includes(v.stadium)
+                          ? " ★本命対象"
+                          : ""}
+                      </td>
+                      <td>{(v.rate * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          <h3 style={{ marginTop: "1rem" }}>ノリ好調（直近1ヶ月 / as of {research.hotRacers.as_of}）</h3>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>選手</th>
+                  <th>出走</th>
+                  <th>勝率</th>
+                  <th>得意コース</th>
+                </tr>
+              </thead>
+              <tbody>
+                {research.hotRacers.windows["1m"].slice(0, 10).map((r) => (
+                  <tr key={r.name + r.starts}>
+                    <td>{r.name}</td>
+                    <td>{r.starts}</td>
+                    <td>{(r.win_rate * 100).toFixed(1)}%</td>
+                    <td>{r.best_course ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="note">{research.exhibition.note}</p>
+          <p className="note">
+            更新: {research.sources.kyoteibiyori} / {research.sources.teikoku_successor} /
+            夜中に1日おき (`scripts/nightly_update.py`)
+          </p>
+        </section>
+      ) : null}
     </main>
   );
 }
+

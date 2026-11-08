@@ -1,0 +1,757 @@
+{
+  "train_years": "2021-2023",
+  "test_years": "2024-2025",
+  "train_n": 165835,
+  "test_n": 110479,
+  "strategies_ge_150_test": 4,
+  "best": {
+    "train": {
+      "bets": 60400,
+      "pay": 71940,
+      "roi": 119.10596026490066,
+      "selected": 151,
+      "hit_races": 63,
+      "hit_rate": 41.72185430463576,
+      "innige_rate_selected": 91.3907284768212,
+      "tickets_per_race": 4,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    "test": {
+      "bets": 26000,
+      "pay": 45320,
+      "roi": 174.3076923076923,
+      "selected": 65,
+      "hit_races": 21,
+      "hit_rate": 32.30769230769231,
+      "innige_rate_selected": 83.07692307692308,
+      "tickets_per_race": 4,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    "stadium_rates": {
+      "桐生": 0.504,
+      "戸田": 0.409,
+      "江戸川": 0.406,
+      "平和島": 0.424,
+      "多摩川": 0.504,
+      "浜名湖": 0.496,
+      "蒲郡": 0.519,
+      "常滑": 0.55,
+      "津": 0.546,
+      "三国": 0.519,
+      "びわこ": 0.529,
+      "住之江": 0.564,
+      "尼崎": 0.579,
+      "鳴門": 0.455,
+      "丸亀": 0.539,
+      "児島": 0.532,
+      "宮島": 0.555,
+      "徳山": 0.601,
+      "下関": 0.577,
+      "若松": 0.538,
+      "芦屋": 0.595,
+      "福岡": 0.516,
+      "唐津": 0.519,
+      "大村": 0.602
+    }
+  },
+  "best_ge_150": {
+    "train": {
+      "bets": 60400,
+      "pay": 71940,
+      "roi": 119.10596026490066,
+      "selected": 151,
+      "hit_races": 63,
+      "hit_rate": 41.72185430463576,
+      "innige_rate_selected": 91.3907284768212,
+      "tickets_per_race": 4,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    "test": {
+      "bets": 26000,
+      "pay": 45320,
+      "roi": 174.3076923076923,
+      "selected": 65,
+      "hit_races": 21,
+      "hit_rate": 32.30769230769231,
+      "innige_rate_selected": 83.07692307692308,
+      "tickets_per_race": 4,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    "stadium_rates": {
+      "桐生": 0.504,
+      "戸田": 0.409,
+      "江戸川": 0.406,
+      "平和島": 0.424,
+      "多摩川": 0.504,
+      "浜名湖": 0.496,
+      "蒲郡": 0.519,
+      "常滑": 0.55,
+      "津": 0.546,
+      "三国": 0.519,
+      "びわこ": 0.529,
+      "住之江": 0.564,
+      "尼崎": 0.579,
+      "鳴門": 0.455,
+      "丸亀": 0.539,
+      "児島": 0.532,
+      "宮島": 0.555,
+      "徳山": 0.601,
+      "下関": 0.577,
+      "若松": 0.538,
+      "芦屋": 0.595,
+      "福岡": 0.516,
+      "唐津": 0.519,
+      "大村": 0.602
+    }
+  },
+  "top30": [
+    {
+      "train_roi": 119.11,
+      "test_roi": 174.31,
+      "test_selected": 65,
+      "test_hit_rate": 32.31,
+      "test_innige_rate": 83.08,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 119.18,
+      "test_roi": 171.67,
+      "test_selected": 66,
+      "test_hit_rate": 31.82,
+      "test_innige_rate": 83.33,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 110.39,
+      "test_roi": 165.45,
+      "test_selected": 77,
+      "test_hit_rate": 33.77,
+      "test_innige_rate": 83.12,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 109.85,
+      "test_roi": 159.25,
+      "test_selected": 80,
+      "test_hit_rate": 32.5,
+      "test_innige_rate": 82.5,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 108.08,
+      "test_roi": 143.22,
+      "test_selected": 83,
+      "test_hit_rate": 27.71,
+      "test_innige_rate": 79.52,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 0.5,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 108.5,
+      "test_roi": 139.85,
+      "test_selected": 85,
+      "test_hit_rate": 27.06,
+      "test_innige_rate": 80.0,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 0.5,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 106.67,
+      "test_roi": 139.73,
+      "test_selected": 94,
+      "test_hit_rate": 30.85,
+      "test_innige_rate": 79.79,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.16,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 106.32,
+      "test_roi": 136.9,
+      "test_selected": 100,
+      "test_hit_rate": 31.0,
+      "test_innige_rate": 80.0,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.16,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 103.17,
+      "test_roi": 136.5,
+      "test_selected": 65,
+      "test_hit_rate": 64.62,
+      "test_innige_rate": 83.08,
+      "cfg": {
+        "ticket": "trifecta_1axis_23",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 103.24,
+      "test_roi": 134.78,
+      "test_selected": 102,
+      "test_hit_rate": 29.41,
+      "test_innige_rate": 80.39,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 35,
+        "min_gap_c2": 0.5,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 102.64,
+      "test_roi": 134.43,
+      "test_selected": 66,
+      "test_hit_rate": 63.64,
+      "test_innige_rate": 83.33,
+      "cfg": {
+        "ticket": "trifecta_1axis_23",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 104.16,
+      "test_roi": 133.93,
+      "test_selected": 91,
+      "test_hit_rate": 27.47,
+      "test_innige_rate": 76.92,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 0.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 104.58,
+      "test_roi": 131.05,
+      "test_selected": 93,
+      "test_hit_rate": 26.88,
+      "test_innige_rate": 77.42,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 0.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 102.92,
+      "test_roi": 128.48,
+      "test_selected": 107,
+      "test_hit_rate": 28.04,
+      "test_innige_rate": 79.44,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 35,
+        "min_gap_c2": 0.5,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 114.11,
+      "test_roi": 128.04,
+      "test_selected": 42,
+      "test_hit_rate": 38.1,
+      "test_innige_rate": 90.48,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 102.12,
+      "test_roi": 126.39,
+      "test_selected": 113,
+      "test_hit_rate": 29.2,
+      "test_innige_rate": 77.88,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 35,
+        "min_gap_c2": 0.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 110.94,
+      "test_roi": 125.06,
+      "test_selected": 43,
+      "test_hit_rate": 37.21,
+      "test_innige_rate": 90.7,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 101.88,
+      "test_roi": 121.04,
+      "test_selected": 118,
+      "test_hit_rate": 27.97,
+      "test_innige_rate": 77.12,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 35,
+        "min_gap_c2": 0.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 100.04,
+      "test_roi": 120.65,
+      "test_selected": 124,
+      "test_hit_rate": 28.23,
+      "test_innige_rate": 78.23,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.16,
+        "min_motor2": 35,
+        "min_gap_c2": 0.5,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 120.64,
+      "test_roi": 117.14,
+      "test_selected": 35,
+      "test_hit_rate": 34.29,
+      "test_innige_rate": 91.43,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 120.52,
+      "test_roi": 117.14,
+      "test_selected": 35,
+      "test_hit_rate": 34.29,
+      "test_innige_rate": 91.43,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 114.27,
+      "test_roi": 116.19,
+      "test_selected": 42,
+      "test_hit_rate": 38.1,
+      "test_innige_rate": 90.48,
+      "cfg": {
+        "ticket": "exacta_12",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 106.99,
+      "test_roi": 115.65,
+      "test_selected": 50,
+      "test_hit_rate": 34.0,
+      "test_innige_rate": 86.0,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.16,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 100.35,
+      "test_roi": 115.14,
+      "test_selected": 35,
+      "test_hit_rate": 68.57,
+      "test_innige_rate": 91.43,
+      "cfg": {
+        "ticket": "exacta_12_13",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 109.63,
+      "test_roi": 114.41,
+      "test_selected": 47,
+      "test_hit_rate": 34.04,
+      "test_innige_rate": 85.11,
+      "cfg": {
+        "ticket": "trifecta_1_2_stream",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.16,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 111.58,
+      "test_roi": 113.49,
+      "test_selected": 43,
+      "test_hit_rate": 37.21,
+      "test_innige_rate": 90.7,
+      "cfg": {
+        "ticket": "exacta_12",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 101.17,
+      "test_roi": 112.85,
+      "test_selected": 83,
+      "test_hit_rate": 55.42,
+      "test_innige_rate": 79.52,
+      "cfg": {
+        "ticket": "trifecta_1axis_23",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 35,
+        "min_gap_c2": 0.5,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 104.01,
+      "test_roi": 111.63,
+      "test_selected": 43,
+      "test_hit_rate": 69.77,
+      "test_innige_rate": 90.7,
+      "cfg": {
+        "ticket": "exacta_12_13",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.15,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 118.78,
+      "test_roi": 110.86,
+      "test_selected": 35,
+      "test_hit_rate": 34.29,
+      "test_innige_rate": 91.43,
+      "cfg": {
+        "ticket": "exacta_12",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 2,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "train_roi": 117.92,
+      "test_roi": 110.86,
+      "test_selected": 35,
+      "test_hit_rate": 34.29,
+      "test_innige_rate": 91.43,
+      "cfg": {
+        "ticket": "exacta_12",
+        "min_stadium_innige": 0.6,
+        "max_c1_class": 1,
+        "min_c1_nat": 7.0,
+        "max_c1_st": 0.14,
+        "min_motor2": 40,
+        "min_gap_c2": 1.0,
+        "grades": [
+          4,
+          5
+        ]
+      }
+    }
+  ]
+}
