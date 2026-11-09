@@ -245,12 +245,12 @@ def explain(place, e1, e2, inn, tickets, elite, score_gap, stake, odds_info) -> 
         f"{name}イン逃げ率 {(inn * 100):.1f}%（本命向き）",
         f"1号 {e1.get('name')} {class_label(e1.get('class'))} / 勝率 {float(e1.get('nat') or 0):.2f} / ST {float(e1.get('st') or 0):.2f}",
         f"モーター2連対 {float(e1.get('motor2') or 0):.1f}% / 1号相対最強（差 {score_gap:.2f}）",
-        f"超厳選{len(tickets)}点 {', '.join(tickets)}（1点{stake}円）",
+        f"ボリューム単点 {', '.join(tickets)}（1点{stake}円）",
     ]
     if odds_info and not odds_info.get("missing"):
         reasons.append(f"オッズ判定: {odds_info.get('reason')}")
     why = (
-        f"{name}は超厳選の本命形。1号の{e1.get('name')}が相対最強"
+        f"{name}はボリューム単点の本命形。1号の{e1.get('name')}が相対最強"
         f"（{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}・"
         f"モーター{float(e1.get('motor2') or 0):.1f}%）のため、"
         f"{tier}として3連単{len(tickets)}点（{', '.join(tickets)}）を採用。"
