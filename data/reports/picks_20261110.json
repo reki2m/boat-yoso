@@ -1,0 +1,16 @@
+{
+  "date": "20261110",
+  "phase": "tomorrow",
+  "generated_at": "2026-11-09T23:16:34.183582+09:00",
+  "picks": [],
+  "status": "programs_unavailable",
+  "mode": "honmei_elite_maxroi",
+  "note": "番組未公開。夜中再取得待ち。",
+  "disabled_systems": [
+    "oshi",
+    "ana",
+    "volume_fixed_12",
+    "tri_1axis_6",
+    "honmei_roi_6pt"
+  ]
+}

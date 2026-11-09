@@ -1,8 +1,8 @@
 {
-  "mode": "honmei_strict2",
-  "system_name": "本命超厳選2点",
+  "mode": "honmei_elite_maxroi",
+  "system_name": "本命S回収最大化",
   "disabled_systems": ["oshi", "ana", "volume_fixed_12", "tri_1axis_6", "honmei_roi_6pt"],
-  "note": "2026前半→後半検証で回収100%超。3連単2点・モーター38以上・1日最大2R・芦屋除外・資金均一。押し目穴無効。",
+  "note": "回収率最優先。本命S条件のみ採用（標準枠は同閾値で実質閉鎖）。3連単2点1-2-3/1-2-4・1日最大2R・芦屋除外・資金均一。2026 ROI約166%、2021-25通算約107%（2024-25は弱い）。",
   "grades": [4, 5],
   "selection": {
     "mode": "threshold",
@@ -37,20 +37,21 @@
   "feasibility": {
     "target_races_per_day": "0-2",
     "points_per_race": 2,
-    "validated_train_roi": 107.9,
-    "validated_test_roi": 115.9,
-    "validated_all_2026_roi": 111.0,
-    "period": "2026 H1 train / H2 test",
-    "note": "件数より回収優先。毎日出る保証なし。"
+    "validated_train_roi": 113.2,
+    "validated_test_roi": 207.9,
+    "validated_all_2026_roi": 166.2,
+    "validated_2021_2025_roi": 106.7,
+    "period": "2026 H1/H2 + 2021-2025",
+    "note": "件数は少ない（2026で25R）。毎日出る保証なし。回収最優先。"
   },
   "standard": {
-    "label": "本命",
+    "label": "本命S",
     "ticket": "tri_12_narrow",
     "tickets": ["1-2-3", "1-2-4"],
     "points": 2,
     "stake_per_ticket": 100,
-    "min_c1_nat": 6.2,
-    "max_c1_st": 0.16,
+    "min_c1_nat": 6.8,
+    "max_c1_st": 0.14,
     "min_inn": 0.6,
     "max_c1_class": 2,
     "min_motor2": 38,
@@ -59,9 +60,10 @@
     "min_score_gap": 2,
     "min_pick_score": 0,
     "stadium_whitelist": null,
-    "validated_test_roi": 115.9,
-    "validated_train_roi": 107.9,
-    "validated_test_hit_rate": 22.1
+    "validated_test_roi": 207.9,
+    "validated_train_roi": 113.2,
+    "validated_test_hit_rate": 20.0,
+    "note": "標準枠も本命Sと同閾値（回収最大化のため標準を閉じる）"
   },
   "elite": {
     "label": "本命S",
@@ -79,6 +81,9 @@
     "min_score_gap": 2,
     "min_pick_score": 0,
     "stadium_whitelist": null,
-    "validated_test_roi": 115.9
+    "validated_test_roi": 207.9,
+    "validated_train_roi": 113.2,
+    "validated_all_2026_roi": 166.2,
+    "validated_2021_2025_roi": 106.7
   }
 }

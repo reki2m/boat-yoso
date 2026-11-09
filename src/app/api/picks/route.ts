@@ -58,7 +58,7 @@ export async function GET() {
       day_before: true,
       skip_on_entry_change: true,
       require_start_exhibition: true,
-      mode: "honmei_strict2",
+      mode: "honmei_elite_maxroi",
       disabled_systems: ["oshi", "ana", "tri_1axis_6"],
       variable_count: true,
       max_per_day: 2,
@@ -66,7 +66,7 @@ export async function GET() {
       stadium_blacklist: [21],
       odds_filter: true,
       exhibition_strict: true,
-      note: "超厳選2点のみ。1日最大2R・モーター38以上・芦屋除外・資金均一。押し目穴無効。",
+      note: "本命S回収最大化。1日最大2R・勝率6.8/ST0.14/モーター38以上・芦屋除外・資金均一。押し目穴無効。",
     },
   });
 }

@@ -5,8 +5,8 @@
   "stake_per_ticket": 100,
   "min_stadium_innige": 0.6,
   "max_c1_class": 2,
-  "min_c1_nat": 6.2,
-  "max_c1_st": 0.16,
+  "min_c1_nat": 6.8,
+  "max_c1_st": 0.14,
   "min_motor2": 38,
   "min_gap_c2": 1.2,
   "require_leading_score": true,
@@ -15,10 +15,12 @@
   "grades": [4, 5],
   "stadium_whitelist": null,
   "stadium_blacklist": [21],
-  "validated_test_roi": 115.9,
-  "validated_train_roi": 107.9,
-  "validated_test_hit_rate": 22.1,
+  "validated_test_roi": 207.9,
+  "validated_train_roi": 113.2,
+  "validated_test_hit_rate": 20.0,
   "validated_test_selected": 2,
+  "validated_all_2026_roi": 166.2,
+  "validated_2021_2025_roi": 106.7,
   "selection_mode": "threshold",
   "odds": {
     "min_favorite_odds": 6.0,
@@ -26,5 +28,5 @@
     "ticket_odds_hi": 120.0,
     "block_overbet": true
   },
-  "note": "超厳選2点。1日最大2R。芦屋除外。資金均一100円。"
+  "note": "本命S回収最大化。1-2-3/1-2-4の2点。1日最大2R。芦屋除外。資金均一100円。"
 }

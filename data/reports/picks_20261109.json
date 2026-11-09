@@ -1,11 +1,11 @@
 {
   "date": "20261109",
   "phase": "today",
-  "generated_at": "2026-11-09T17:40:29.230412+09:00",
+  "generated_at": "2026-11-09T23:16:34.095340+09:00",
   "picks": [],
   "count": 0,
   "status": "ok",
-  "mode": "honmei_strict2",
+  "mode": "honmei_elite_maxroi",
   "selection": {
     "mode": "threshold",
     "min_score": 0,
@@ -29,7 +29,7 @@
   "elite_count": 0,
   "standard_count": 0,
   "points_per_race": 2,
-  "closed_skipped": 84,
+  "closed_skipped": 96,
   "odds_blocked": 0,
   "blacklisted_stadiums_seen": 1,
   "stake_s": 100,
@@ -37,16 +37,12 @@
   "feasibility": {
     "target_races_per_day": "0-2",
     "points_per_race": 2,
-    "validated_train_roi": 107.9,
-    "validated_test_roi": 115.9,
-    "validated_all_2026_roi": 111.0,
-    "period": "2026 H1 train / H2 test",
-    "note": "件数より回収優先。毎日出る保証なし。"
+    "validated_train_roi": 113.2,
+    "validated_test_roi": 207.9,
+    "validated_all_2026_roi": 166.2,
+    "validated_2021_2025_roi": 106.7,
+    "period": "2026 H1/H2 + 2021-2025",
+    "note": "件数は少ない（2026で25R）。毎日出る保証なし。回収最優先。"
   },
-  "note": "超厳選2点。展示厳格＋オッズ回避後に確定。進入変更・異常・締切済み・買われすぎはスキップ。押し目穴無効。",
-  "active_picks": [],
-  "confirmed": 0,
-  "skipped": 0,
-  "provisional": 0,
-  "confirmed_at": "2026-11-09T17:40:29.787609+09:00"
+  "note": "本命S回収最大化。1日最大2R。勝率6.8/ST0.14/モーター38以上。芦屋除外。資金均一。押し目穴無効。"
 }

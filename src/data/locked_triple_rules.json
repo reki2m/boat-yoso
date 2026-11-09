@@ -1,6 +1,10 @@
 {
-  "mode": "honmei_strict2",
-  "disabled_systems": ["oshi", "ana", "tri_1axis_6"],
+  "mode": "honmei_elite_maxroi",
+  "disabled_systems": [
+    "oshi",
+    "ana",
+    "tri_1axis_6"
+  ],
   "selection": {
     "mode": "threshold",
     "min_score": 0,
@@ -8,11 +12,16 @@
     "soft_max_per_day": 2,
     "fill_to_target": false
   },
-  "stadium_blacklist": [21],
-  "note": "本命超厳選2点のみ有効。押し目・穴・6点本命は無効。",
+  "stadium_blacklist": [
+    21
+  ],
+  "note": "本命S回収最大化。3連単1-2-3/1-2-4。勝率6.8/ST0.14/モーター38。1日最大2R。芦屋除外。",
   "honmei": {
     "ticket": "tri_12_narrow",
-    "tickets": ["1-2-3", "1-2-4"],
+    "tickets": [
+      "1-2-3",
+      "1-2-4"
+    ],
     "points": 2,
     "stake_per_ticket": 100,
     "min_stadium_innige": 0.6,
@@ -24,7 +33,10 @@
     "require_leading_score": true,
     "min_score_gap": 2,
     "min_pick_score": 0,
-    "grades": [4, 5],
+    "grades": [
+      4,
+      5
+    ],
     "stadium_whitelist": null,
     "validated_test_roi": 115.9,
     "validated_train_roi": 107.9,
@@ -37,7 +49,10 @@
   },
   "elite": {
     "ticket": "tri_12_narrow",
-    "tickets": ["1-2-3", "1-2-4"],
+    "tickets": [
+      "1-2-3",
+      "1-2-4"
+    ],
     "points": 2,
     "stake_per_ticket": 100,
     "min_c1_nat": 6.8,
@@ -51,5 +66,6 @@
     "band": "honmei_s"
   },
   "oshi": null,
-  "ana": null
+  "ana": null,
+  "system_name": "本命S回収最大化"
 }

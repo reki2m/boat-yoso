@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          超厳選2点のみ有効（1-2-3 / 1-2-4）。1日最大2R、モーター38%以上、芦屋除外、資金均一100円。押し目・穴・6点本命は無効。
+          本命S回収最大化（1-2-3 / 1-2-4）。1日最大2R、勝率6.8以上・ST0.14以下・モーター38%以上、芦屋除外、資金均一100円。押し目・穴は無効。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -756,7 +756,7 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命超厳選2点</strong>
+            <strong>本命S回収最大化</strong>
             <p>
               押し目・穴は無効。3連単は 1-2-3 / 1-2-4 のみ。1日最大2R、モーター38%以上、芦屋除外、資金均一。オッズ回避・展示悪化はスキップ。
             </p>
