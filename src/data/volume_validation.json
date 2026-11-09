@@ -1,0 +1,47 @@
+{
+  "ask": "見逃し（展示・オッズ、2024-25弱さ）を拾って検証。1.2R/日は少なすぎる。",
+  "data_limits": {
+    "historical_odds": "data/programs および data/api スナップショットにオッズほぼ無し。履歴オッズ検証は不可。",
+    "historical_exhibition": "通常programsに無し。data/api の preview.racers に展示あり（直近約2ヶ月）。"
+  },
+  "diagnosis_2024_2025": {
+    "elite_1st_win_rate": "2024 92% / 2025 87% と高い",
+    "main_miss": "1号は勝っているが 2-3着が 2-3/2-4 以外（相手外れ）",
+    "implication": "2点1-2-3/1-2-4を増やしても改善しにくい。単点1-2-3＋母数拡大の方が近年は安定。"
+  },
+  "chosen_rule": {
+    "name": "本命ボリューム単点",
+    "tickets": ["1-2-3"],
+    "points": 1,
+    "soft_max_per_day": 2,
+    "filters": {
+      "max_c1_class": 1,
+      "min_c1_nat": 6.5,
+      "max_c1_st": 0.15,
+      "min_motor2": 35,
+      "min_inn": 0.5,
+      "min_score_gap": 2.0,
+      "min_gap_c2": 0.8,
+      "stadium_blacklist": [21]
+    }
+  },
+  "metrics": {
+    "2026": {"avg_per_day": 1.68, "n": 524, "roi": 115.5, "H1": 105.2, "H2": 130.3},
+    "2021_2025": {"avg_per_day": 1.67, "roi": 87.4, "yearly": {"2021": 82.5, "2022": 88.1, "2023": 81.8, "2024": 96.9, "2025": 87.2}},
+    "api_exhibition_window": {
+      "no_gate": {"n": 105, "roi": 122.7},
+      "gate_pass_only": {"n": 90, "roi": 109.6},
+      "gate_fail_skipped": {"n": 15, "roi_if_kept": 201.3, "note": "小サンプルではゲートが当たりも落とした。本番はリスク管理のため維持。"}
+    },
+    "elite_comparison": {
+      "avg_per_day": 0.08,
+      "roi_2026": 166.2,
+      "roi_2021_2025": 106.7,
+      "roi_2024": 70.8,
+      "roi_2025": 53.7,
+      "api_window_n": 6,
+      "api_window_roi": 0.0
+    }
+  },
+  "decision": "件数を約1.7R/日まで増やし、2026の100%超を維持する単点ルールへ切替。長期通算100%は未達だが、本命Sの件数不足と2024-25悪化を優先して改善。"
+}

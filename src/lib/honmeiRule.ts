@@ -106,7 +106,7 @@ export function evaluateHonmeiEligibility(input: {
       ? [
           `イン逃げ率 ${(rate * 100).toFixed(1)}%`,
           `1号 ${input.className} / 勝率 ${input.nationalWin.toFixed(2)} / ST ${input.avgStart.toFixed(2)}`,
-          `本命S回収最大化条件を充足`,
+          `本命ボリューム単点条件を充足`,
         ]
       : reasons,
     tickets: ok ? buildHonmeiTickets() : [],

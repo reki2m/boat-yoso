@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-本命S回収最大化の買い目生成。
+本命ボリューム単点の買い目生成。
 
-- 3連単 1-2-3 / 1-2-4 のみ
-- 本命S条件（全国勝率6.8 / ST0.14 / モーター38以上）
-- 1日最大2R（閾値選抜、埋めなし）
+- 3連単 1-2-3 のみ（1点）
+- A1 / 勝率6.5 / ST0.15 / モーター35 以上
+- 1日最大2R（平均約1.7、閾値選抜）
 - 芦屋など blacklist 除外
-- 資金は均一100円（S倍賭けなし）
+- 資金は均一100円
 - オッズ回避・展示厳格・押し目穴無効
 """
 
@@ -29,7 +29,7 @@ STADIUMS = {
     19: "下関", 20: "若松", 21: "芦屋", 22: "福岡", 23: "唐津", 24: "大村",
 }
 CLASS_LABEL = {1: "A1", 2: "A2", 3: "B1", 4: "B2"}
-DEFAULT_TICKETS = ["1-2-3", "1-2-4"]
+DEFAULT_TICKETS = ["1-2-3"]
 
 
 def fetch_json(url: str):
@@ -317,7 +317,7 @@ def generate(date_key: str, phase: str) -> dict:
             "generated_at": datetime.now(JST).isoformat(),
             "picks": [],
             "status": "programs_unavailable",
-            "mode": "honmei_elite_maxroi",
+            "mode": "honmei_volume_single",
             "note": "番組未公開。夜中再取得待ち。",
             "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         }
@@ -418,7 +418,7 @@ def generate(date_key: str, phase: str) -> dict:
                         "odds_overbet",
                         "odds_missing_near_close",
                     ],
-                    "mode": "honmei_elite_maxroi",
+                    "mode": "honmei_volume_single",
                     "band": "honmei_s" if is_elite else "honmei",
                     "label": label,
                     "tickets": tickets,
@@ -465,7 +465,7 @@ def generate(date_key: str, phase: str) -> dict:
         "picks": picks,
         "count": len(picks),
         "status": "ok",
-        "mode": "honmei_elite_maxroi",
+        "mode": "honmei_volume_single",
         "selection": rules.get("selection"),
         "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         "stadium_blacklist": sorted(blacklist),
@@ -479,7 +479,7 @@ def generate(date_key: str, phase: str) -> dict:
         "stake_s": int((elite or {}).get("stake_per_ticket") or 100),
         "stake_standard": int((standard or {}).get("stake_per_ticket") or 100),
         "feasibility": rules.get("feasibility"),
-        "note": "本命S回収最大化。1日最大2R。勝率6.8/ST0.14/モーター38以上。芦屋除外。資金均一。押し目穴無効。",
+        "note": "本命ボリューム単点。1日最大2R（平均約1.7）。A1/勝率6.5/ST0.15/モーター35。1-2-3のみ。芦屋除外。",
     }
 
 
@@ -540,7 +540,7 @@ def main():
         "count": active.get("count") or 0,
         "status": active.get("status"),
         "note": active.get("note"),
-        "mode": "honmei_elite_maxroi",
+        "mode": "honmei_volume_single",
         "selection": active.get("selection"),
         "disabled_systems": active.get("disabled_systems") or ["oshi", "ana"],
         "stadium_blacklist": active.get("stadium_blacklist") or [21],

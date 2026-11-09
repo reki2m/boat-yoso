@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          本命S回収最大化（1-2-3 / 1-2-4）。1日最大2R、勝率6.8以上・ST0.14以下・モーター38%以上、芦屋除外、資金均一100円。押し目・穴は無効。
+          本命ボリューム単点（1-2-3のみ）。1日最大2R（平均約1.7）、A1・勝率6.5以上・ST0.15以下・モーター35%以上、芦屋除外、資金均一100円。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -756,9 +756,9 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命S回収最大化</strong>
+            <strong>本命ボリューム単点</strong>
             <p>
-              押し目・穴は無効。3連単は 1-2-3 / 1-2-4 のみ。1日最大2R、モーター38%以上、芦屋除外、資金均一。オッズ回避・展示悪化はスキップ。
+              押し目・穴は無効。3連単は 1-2-3 のみ。1日最大2R（平均約1.7）、A1・勝率6.5・ST0.15・モーター35以上、芦屋除外、資金均一。オッズ回避・展示悪化はスキップ。
             </p>
           </div>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (
