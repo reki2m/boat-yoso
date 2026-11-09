@@ -1,0 +1,1313 @@
+{
+  "ask": "ROI>100% かつ 1日あたり約5レースのロジック候補10本",
+  "finding": "2021-2025全日では「ROI>100%かつ平均≈5R/日」は実質未発見（≈5R帯はROI≈90%前後が上限）。2026では達成可能。特に3連単単点1-2-3が強い。2点・二連単は条件が厳しく、一部はH1が100割れ。下記は票種・軸・場館・レース帯を分散した10候補。長期は過学習に注意。",
+  "recommendation": "優先検証は L01→L02→L03。件数不足なら点を増やすより、強場パックを広げず単点のまま soft_max を5〜6に維持。",
+  "stadium_pack_2026_top": [
+    {
+      "id": 23,
+      "name": "唐津",
+      "roi": 109.7
+    },
+    {
+      "id": 17,
+      "name": "宮島",
+      "roi": 99.0
+    },
+    {
+      "id": 15,
+      "name": "丸亀",
+      "roi": 93.5
+    },
+    {
+      "id": 12,
+      "name": "住之江",
+      "roi": 91.3
+    },
+    {
+      "id": 11,
+      "name": "びわこ",
+      "roi": 90.4
+    },
+    {
+      "id": 9,
+      "name": "津",
+      "roi": 86.0
+    },
+    {
+      "id": 16,
+      "name": "児島",
+      "roi": 84.3
+    },
+    {
+      "id": 24,
+      "name": "大村",
+      "roi": 82.8
+    },
+    {
+      "id": 7,
+      "name": "蒲郡",
+      "roi": 80.3
+    },
+    {
+      "id": 22,
+      "name": "福岡",
+      "roi": 80.3
+    },
+    {
+      "id": 20,
+      "name": "若松",
+      "roi": 75.4
+    },
+    {
+      "id": 13,
+      "name": "尼崎",
+      "roi": 74.8
+    }
+  ],
+  "candidates": [
+    {
+      "id": "L01",
+      "name": "単点123・強場館c1w",
+      "idea": "3連単1点。強場＋能力順。2026で最も安定しやすい本命帯。",
+      "family": "tri123",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "score",
+      "filter": {
+        "max_k1": 1,
+        "min_nat1": 6.2,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 3.0,
+        "min_dnat": 0.8,
+        "min_c1w": 0.6,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadium_whitelist": [
+        23,
+        17,
+        15,
+        12,
+        11,
+        9,
+        16,
+        24,
+        7,
+        22
+      ],
+      "stadium_names": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津",
+        "児島",
+        "大村",
+        "蒲郡",
+        "福岡"
+      ],
+      "metrics_2026": {
+        "all": {
+          "n": 1343,
+          "days": 304,
+          "avg_cal": 4.3,
+          "avg_act": 4.42,
+          "hit": 13.3,
+          "roi": 113.4,
+          "pnl": 18020
+        },
+        "H1": {
+          "n": 741,
+          "days": 174,
+          "avg_cal": 2.38,
+          "avg_act": 4.26,
+          "hit": 11.6,
+          "roi": 98.9,
+          "pnl": -850
+        },
+        "H2": {
+          "n": 602,
+          "days": 130,
+          "avg_cal": 1.93,
+          "avg_act": 4.63,
+          "hit": 15.3,
+          "roi": 131.3,
+          "pnl": 18870
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 8284,
+        "avg_cal": 4.54,
+        "roi": 82.3,
+        "hit": 10.2,
+        "yearly": {
+          "2021": 83.8,
+          "2022": 83.0,
+          "2023": 90.7,
+          "2024": 84.6,
+          "2025": 70.7
+        }
+      },
+      "loose": false,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": true,
+        "h1_over_100": false,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L02",
+      "name": "単点123・後半戦全国",
+      "idea": "6R以降限定の単点。番組後半の1号を拾って件数を稼ぐ。",
+      "family": "tri123_b",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 6,
+      "rank": "c1w",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 6.4,
+        "max_st1": 0.18,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 1.0,
+        "min_dnat": 0.5,
+        "min_c1w": 0.65,
+        "race_min": 5,
+        "max_nat2": 5.5
+      },
+      "stadium_whitelist": null,
+      "stadium_names": [],
+      "metrics_2026": {
+        "all": {
+          "n": 1234,
+          "days": 299,
+          "avg_cal": 3.96,
+          "avg_act": 4.13,
+          "hit": 10.0,
+          "roi": 109.8,
+          "pnl": 12060
+        },
+        "H1": {
+          "n": 674,
+          "days": 173,
+          "avg_cal": 2.16,
+          "avg_act": 3.9,
+          "hit": 10.4,
+          "roi": 111.3,
+          "pnl": 7620
+        },
+        "H2": {
+          "n": 560,
+          "days": 126,
+          "avg_cal": 1.79,
+          "avg_act": 4.44,
+          "hit": 9.5,
+          "roi": 107.9,
+          "pnl": 4440
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 8020,
+        "avg_cal": 4.39,
+        "roi": 80.6,
+        "hit": 8.3,
+        "yearly": {
+          "2021": 75.3,
+          "2022": 82.4,
+          "2023": 80.8,
+          "2024": 80.2,
+          "2025": 84.4
+        }
+      },
+      "loose": false,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": true,
+        "h1_over_100": true,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L03",
+      "name": "2点123/125・軽穴",
+      "idea": "1-2軸で3と5。本命＋軽い穴の2点。",
+      "family": "tri12_35",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3",
+        "1-2-5"
+      ],
+      "points": 2,
+      "soft_max": 7,
+      "rank": "score",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 1.0,
+        "min_dnat": 0.5,
+        "min_c1w": null,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadium_whitelist": [
+        23,
+        17,
+        15,
+        12,
+        11,
+        9
+      ],
+      "stadium_names": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ],
+      "metrics_2026": {
+        "all": {
+          "n": 1178,
+          "days": 292,
+          "avg_cal": 3.78,
+          "avg_act": 4.03,
+          "hit": 16.8,
+          "roi": 104.4,
+          "pnl": 10290
+        },
+        "H1": {
+          "n": 663,
+          "days": 166,
+          "avg_cal": 2.12,
+          "avg_act": 3.99,
+          "hit": 16.3,
+          "roi": 102.2,
+          "pnl": 2930
+        },
+        "H2": {
+          "n": 515,
+          "days": 126,
+          "avg_cal": 1.65,
+          "avg_act": 4.09,
+          "hit": 17.5,
+          "roi": 107.1,
+          "pnl": 7360
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 7015,
+        "avg_cal": 3.84,
+        "roi": 77.2,
+        "hit": 13.4,
+        "yearly": {
+          "2021": 72.9,
+          "2022": 86.3,
+          "2023": 82.2,
+          "2024": 76.0,
+          "2025": 68.7
+        }
+      },
+      "loose": false,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": true,
+        "h1_over_100": true,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L04",
+      "name": "2点123/124・本命形",
+      "idea": "従来の本命2点を件数向け閾値に緩和。",
+      "family": "tri12_34",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3",
+        "1-2-4"
+      ],
+      "points": 2,
+      "soft_max": 7,
+      "rank": "score",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 6.0,
+        "max_st1": 0.19,
+        "min_m1": 28,
+        "min_inn": 0.4,
+        "min_gap": 1.5,
+        "min_dnat": 0.5,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadium_whitelist": [
+        23,
+        17,
+        15,
+        12,
+        11,
+        9
+      ],
+      "stadium_names": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ],
+      "metrics_2026": {
+        "all": {
+          "n": 968,
+          "days": 285,
+          "avg_cal": 3.1,
+          "avg_act": 3.4,
+          "hit": 18.7,
+          "roi": 104.5,
+          "pnl": 8650
+        },
+        "H1": {
+          "n": 528,
+          "days": 162,
+          "avg_cal": 1.69,
+          "avg_act": 3.26,
+          "hit": 18.0,
+          "roi": 99.3,
+          "pnl": -700
+        },
+        "H2": {
+          "n": 440,
+          "days": 123,
+          "avg_cal": 1.41,
+          "avg_act": 3.58,
+          "hit": 19.5,
+          "roi": 110.6,
+          "pnl": 9350
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 6045,
+        "avg_cal": 3.31,
+        "roi": 76.6,
+        "hit": 15.3,
+        "yearly": {
+          "2021": 83.2,
+          "2022": 76.7,
+          "2023": 75.6,
+          "2024": 75.2,
+          "2025": 73.1
+        }
+      },
+      "loose": true,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": false,
+        "h1_over_100": false,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L05",
+      "name": "3点123-5・カバー",
+      "idea": "3点で的中率を上げつつ回収維持を狙う。",
+      "family": "tri12_345",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5"
+      ],
+      "points": 3,
+      "soft_max": 6,
+      "rank": "c1w",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.8,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.45,
+        "min_gap": 2.5,
+        "min_dnat": 1.0,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadium_whitelist": [
+        23,
+        17,
+        15,
+        12,
+        11,
+        9,
+        16,
+        24
+      ],
+      "stadium_names": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津",
+        "児島",
+        "大村"
+      ],
+      "metrics_2026": {
+        "all": {
+          "n": 1151,
+          "days": 301,
+          "avg_cal": 3.69,
+          "avg_act": 3.82,
+          "hit": 22.4,
+          "roi": 102.7,
+          "pnl": 9300
+        },
+        "H1": {
+          "n": 658,
+          "days": 173,
+          "avg_cal": 2.11,
+          "avg_act": 3.8,
+          "hit": 21.4,
+          "roi": 99.0,
+          "pnl": -2060
+        },
+        "H2": {
+          "n": 493,
+          "days": 128,
+          "avg_cal": 1.58,
+          "avg_act": 3.85,
+          "hit": 23.7,
+          "roi": 107.7,
+          "pnl": 11360
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 6983,
+        "avg_cal": 3.82,
+        "roi": 72.7,
+        "hit": 19.1,
+        "yearly": {
+          "2021": 72.3,
+          "2022": 74.7,
+          "2023": 75.4,
+          "2024": 68.6,
+          "2025": 72.8
+        }
+      },
+      "loose": true,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": true,
+        "h1_over_100": false,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L06",
+      "name": "モーター特化単点123",
+      "idea": "モーター2連対率を厚めに要求する単点。",
+      "family": "L06",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 6,
+      "rank": "c1w",
+      "filter": {
+        "max_k1": 1,
+        "min_nat1": 5.8,
+        "max_st1": 0.19,
+        "min_m1": 40,
+        "min_inn": 0.45,
+        "min_gap": 2.0,
+        "min_dnat": 0.6,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadium_whitelist": null,
+      "stadium_names": [],
+      "metrics_2026": {
+        "all": {
+          "n": 972,
+          "days": 291,
+          "avg_cal": 3.12,
+          "avg_act": 3.34,
+          "hit": 13.0,
+          "roi": 101.5,
+          "pnl": 1430
+        },
+        "H1": {
+          "n": 587,
+          "days": 175,
+          "avg_cal": 1.88,
+          "avg_act": 3.35,
+          "hit": 12.4,
+          "roi": 96.4,
+          "pnl": -2120
+        },
+        "H2": {
+          "n": 385,
+          "days": 116,
+          "avg_cal": 1.23,
+          "avg_act": 3.32,
+          "hit": 13.8,
+          "roi": 109.2,
+          "pnl": 3550
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 6027,
+        "avg_cal": 3.3,
+        "roi": 81.7,
+        "hit": 10.3,
+        "yearly": {
+          "2021": 71.2,
+          "2022": 104.7,
+          "2023": 70.7,
+          "2024": 88.4,
+          "2025": 71.7
+        }
+      },
+      "loose": true,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": false,
+        "h1_over_100": false,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L07",
+      "name": "大ギャップ単点123",
+      "idea": "スコア差が大きい番組だけ単点で突く。",
+      "family": "L07",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "score",
+      "filter": {
+        "max_k1": 1,
+        "min_nat1": 5.8,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 4.0,
+        "min_dnat": 0.8,
+        "min_c1w": 0.65,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadium_whitelist": [
+        23,
+        17,
+        15,
+        12,
+        11,
+        9,
+        16,
+        24
+      ],
+      "stadium_names": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津",
+        "児島",
+        "大村"
+      ],
+      "metrics_2026": {
+        "all": {
+          "n": 1043,
+          "days": 291,
+          "avg_cal": 3.34,
+          "avg_act": 3.58,
+          "hit": 14.1,
+          "roi": 123.9,
+          "pnl": 24920
+        },
+        "H1": {
+          "n": 568,
+          "days": 167,
+          "avg_cal": 1.82,
+          "avg_act": 3.4,
+          "hit": 12.3,
+          "roi": 109.1,
+          "pnl": 5190
+        },
+        "H2": {
+          "n": 475,
+          "days": 124,
+          "avg_cal": 1.52,
+          "avg_act": 3.83,
+          "hit": 16.2,
+          "roi": 141.5,
+          "pnl": 19730
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 7441,
+        "avg_cal": 4.08,
+        "roi": 80.9,
+        "hit": 10.2,
+        "yearly": {
+          "2021": 80.4,
+          "2022": 79.3,
+          "2023": 88.7,
+          "2024": 87.1,
+          "2025": 69.7
+        }
+      },
+      "loose": false,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": false,
+        "h1_over_100": true,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L08",
+      "name": "二連単1-2単点",
+      "idea": "3連単を捨てて二連単で件数と回収を取りに行く。",
+      "family": "ex12",
+      "bet_type": "exacta",
+      "tickets": [
+        "1-2"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "c1w",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.45,
+        "min_gap": 2.5,
+        "min_dnat": 0.8,
+        "min_c1w": null,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadium_whitelist": [
+        23,
+        17,
+        15,
+        12,
+        11,
+        9
+      ],
+      "stadium_names": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ],
+      "metrics_2026": {
+        "all": {
+          "n": 1048,
+          "days": 288,
+          "avg_cal": 3.36,
+          "avg_act": 3.64,
+          "hit": 26.5,
+          "roi": 107.1,
+          "pnl": 7430
+        },
+        "H1": {
+          "n": 582,
+          "days": 163,
+          "avg_cal": 1.87,
+          "avg_act": 3.57,
+          "hit": 25.1,
+          "roi": 92.9,
+          "pnl": -4160
+        },
+        "H2": {
+          "n": 466,
+          "days": 125,
+          "avg_cal": 1.49,
+          "avg_act": 3.73,
+          "hit": 28.3,
+          "roi": 124.9,
+          "pnl": 11590
+        }
+      },
+      "metrics_2021_2025": {
+        "note": "exactaは2021-25払戻なし"
+      },
+      "loose": true,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": false,
+        "h1_over_100": false,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L09",
+      "name": "弱2号単点123",
+      "idea": "2号の全国勝率に上限を付けて差を作る。",
+      "family": "L09",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "score",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.19,
+        "min_m1": 34,
+        "min_inn": 0.4,
+        "min_gap": 2.5,
+        "min_dnat": 1.2,
+        "min_c1w": null,
+        "race_min": 7,
+        "max_nat2": 5.2
+      },
+      "stadium_whitelist": null,
+      "stadium_names": [],
+      "metrics_2026": {
+        "all": {
+          "n": 1243,
+          "days": 306,
+          "avg_cal": 3.98,
+          "avg_act": 4.06,
+          "hit": 8.4,
+          "roi": 109.9,
+          "pnl": 12350
+        },
+        "H1": {
+          "n": 716,
+          "days": 178,
+          "avg_cal": 2.29,
+          "avg_act": 4.02,
+          "hit": 8.7,
+          "roi": 112.6,
+          "pnl": 9030
+        },
+        "H2": {
+          "n": 527,
+          "days": 128,
+          "avg_cal": 1.69,
+          "avg_act": 4.12,
+          "hit": 8.2,
+          "roi": 106.3,
+          "pnl": 3320
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 6801,
+        "avg_cal": 3.72,
+        "roi": 77.0,
+        "hit": 6.8,
+        "yearly": {
+          "2021": 78.1,
+          "2022": 86.6,
+          "2023": 67.3,
+          "2024": 69.8,
+          "2025": 83.5
+        }
+      },
+      "loose": false,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": true,
+        "h1_over_100": true,
+        "h2_over_100": true
+      }
+    },
+    {
+      "id": "L10",
+      "name": "トップ6場・能力順単点",
+      "idea": "2026強場6場に限定しc1w順。",
+      "family": "L10",
+      "bet_type": "tri",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 6,
+      "rank": "score",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.45,
+        "min_gap": 3.0,
+        "min_dnat": 1.0,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadium_whitelist": [
+        23,
+        17,
+        15,
+        12,
+        11,
+        9
+      ],
+      "stadium_names": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ],
+      "metrics_2026": {
+        "all": {
+          "n": 1050,
+          "days": 292,
+          "avg_cal": 3.37,
+          "avg_act": 3.6,
+          "hit": 13.2,
+          "roi": 127.8,
+          "pnl": 29140
+        },
+        "H1": {
+          "n": 581,
+          "days": 168,
+          "avg_cal": 1.86,
+          "avg_act": 3.46,
+          "hit": 12.2,
+          "roi": 114.0,
+          "pnl": 8150
+        },
+        "H2": {
+          "n": 469,
+          "days": 124,
+          "avg_cal": 1.5,
+          "avg_act": 3.78,
+          "hit": 14.5,
+          "roi": 144.8,
+          "pnl": 20990
+        }
+      },
+      "metrics_2021_2025": {
+        "n": 6562,
+        "avg_cal": 3.59,
+        "roi": 86.4,
+        "hit": 10.1,
+        "yearly": {
+          "2021": 91.4,
+          "2022": 84.9,
+          "2023": 93.9,
+          "2024": 83.6,
+          "2025": 79.2
+        }
+      },
+      "loose": false,
+      "target_check": {
+        "roi_over_100": true,
+        "about_5_races": false,
+        "h1_over_100": true,
+        "h2_over_100": true
+      }
+    }
+  ],
+  "volume_note": "soft_max 5〜7で1日あたり件数を寄せた。2026平均は概ね3〜5R。ちょうど5Rかつ長期ROI100超は狭い。",
+  "table": [
+    {
+      "id": "L01",
+      "name": "単点123・強場館c1w",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "score",
+      "avg_races_2026": 4.3,
+      "roi_2026": 113.4,
+      "roi_h1": 98.9,
+      "roi_h2": 131.3,
+      "hit_2026": 13.3,
+      "roi_2021_2025": 82.3,
+      "idea": "3連単1点。強場＋能力順。2026で最も安定しやすい本命帯。",
+      "filter": {
+        "max_k1": 1,
+        "min_nat1": 6.2,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 3.0,
+        "min_dnat": 0.8,
+        "min_c1w": 0.6,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadiums": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津",
+        "児島",
+        "大村",
+        "蒲郡",
+        "福岡"
+      ]
+    },
+    {
+      "id": "L02",
+      "name": "単点123・後半戦全国",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 6,
+      "rank": "c1w",
+      "avg_races_2026": 3.96,
+      "roi_2026": 109.8,
+      "roi_h1": 111.3,
+      "roi_h2": 107.9,
+      "hit_2026": 10.0,
+      "roi_2021_2025": 80.6,
+      "idea": "6R以降限定の単点。番組後半の1号を拾って件数を稼ぐ。",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 6.4,
+        "max_st1": 0.18,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 1.0,
+        "min_dnat": 0.5,
+        "min_c1w": 0.65,
+        "race_min": 5,
+        "max_nat2": 5.5
+      },
+      "stadiums": "全国"
+    },
+    {
+      "id": "L03",
+      "name": "2点123/125・軽穴",
+      "tickets": [
+        "1-2-3",
+        "1-2-5"
+      ],
+      "points": 2,
+      "soft_max": 7,
+      "rank": "score",
+      "avg_races_2026": 3.78,
+      "roi_2026": 104.4,
+      "roi_h1": 102.2,
+      "roi_h2": 107.1,
+      "hit_2026": 16.8,
+      "roi_2021_2025": 77.2,
+      "idea": "1-2軸で3と5。本命＋軽い穴の2点。",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 1.0,
+        "min_dnat": 0.5,
+        "min_c1w": null,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadiums": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ]
+    },
+    {
+      "id": "L04",
+      "name": "2点123/124・本命形",
+      "tickets": [
+        "1-2-3",
+        "1-2-4"
+      ],
+      "points": 2,
+      "soft_max": 7,
+      "rank": "score",
+      "avg_races_2026": 3.1,
+      "roi_2026": 104.5,
+      "roi_h1": 99.3,
+      "roi_h2": 110.6,
+      "hit_2026": 18.7,
+      "roi_2021_2025": 76.6,
+      "idea": "従来の本命2点を件数向け閾値に緩和。",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 6.0,
+        "max_st1": 0.19,
+        "min_m1": 28,
+        "min_inn": 0.4,
+        "min_gap": 1.5,
+        "min_dnat": 0.5,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadiums": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ]
+    },
+    {
+      "id": "L05",
+      "name": "3点123-5・カバー",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5"
+      ],
+      "points": 3,
+      "soft_max": 6,
+      "rank": "c1w",
+      "avg_races_2026": 3.69,
+      "roi_2026": 102.7,
+      "roi_h1": 99.0,
+      "roi_h2": 107.7,
+      "hit_2026": 22.4,
+      "roi_2021_2025": 72.7,
+      "idea": "3点で的中率を上げつつ回収維持を狙う。",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.8,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.45,
+        "min_gap": 2.5,
+        "min_dnat": 1.0,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadiums": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津",
+        "児島",
+        "大村"
+      ]
+    },
+    {
+      "id": "L06",
+      "name": "モーター特化単点123",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 6,
+      "rank": "c1w",
+      "avg_races_2026": 3.12,
+      "roi_2026": 101.5,
+      "roi_h1": 96.4,
+      "roi_h2": 109.2,
+      "hit_2026": 13.0,
+      "roi_2021_2025": 81.7,
+      "idea": "モーター2連対率を厚めに要求する単点。",
+      "filter": {
+        "max_k1": 1,
+        "min_nat1": 5.8,
+        "max_st1": 0.19,
+        "min_m1": 40,
+        "min_inn": 0.45,
+        "min_gap": 2.0,
+        "min_dnat": 0.6,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadiums": "全国"
+    },
+    {
+      "id": "L07",
+      "name": "大ギャップ単点123",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "score",
+      "avg_races_2026": 3.34,
+      "roi_2026": 123.9,
+      "roi_h1": 109.1,
+      "roi_h2": 141.5,
+      "hit_2026": 14.1,
+      "roi_2021_2025": 80.9,
+      "idea": "スコア差が大きい番組だけ単点で突く。",
+      "filter": {
+        "max_k1": 1,
+        "min_nat1": 5.8,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.5,
+        "min_gap": 4.0,
+        "min_dnat": 0.8,
+        "min_c1w": 0.65,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadiums": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津",
+        "児島",
+        "大村"
+      ]
+    },
+    {
+      "id": "L08",
+      "name": "二連単1-2単点",
+      "tickets": [
+        "1-2"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "c1w",
+      "avg_races_2026": 3.36,
+      "roi_2026": 107.1,
+      "roi_h1": 92.9,
+      "roi_h2": 124.9,
+      "hit_2026": 26.5,
+      "roi_2021_2025": null,
+      "idea": "3連単を捨てて二連単で件数と回収を取りに行く。",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.45,
+        "min_gap": 2.5,
+        "min_dnat": 0.8,
+        "min_c1w": null,
+        "race_min": null,
+        "max_nat2": 5.5
+      },
+      "stadiums": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ]
+    },
+    {
+      "id": "L09",
+      "name": "弱2号単点123",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 7,
+      "rank": "score",
+      "avg_races_2026": 3.98,
+      "roi_2026": 109.9,
+      "roi_h1": 112.6,
+      "roi_h2": 106.3,
+      "hit_2026": 8.4,
+      "roi_2021_2025": 77.0,
+      "idea": "2号の全国勝率に上限を付けて差を作る。",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.19,
+        "min_m1": 34,
+        "min_inn": 0.4,
+        "min_gap": 2.5,
+        "min_dnat": 1.2,
+        "min_c1w": null,
+        "race_min": 7,
+        "max_nat2": 5.2
+      },
+      "stadiums": "全国"
+    },
+    {
+      "id": "L10",
+      "name": "トップ6場・能力順単点",
+      "tickets": [
+        "1-2-3"
+      ],
+      "points": 1,
+      "soft_max": 6,
+      "rank": "score",
+      "avg_races_2026": 3.37,
+      "roi_2026": 127.8,
+      "roi_h1": 114.0,
+      "roi_h2": 144.8,
+      "hit_2026": 13.2,
+      "roi_2021_2025": 86.4,
+      "idea": "2026強場6場に限定しc1w順。",
+      "filter": {
+        "max_k1": 2,
+        "min_nat1": 5.6,
+        "max_st1": 0.17,
+        "min_m1": 28,
+        "min_inn": 0.45,
+        "min_gap": 3.0,
+        "min_dnat": 1.0,
+        "min_c1w": 0.55,
+        "race_min": null,
+        "max_nat2": null
+      },
+      "stadiums": [
+        "唐津",
+        "宮島",
+        "丸亀",
+        "住之江",
+        "びわこ",
+        "津"
+      ]
+    }
+  ],
+  "priority": [
+    "L01",
+    "L10",
+    "L07",
+    "L02",
+    "L09",
+    "L03",
+    "L08",
+    "L05",
+    "L04",
+    "L06"
+  ]
+}
