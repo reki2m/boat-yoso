@@ -1,33 +1,44 @@
 {
   "ticket": "trifecta_123",
-  "tickets": ["1-2-3"],
+  "tickets": [
+    "1-2-3"
+  ],
   "points": 1,
   "stake_per_ticket": 100,
   "min_stadium_innige": 0.5,
   "max_c1_class": 1,
-  "min_c1_nat": 6.5,
+  "min_c1_nat": 6.8,
   "max_c1_st": 0.15,
-  "min_motor2": 35,
+  "min_motor2": 32,
   "min_gap_c2": 0.8,
   "require_leading_score": true,
-  "min_score_gap": 2,
+  "min_score_gap": 1.5,
   "min_pick_score": 0,
-  "grades": [4, 5],
-  "stadium_whitelist": null,
-  "stadium_blacklist": [21],
-  "validated_test_roi": 130.3,
-  "validated_train_roi": 105.2,
-  "validated_test_hit_rate": 12.0,
-  "validated_test_selected": 2,
-  "validated_all_2026_roi": 115.5,
-  "validated_2021_2025_roi": 87.4,
-  "validated_api_exhibition_roi": 109.6,
-  "selection_mode": "threshold",
-  "odds": {
-    "min_favorite_odds": 6.0,
-    "ticket_odds_lo": 6.0,
-    "ticket_odds_hi": 120.0,
-    "block_overbet": true
-  },
-  "note": "本命ボリューム単点。A1・勝率6.5/ST0.15/モーター35・3連単1-2-3のみ。1日最大2R（平均約1.7）。芦屋除外。"
+  "grades": [
+    4,
+    5
+  ],
+  "stadium_whitelist": [
+    8,
+    9,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    24
+  ],
+  "validated_test_roi": 107.5,
+  "validated_train_roi": 105.4,
+  "validated_test_hit_rate": 14.7,
+  "band": "honmei",
+  "meets_target": true,
+  "odds_lo": 6,
+  "odds_hi": 120,
+  "anomaly_block": true,
+  "min_inn": 0.5
 }

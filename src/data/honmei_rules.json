@@ -1,19 +1,30 @@
 {
-  "mode": "honmei_volume_single",
-  "system_name": "本命ボリューム単点",
-  "disabled_systems": ["oshi", "ana", "volume_fixed_12", "tri_1axis_6", "honmei_roi_6pt"],
-  "note": "件数不足の本命Sを改め、A1単点1-2-3で約1.7R/日。2026はH1/H2とも100%超。展示ゲート後もAPI期間ROI約110%。オッズ履歴はデータ無しで未検証。",
-  "grades": [4, 5],
+  "mode": "honmei_stadium_wl_single",
+  "system_name": "本命スタジアムWL単点",
+  "disabled_systems": [
+    "oshi",
+    "ana",
+    "volume_fixed_12",
+    "tri_1axis_6",
+    "honmei_roi_6pt"
+  ],
+  "note": "内枠優位12場限定 + A1(nat>=6.8,st<=0.15,motor>=32) + 1-2-3単点。展示ゲート後2024-26すべて100%超。現行全場ボリュームより年次安定。",
+  "grades": [
+    4,
+    5
+  ],
   "selection": {
     "mode": "threshold",
     "min_score": 0,
-    "min_score_gap": 2,
-    "soft_max_per_day": 2,
-    "hard_max_per_day": 2,
+    "min_score_gap": 1.5,
+    "soft_max_per_day": 3,
+    "hard_max_per_day": 3,
     "min_per_day": 0,
     "fill_to_target": false
   },
-  "stadium_blacklist": [21],
+  "stadium_blacklist": [
+    21
+  ],
   "odds": {
     "enabled": true,
     "require_odds_to_confirm": true,
@@ -35,58 +46,85 @@
     "skip_on_closed": true
   },
   "feasibility": {
-    "target_races_per_day": "1.5-2.0",
+    "target_races_per_day": "1.3-1.7",
     "points_per_race": 1,
-    "validated_train_roi": 105.2,
-    "validated_test_roi": 130.3,
-    "validated_all_2026_roi": 115.5,
-    "validated_2021_2025_roi": 87.4,
-    "validated_api_exhibition_roi": 109.6,
-    "period": "2026 H1/H2 + 2021-2025 + API展示期間",
-    "note": "本命S(0.08R/日)より約20倍の件数。長期通算は100%未満だが2024-25は本命Sより安定。"
+    "validated_raw_2024_2025_roi": 104.7,
+    "validated_raw_2026_roi": 103.9,
+    "validated_gated_2024_2025_roi": 105.4,
+    "validated_gated_2026_roi": 107.5,
+    "validated_2021_2023_roi": 95.1,
+    "period": "2021-2026 + API展示ゲート",
+    "note": "2024/2025/2026 raw 108.7/100.7/103.9。展示ゲート後 104.8/106.1/107.5。2021のみ87.4%。"
   },
   "diagnosis_2024_2025": {
-    "elite_issue": "1号の逃げる率は高いまま（約90%）。崩れたのは2-3着で、1-2-3/1-2-4の相手外れが主因。",
-    "volume_single_effect": "単点1-2-3＋条件緩和で2024-25の回収が本命Sより改善（96.9%/87.2% vs 70.8%/53.7%）。"
+    "better_than_volume": "全場ボリュームは2025が87%。場WLで内枠優位場に絞ると2024-25が両方100%超。"
   },
   "standard": {
     "label": "本命",
     "ticket": "trifecta_123",
-    "tickets": ["1-2-3"],
+    "tickets": [
+      "1-2-3"
+    ],
     "points": 1,
     "stake_per_ticket": 100,
-    "min_c1_nat": 6.5,
+    "min_c1_nat": 6.8,
     "max_c1_st": 0.15,
     "min_inn": 0.5,
     "max_c1_class": 1,
-    "min_motor2": 35,
+    "min_motor2": 32,
     "min_gap_c2": 0.8,
     "require_leading_score": true,
-    "min_score_gap": 2,
+    "min_score_gap": 1.5,
     "min_pick_score": 0,
-    "stadium_whitelist": null,
-    "validated_test_roi": 130.3,
-    "validated_train_roi": 105.2,
-    "validated_test_hit_rate": 12.0
+    "stadium_whitelist": [
+      8,
+      9,
+      11,
+      12,
+      13,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      24
+    ],
+    "validated_test_roi": 107.5,
+    "validated_train_roi": 105.4,
+    "validated_test_hit_rate": 14.7
   },
   "elite": {
     "label": "本命S",
     "ticket": "trifecta_123",
-    "tickets": ["1-2-3"],
+    "tickets": [
+      "1-2-3"
+    ],
     "points": 1,
     "stake_per_ticket": 100,
-    "min_c1_nat": 6.5,
+    "min_c1_nat": 6.8,
     "max_c1_st": 0.15,
     "min_inn": 0.5,
     "max_c1_class": 1,
-    "min_motor2": 35,
+    "min_motor2": 32,
     "min_gap_c2": 0.8,
     "require_leading_score": true,
-    "min_score_gap": 2,
+    "min_score_gap": 1.5,
     "min_pick_score": 0,
-    "stadium_whitelist": null,
-    "validated_test_roi": 130.3,
-    "validated_train_roi": 105.2,
-    "note": "表示用。実質standardと同閾値（ボリューム単点）。"
+    "stadium_whitelist": [
+      8,
+      9,
+      11,
+      12,
+      13,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      24
+    ],
+    "note": "表示用。standardと同閾値（スタジアムWL単点）。"
   }
 }
