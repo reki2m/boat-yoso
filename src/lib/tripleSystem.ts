@@ -441,7 +441,7 @@ export function buildTriplePrediction(input: {
     focus,
     why,
     disclaimer:
-      "回収重視の本命のみ。押し目・穴は無効。可変本数・オッズ回避・展示厳格。進入変更・異常・締切済みはスキップ。必ず勝てる保証はない。",
+      "超厳選2点のみ。押し目・穴・6点本命は無効。1日最大2R・モーター厳選・芦屋除外・オッズ回避・展示厳格。必ず勝てる保証はない。",
     exhibition: input.exhibition,
     ticketsLocked,
     liveUrls,

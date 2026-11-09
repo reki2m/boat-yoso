@@ -58,12 +58,15 @@ export async function GET() {
       day_before: true,
       skip_on_entry_change: true,
       require_start_exhibition: true,
-      mode: "honmei_roi",
-      disabled_systems: ["oshi", "ana"],
+      mode: "honmei_strict2",
+      disabled_systems: ["oshi", "ana", "tri_1axis_6"],
       variable_count: true,
+      max_per_day: 2,
+      points: 2,
+      stadium_blacklist: [21],
       odds_filter: true,
       exhibition_strict: true,
-      note: "回収重視の本命のみ。可変本数・本命S厚買い・オッズ回避・展示厳格。押し目・穴は無効。",
+      note: "超厳選2点のみ。1日最大2R・モーター38以上・芦屋除外・資金均一。押し目穴無効。",
     },
   });
 }

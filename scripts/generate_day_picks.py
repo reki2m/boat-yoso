@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-本命回収重視の買い目生成。
+本命超厳選2点の買い目生成。
 
-1. 本命S / 本命で資金差（stake_per_ticket）
-2. 固定本数廃止：スコア下限を超えたものだけ（可変0〜soft_max）
-3. オッズ取得できれば買われすぎ・集中を除外
-4. 締切済み除外（展示厳格は confirm_exhibition）
-押し目・穴など他システムは無効。
+- 3連単 1-2-3 / 1-2-4 のみ
+- モーター38以上など厳条件
+- 1日最大2R（閾値選抜、埋めなし）
+- 芦屋など blacklist 除外
+- 資金は均一100円（S倍賭けなし）
+- オッズ回避・展示厳格・押し目穴無効
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ STADIUMS = {
     19: "下関", 20: "若松", 21: "芦屋", 22: "福岡", 23: "唐津", 24: "大村",
 }
 CLASS_LABEL = {1: "A1", 2: "A2", 3: "B1", 4: "B2"}
-DEFAULT_TICKETS = ["1-2-3", "1-2-4", "1-2-5", "1-2-6", "1-3-2", "1-3-4"]
+DEFAULT_TICKETS = ["1-2-3", "1-2-4"]
 
 
 def fetch_json(url: str):
@@ -243,16 +244,16 @@ def explain(place, e1, e2, inn, tickets, elite, score_gap, stake, odds_info) -> 
     reasons = [
         f"{name}イン逃げ率 {(inn * 100):.1f}%（本命向き）",
         f"1号 {e1.get('name')} {class_label(e1.get('class'))} / 勝率 {float(e1.get('nat') or 0):.2f} / ST {float(e1.get('st') or 0):.2f}",
-        f"1号が相対最強（スコア差 {score_gap:.2f}）",
-        f"投資 {stake}円×{len(tickets)}点",
-        f"{tier}6点 {', '.join(tickets)}",
+        f"モーター2連対 {float(e1.get('motor2') or 0):.1f}% / 1号相対最強（差 {score_gap:.2f}）",
+        f"超厳選{len(tickets)}点 {', '.join(tickets)}（1点{stake}円）",
     ]
     if odds_info and not odds_info.get("missing"):
         reasons.append(f"オッズ判定: {odds_info.get('reason')}")
     why = (
-        f"{name}はイン戦の本命形。1号の{e1.get('name')}が相対最強"
-        f"（{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}）のため、"
-        f"{tier}として3連単{len(tickets)}点を採用（1点{stake}円）。"
+        f"{name}は超厳選の本命形。1号の{e1.get('name')}が相対最強"
+        f"（{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}・"
+        f"モーター{float(e1.get('motor2') or 0):.1f}%）のため、"
+        f"{tier}として3連単{len(tickets)}点（{', '.join(tickets)}）を採用。"
     )
     return {"why": why, "reasons": reasons}
 
@@ -316,18 +317,23 @@ def generate(date_key: str, phase: str) -> dict:
             "generated_at": datetime.now(JST).isoformat(),
             "picks": [],
             "status": "programs_unavailable",
-            "mode": "honmei_roi",
+            "mode": "honmei_strict2",
             "note": "番組未公開。夜中再取得待ち。",
             "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         }
 
     now = datetime.now(JST)
+    blacklist = set(int(x) for x in (rules.get("stadium_blacklist") or []))
     cands = []
     closed_skipped = 0
     odds_blocked = 0
+    blacklisted = 0
     stadiums = (programs.get("programs") or {}).get("stadiums") or {}
     for sid, st in stadiums.items():
         place = int(sid)
+        if place in blacklist:
+            blacklisted += 1
+            continue
         inn = innige.get(place, 0.5)
         for rid, race in (st.get("races") or {}).items():
             grade = int(race.get("grade_number") or 5)
@@ -363,9 +369,9 @@ def generate(date_key: str, phase: str) -> dict:
 
             rule = elite if is_elite else standard
             tickets = list(rule.get("tickets") or DEFAULT_TICKETS)
-            ticket = rule.get("ticket") or "tri_1axis_6"
+            ticket = rule.get("ticket") or "tri_12_narrow"
             label = rule.get("label") or ("本命S" if is_elite else "本命")
-            stake = int(rule.get("stake_per_ticket") or (200 if is_elite else 100))
+            stake = int(rule.get("stake_per_ticket") or 100)
             c1w, c1t2 = skill_rates(skills, int(e1.get("regno") or 0), 1)
             score = (
                 float(e1["nat"]) * 3
@@ -376,7 +382,7 @@ def generate(date_key: str, phase: str) -> dict:
                 + (float(e1["nat"]) - float(e2["nat"]))
                 + c1t2 * 5
                 + max(0.0, score_gap)
-                + (80 if is_elite else 0)
+                + (40 if is_elite else 0)
             )
             min_pick_score = float(rule.get("min_pick_score") or (rules.get("selection") or {}).get("min_score") or 48)
             if score < min_pick_score:
@@ -412,7 +418,7 @@ def generate(date_key: str, phase: str) -> dict:
                         "odds_overbet",
                         "odds_missing_near_close",
                     ],
-                    "mode": "honmei_roi",
+                    "mode": "honmei_strict2",
                     "band": "honmei_s" if is_elite else "honmei",
                     "label": label,
                     "tickets": tickets,
@@ -426,6 +432,7 @@ def generate(date_key: str, phase: str) -> dict:
                     "elite": is_elite,
                     "validated_roi": rule.get("validated_test_roi"),
                     "innige": inn,
+                    "motor2": float(e1.get("motor2") or 0),
                     "odds": {
                         "source": odds_source,
                         "missing": odds_info.get("missing"),
@@ -458,19 +465,21 @@ def generate(date_key: str, phase: str) -> dict:
         "picks": picks,
         "count": len(picks),
         "status": "ok",
-        "mode": "honmei_roi",
+        "mode": "honmei_strict2",
         "selection": rules.get("selection"),
         "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
+        "stadium_blacklist": sorted(blacklist),
         "pool_size": len(cands),
         "elite_count": sum(1 for p in picks if p.get("elite")),
         "standard_count": sum(1 for p in picks if not p.get("elite")),
-        "points_per_race": 6,
+        "points_per_race": 2,
         "closed_skipped": closed_skipped,
         "odds_blocked": odds_blocked,
-        "stake_s": int((elite or {}).get("stake_per_ticket") or 200),
+        "blacklisted_stadiums_seen": blacklisted,
+        "stake_s": int((elite or {}).get("stake_per_ticket") or 100),
         "stake_standard": int((standard or {}).get("stake_per_ticket") or 100),
         "feasibility": rules.get("feasibility"),
-        "note": "回収重視。可変本数・本命S厚買い・オッズ回避・展示厳格。押し目・穴は無効。締切済み除外。",
+        "note": "超厳選2点。1日最大2R。モーター38以上。芦屋除外。資金均一。押し目穴無効。",
     }
 
 
@@ -531,10 +540,11 @@ def main():
         "count": active.get("count") or 0,
         "status": active.get("status"),
         "note": active.get("note"),
-        "mode": "honmei_roi",
+        "mode": "honmei_strict2",
         "selection": active.get("selection"),
         "disabled_systems": active.get("disabled_systems") or ["oshi", "ana"],
-        "points_per_race": active.get("points_per_race") or 6,
+        "stadium_blacklist": active.get("stadium_blacklist") or [21],
+        "points_per_race": active.get("points_per_race") or 2,
         "elite_count": active.get("elite_count"),
         "odds_blocked": active.get("odds_blocked"),
         "feasibility": active.get("feasibility"),

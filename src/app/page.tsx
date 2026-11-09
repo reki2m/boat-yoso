@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          回収重視の本命のみ有効。本命Sは厚く、通常は薄く。固定本数はやめ、スコア下限・オッズ・展示ゲートを通ったレースだけ出す。押し目・穴は無効。
+          超厳選2点のみ有効（1-2-3 / 1-2-4）。1日最大2R、モーター38%以上、芦屋除外、資金均一100円。押し目・穴・6点本命は無効。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -756,9 +756,9 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命回収重視</strong>
+            <strong>本命超厳選2点</strong>
             <p>
-              押し目・穴は無効。可変本数（スコア下限）／本命Sは1点200円・本命は100円／買われすぎオッズは回避／展示悪化はスキップ。買い目は3連単6点。
+              押し目・穴は無効。3連単は 1-2-3 / 1-2-4 のみ。1日最大2R、モーター38%以上、芦屋除外、資金均一。オッズ回避・展示悪化はスキップ。
             </p>
           </div>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (
