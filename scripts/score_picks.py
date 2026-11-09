@@ -95,7 +95,9 @@ def score_date(date_key: str, ignore_exhibition: bool = False) -> dict:
             continue
         selected += 1
         tickets = p.get("tickets") or []
-        stake = 100 * len(tickets)
+        unit = int(p.get("stake_per_ticket") or 100)
+        # payout tables are per 100yen; scale if unit differs
+        stake = unit * len(tickets)
         bets += stake
         got = 0
         hit = False
@@ -103,7 +105,8 @@ def score_date(date_key: str, ignore_exhibition: bool = False) -> dict:
         for t in tickets:
             mp = res["trifecta"] if t.count("-") == 2 else res["exacta"]
             if t in mp:
-                got += mp[t]
+                raw = mp[t]
+                got += int(raw * (unit / 100))
                 hit = True
                 hit_tickets.append(t)
         pay += got

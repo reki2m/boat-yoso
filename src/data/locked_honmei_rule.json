@@ -1,5 +1,8 @@
 {
   "ticket": "tri_1axis_6",
+  "tickets": ["1-2-3", "1-2-4", "1-2-5", "1-2-6", "1-3-2", "1-3-4"],
+  "points": 6,
+  "stake_per_ticket": 100,
   "min_stadium_innige": 0.55,
   "max_c1_class": 2,
   "min_c1_nat": 5.8,
@@ -8,13 +11,19 @@
   "min_gap_c2": 0.8,
   "require_leading_score": true,
   "min_score_gap": 0,
+  "min_pick_score": 48,
   "grades": [4, 5],
   "stadium_whitelist": null,
   "validated_test_roi": 90.8,
   "validated_train_roi": 82.4,
   "validated_test_hit_rate": 39.5,
-  "validated_test_selected": 8,
-  "points": 6,
-  "tickets": ["1-2-3", "1-2-4", "1-2-5", "1-2-6", "1-3-2", "1-3-4"],
-  "note": "1日8R想定。3連単6点。1号が相対最強のときのみ。"
+  "validated_test_selected": 0,
+  "selection_mode": "threshold",
+  "odds": {
+    "min_favorite_odds": 6.0,
+    "ticket_odds_lo": 6.0,
+    "ticket_odds_hi": 120.0,
+    "block_overbet": true
+  },
+  "note": "回収重視。可変本数・オッズ回避・展示厳格。押し目穴無効。"
 }

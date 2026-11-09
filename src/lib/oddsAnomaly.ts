@@ -44,13 +44,13 @@ export function detectOddsAnomaly(tri: TrifectaOddsMap): OddsAnomaly {
   if (overbet) flags.push("overbet");
   if (moneyConcentrate) flags.push("money_concentrate");
 
-  let advice = "オッズは妥当帯。イン戦からの買い目を検討可。";
+  let advice = "オッズは妥当帯。本命の検討可。";
   if (overbet && moneyConcentrate) {
-    advice = "買われすぎ＋大口集中。本命・押し目は回避し、穴目のみ条件付きで検討。";
+    advice = "買われすぎ＋大口集中。本命は見送り。";
   } else if (overbet) {
-    advice = "1番人気が異常に短い。本命のイン戦は見送り、押し目/穴を優先。";
+    advice = "1番人気が異常に短い。本命は見送り。";
   } else if (moneyConcentrate) {
-    advice = "上位に資金集中。期待値の薄い人気目は避け、値がある帯だけ買う。";
+    advice = "上位に資金集中。本命は慎重に、値がない人気目は避ける。";
   }
 
   return {

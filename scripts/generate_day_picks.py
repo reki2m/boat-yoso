@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-本命6点の前日〜当日買い目生成。
+本命回収重視の買い目生成。
 
-検証結論（5〜10R/日向け）:
-- 軸は1号固定が最強軸より有利
-- ただし1号が相対最強のレースに限定
-- 2点より 4〜6点の方が回収・的中が安定
-- 採用: 1日8R / 3連単6点
-  1-2-3 / 1-2-4 / 1-2-5 / 1-2-6 / 1-3-2 / 1-3-4
+1. 本命S / 本命で資金差（stake_per_ticket）
+2. 固定本数廃止：スコア下限を超えたものだけ（可変0〜soft_max）
+3. オッズ取得できれば買われすぎ・集中を除外
+4. 締切済み除外（展示厳格は confirm_exhibition）
+押し目・穴など他システムは無効。
 """
 
 from __future__ import annotations
@@ -33,8 +32,8 @@ DEFAULT_TICKETS = ["1-2-3", "1-2-4", "1-2-5", "1-2-6", "1-3-2", "1-3-4"]
 
 
 def fetch_json(url: str):
-    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoHonmei/4.0"})
-    with urllib.request.urlopen(req, timeout=60) as res:
+    req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoHonmeiRoi/5.0"})
+    with urllib.request.urlopen(req, timeout=45) as res:
         return json.loads(res.read())
 
 
@@ -56,6 +55,37 @@ def innige_map(stadium_rates: dict) -> dict[int, float]:
 
 def class_label(n: int) -> str:
     return CLASS_LABEL.get(int(n), f"級{n}")
+
+
+def parse_closed_at(value) -> datetime | None:
+    if not value:
+        return None
+    text = str(value).strip().replace("Z", "+00:00")
+    if " " in text and "T" not in text:
+        text = text.replace(" ", "T")
+    try:
+        dt = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=JST)
+    return dt
+
+
+def is_race_closed(race: dict, now: datetime | None = None) -> bool:
+    now = now or datetime.now(JST)
+    closed = parse_closed_at(race.get("closed_at"))
+    if closed is not None and now >= closed:
+        return True
+    result = race.get("result")
+    if isinstance(result, dict):
+        racers = result.get("racers") or {}
+        if any((r or {}).get("place_number") not in (None, "", 0) for r in racers.values()):
+            return True
+        payouts = result.get("payouts") or {}
+        if any(payouts.get(k) for k in ("trifecta", "exacta", "win")):
+            return True
+    return False
 
 
 def boat_strength(entry: dict, course: int, skills: dict) -> float:
@@ -88,20 +118,141 @@ def passes(rule: dict, place: int, e1: dict, e2: dict, inn: float, score_gap: fl
     )
 
 
-def explain(place: int, e1: dict, e2: dict, inn: float, tickets: list[str], elite: bool, score_gap: float) -> dict:
+def flatten_trifecta_tree(tree) -> dict[str, float]:
+    out: dict[str, float] = {}
+    if not isinstance(tree, dict):
+        return out
+    for a, m2 in tree.items():
+        if not isinstance(m2, dict):
+            continue
+        for b, m3 in m2.items():
+            if not isinstance(m3, dict):
+                continue
+            for c, odds in m3.items():
+                if odds is None:
+                    continue
+                try:
+                    v = float(odds)
+                except (TypeError, ValueError):
+                    continue
+                if v > 0:
+                    out[f"{a}-{b}-{c}"] = v
+    return out
+
+
+def extract_odds_from_programs(programs: dict, stadium: int, race: int) -> dict[str, float]:
+    stadiums = (programs.get("programs") or {}).get("stadiums") or {}
+    race_doc = ((stadiums.get(str(stadium)) or {}).get("races") or {}).get(str(race)) or {}
+    odds = ((race_doc.get("odds") or {}).get("trifecta"))
+    return flatten_trifecta_tree(odds)
+
+
+_CHRONOLOGY_CACHE: dict[str, dict] = {}
+
+
+def load_chronology(date_key: str) -> dict | None:
+    if date_key in _CHRONOLOGY_CACHE:
+        return _CHRONOLOGY_CACHE[date_key]
+    iso = f"{date_key[:4]}-{date_key[4:6]}-{date_key[6:8]}"
+    local = ROOT / "data" / "chronology" / f"{date_key}.json"
+    if local.exists():
+        data = json.loads(local.read_text(encoding="utf-8"))
+        _CHRONOLOGY_CACHE[date_key] = data
+        return data
+    for url in [
+        f"https://boatraceopenapi.github.io/chronology/v2/{iso}.json",
+        f"https://boatraceopenapi.github.io/api/v2/{iso}.json",
+    ]:
+        try:
+            data = fetch_json(url)
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            _CHRONOLOGY_CACHE[date_key] = data
+            return data
+        except Exception:
+            continue
+    _CHRONOLOGY_CACHE[date_key] = {}
+    return None
+
+
+def fetch_race_odds(date_key: str, stadium: int, race: int, programs: dict) -> tuple[dict[str, float], str]:
+    local = extract_odds_from_programs(programs, stadium, race)
+    if local:
+        return local, "programs"
+    chrono = load_chronology(date_key) or {}
+    stadiums = (chrono.get("programs") or {}).get("stadiums") or {}
+    race_doc = ((stadiums.get(str(stadium)) or {}).get("races") or {}).get(str(race)) or {}
+    odds = flatten_trifecta_tree(((race_doc.get("odds") or {}).get("trifecta")))
+    if odds:
+        return odds, "chronology"
+    return {}, "missing"
+
+
+def evaluate_odds(odds: dict[str, float], cfg: dict, tickets: list[str]) -> dict:
+    if not odds:
+        return {
+            "ok": None,
+            "missing": True,
+            "overbet": False,
+            "money_concentrate": False,
+            "favorite": None,
+            "fav_odds": None,
+            "top3_share": None,
+            "tickets": tickets,
+            "filtered_tickets": tickets,
+            "reason": "オッズ未取得（展示後に再判定）",
+        }
+    ranked = sorted(((k, v) for k, v in odds.items() if v and v > 0), key=lambda x: x[1])
+    favorite, fav = ranked[0]
+    inv = [(k, 1.0 / v) for k, v in ranked[:30]]
+    s = sum(v for _, v in inv) or 1.0
+    top3 = sum(v for _, v in inv[:3]) / s
+    overbet = fav < float(cfg.get("min_favorite_odds") or 6)
+    concentrate = top3 > float(cfg.get("max_top3_share") or 0.55)
+    lo = float(cfg.get("ticket_odds_lo") or 6)
+    hi = float(cfg.get("ticket_odds_hi") or 120)
+    filtered = [t for t in tickets if lo <= float(odds.get(t) or 0) <= hi]
+    blocked = False
+    reasons = []
+    if cfg.get("block_overbet", True) and overbet:
+        blocked = True
+        reasons.append(f"1番人気が買われすぎ ({favorite} {fav:.1f}倍)")
+    if cfg.get("block_money_concentrate", True) and concentrate:
+        blocked = True
+        reasons.append(f"上位資金集中 (top3占有 {top3:.1%})")
+    if not filtered:
+        blocked = True
+        reasons.append("買い目がオッズ帯外")
+    return {
+        "ok": not blocked,
+        "missing": False,
+        "overbet": overbet,
+        "money_concentrate": concentrate,
+        "favorite": favorite,
+        "fav_odds": fav,
+        "top3_share": round(top3, 3),
+        "tickets": tickets,
+        "filtered_tickets": filtered if filtered else tickets,
+        "reason": " / ".join(reasons) if reasons else "オッズ妥当",
+    }
+
+
+def explain(place, e1, e2, inn, tickets, elite, score_gap, stake, odds_info) -> dict:
     name = STADIUMS.get(place, f"場{place}")
     tier = "本命S" if elite else "本命"
     reasons = [
         f"{name}イン逃げ率 {(inn * 100):.1f}%（本命向き）",
         f"1号 {e1.get('name')} {class_label(e1.get('class'))} / 勝率 {float(e1.get('nat') or 0):.2f} / ST {float(e1.get('st') or 0):.2f}",
         f"1号が相対最強（スコア差 {score_gap:.2f}）",
-        f"モーター2連対 {float(e1.get('motor2') or 0):.1f}%、2号勝率差 {float(e1.get('nat') or 0) - float(e2.get('nat') or 0):.2f}",
+        f"投資 {stake}円×{len(tickets)}点",
         f"{tier}6点 {', '.join(tickets)}",
     ]
+    if odds_info and not odds_info.get("missing"):
+        reasons.append(f"オッズ判定: {odds_info.get('reason')}")
     why = (
         f"{name}はイン戦の本命形。1号の{e1.get('name')}が相対最強"
         f"（{class_label(e1.get('class'))}・勝率{float(e1.get('nat') or 0):.2f}・ST{float(e1.get('st') or 0):.2f}）のため、"
-        f"{tier}として3連単6点（{', '.join(tickets)}）を採用。"
+        f"{tier}として3連単{len(tickets)}点を採用（1点{stake}円）。"
     )
     return {"why": why, "reasons": reasons}
 
@@ -127,10 +278,34 @@ def load_programs_for(date_key: str) -> dict | None:
     return None
 
 
+def select_picks(cands: list[dict], rules: dict) -> list[dict]:
+    sel = rules.get("selection") or {}
+    mode = sel.get("mode") or "threshold"
+    soft_max = int(sel.get("soft_max_per_day") or sel.get("hard_max_per_day") or 10)
+    cands = sorted(cands, key=lambda x: -x["score"])
+    if mode != "threshold":
+        # legacy fixed top-N disabled unless explicitly requested
+        target = int(rules.get("daily_target") or soft_max)
+        return cands[:target]
+    min_score = float(sel.get("min_score") or 48)
+    min_gap = float(sel.get("min_score_gap") or 0)
+    out = []
+    for p in cands:
+        if float(p.get("score") or 0) < float(p.get("min_pick_score") or min_score):
+            continue
+        if float(p.get("score_gap") or 0) < min_gap:
+            continue
+        out.append(p)
+        if len(out) >= soft_max:
+            break
+    return out
+
+
 def generate(date_key: str, phase: str) -> dict:
     rules = load_json(REPORTS / "honmei_rules.json", {}) or {}
     standard = rules.get("standard") or {}
     elite = rules.get("elite") or {}
+    odds_cfg = rules.get("odds") or {}
     skills = load_json(REPORTS / "course_skills.json", {}) or {}
     innige = innige_map(load_json(REPORTS / "stadium_innige_rates.json", {}) or {})
     programs = load_programs_for(date_key)
@@ -141,12 +316,15 @@ def generate(date_key: str, phase: str) -> dict:
             "generated_at": datetime.now(JST).isoformat(),
             "picks": [],
             "status": "programs_unavailable",
-            "mode": "honmei",
+            "mode": "honmei_roi",
             "note": "番組未公開。夜中再取得待ち。",
+            "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         }
 
-    daily_target = int(rules.get("daily_target") or 8)
+    now = datetime.now(JST)
     cands = []
+    closed_skipped = 0
+    odds_blocked = 0
     stadiums = (programs.get("programs") or {}).get("stadiums") or {}
     for sid, st in stadiums.items():
         place = int(sid)
@@ -154,6 +332,9 @@ def generate(date_key: str, phase: str) -> dict:
         for rid, race in (st.get("races") or {}).items():
             grade = int(race.get("grade_number") or 5)
             if grade not in (rules.get("grades") or [4, 5]):
+                continue
+            if is_race_closed(race, now):
+                closed_skipped += 1
                 continue
             entries = {}
             for _, r in (race.get("racers") or {}).items():
@@ -184,6 +365,7 @@ def generate(date_key: str, phase: str) -> dict:
             tickets = list(rule.get("tickets") or DEFAULT_TICKETS)
             ticket = rule.get("ticket") or "tri_1axis_6"
             label = rule.get("label") or ("本命S" if is_elite else "本命")
+            stake = int(rule.get("stake_per_ticket") or (200 if is_elite else 100))
             c1w, c1t2 = skill_rates(skills, int(e1.get("regno") or 0), 1)
             score = (
                 float(e1["nat"]) * 3
@@ -196,7 +378,22 @@ def generate(date_key: str, phase: str) -> dict:
                 + max(0.0, score_gap)
                 + (80 if is_elite else 0)
             )
-            expl = explain(place, e1, e2, inn, tickets, is_elite, score_gap)
+            min_pick_score = float(rule.get("min_pick_score") or (rules.get("selection") or {}).get("min_score") or 48)
+            if score < min_pick_score:
+                continue
+
+            odds_map, odds_source = ({}, "disabled")
+            odds_info = {"ok": None, "missing": True, "reason": "オッズ判定オフ", "filtered_tickets": tickets}
+            if odds_cfg.get("enabled", True):
+                odds_map, odds_source = fetch_race_odds(date_key, place, int(rid), programs)
+                odds_info = evaluate_odds(odds_map, odds_cfg, tickets)
+                if odds_info.get("ok") is False:
+                    odds_blocked += 1
+                    continue
+                if odds_info.get("filtered_tickets"):
+                    tickets = list(odds_info["filtered_tickets"])
+
+            expl = explain(place, e1, e2, inn, tickets, is_elite, score_gap, stake, odds_info)
             cands.append(
                 {
                     "date": date_key,
@@ -206,18 +403,38 @@ def generate(date_key: str, phase: str) -> dict:
                     "title": race.get("title") or "",
                     "grade": grade,
                     "status": "provisional",
-                    "skip_on": ["entry_change", "exhibition_missing", "unexpected_event"],
-                    "mode": "honmei",
-                    "band": "honmei",
+                    "closed_at": race.get("closed_at"),
+                    "skip_on": [
+                        "entry_change",
+                        "exhibition_fail",
+                        "unexpected_event",
+                        "race_closed",
+                        "odds_overbet",
+                        "odds_missing_near_close",
+                    ],
+                    "mode": "honmei_roi",
+                    "band": "honmei_s" if is_elite else "honmei",
                     "label": label,
                     "tickets": tickets,
                     "ticket": ticket,
                     "points": len(tickets),
+                    "stake_per_ticket": stake,
+                    "stake_total": stake * len(tickets),
                     "score": score,
                     "score_gap": round(score_gap, 3),
+                    "min_pick_score": min_pick_score,
                     "elite": is_elite,
                     "validated_roi": rule.get("validated_test_roi"),
                     "innige": inn,
+                    "odds": {
+                        "source": odds_source,
+                        "missing": odds_info.get("missing"),
+                        "ok": odds_info.get("ok"),
+                        "favorite": odds_info.get("favorite"),
+                        "fav_odds": odds_info.get("fav_odds"),
+                        "top3_share": odds_info.get("top3_share"),
+                        "reason": odds_info.get("reason"),
+                    },
                     "entries": {
                         str(k): {
                             "name": v["name"],
@@ -233,8 +450,7 @@ def generate(date_key: str, phase: str) -> dict:
                 }
             )
 
-    cands.sort(key=lambda x: -x["score"])
-    picks = cands[:daily_target]
+    picks = select_picks(cands, rules)
     return {
         "date": date_key,
         "phase": phase,
@@ -242,13 +458,19 @@ def generate(date_key: str, phase: str) -> dict:
         "picks": picks,
         "count": len(picks),
         "status": "ok",
-        "mode": "honmei",
-        "daily_target": daily_target,
+        "mode": "honmei_roi",
+        "selection": rules.get("selection"),
+        "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         "pool_size": len(cands),
         "elite_count": sum(1 for p in picks if p.get("elite")),
+        "standard_count": sum(1 for p in picks if not p.get("elite")),
         "points_per_race": 6,
+        "closed_skipped": closed_skipped,
+        "odds_blocked": odds_blocked,
+        "stake_s": int((elite or {}).get("stake_per_ticket") or 200),
+        "stake_standard": int((standard or {}).get("stake_per_ticket") or 100),
         "feasibility": rules.get("feasibility"),
-        "note": "本命6点。1号が相対最強のレースのみ。展示確認後に確定し、進入変更・異常はスキップ。",
+        "note": "回収重視。可変本数・本命S厚買い・オッズ回避・展示厳格。押し目・穴は無効。締切済み除外。",
     }
 
 
@@ -275,7 +497,16 @@ def main():
         (REPORTS / f"picks_{date_key}.json").write_text(
             json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        print("  picks", out.get("count"), "elite", out.get("elite_count"), "pool", out.get("pool_size"))
+        print(
+            "  picks",
+            out.get("count"),
+            "elite",
+            out.get("elite_count"),
+            "pool",
+            out.get("pool_size"),
+            "odds_blocked",
+            out.get("odds_blocked"),
+        )
 
     def usable(doc):
         return bool(doc) and doc.get("status") != "programs_unavailable"
@@ -283,12 +514,13 @@ def main():
     tomorrow_doc, today_doc = bundle["targets"].get(tomorrow), bundle["targets"].get(today)
     if args.date and args.date in bundle["targets"]:
         active = bundle["targets"][args.date]
+    elif usable(today_doc):
+        # 当日優先（終了レース除外後の最新）
+        active = today_doc
     elif usable(tomorrow_doc):
         active = tomorrow_doc
-    elif usable(today_doc):
-        active = today_doc
     else:
-        active = tomorrow_doc or today_doc or {}
+        active = today_doc or tomorrow_doc or {}
 
     board = {
         "active_date": active.get("date"),
@@ -299,20 +531,34 @@ def main():
         "count": active.get("count") or 0,
         "status": active.get("status"),
         "note": active.get("note"),
-        "mode": "honmei",
-        "daily_target": active.get("daily_target"),
+        "mode": "honmei_roi",
+        "selection": active.get("selection"),
+        "disabled_systems": active.get("disabled_systems") or ["oshi", "ana"],
         "points_per_race": active.get("points_per_race") or 6,
+        "elite_count": active.get("elite_count"),
+        "odds_blocked": active.get("odds_blocked"),
         "feasibility": active.get("feasibility"),
         "today": today_doc,
         "tomorrow": tomorrow_doc,
     }
     (REPORTS / "picks_board.json").write_text(json.dumps(board, ensure_ascii=False, indent=2), encoding="utf-8")
     (SRC_DATA / "picks_board.json").write_text(json.dumps(board, ensure_ascii=False, indent=2), encoding="utf-8")
-    for name in ("honmei_rules.json", "volume_rules.json", "locked_triple_rules.json", "locked_honmei_rule.json"):
+    for name in ("honmei_rules.json", "locked_triple_rules.json", "locked_honmei_rule.json"):
         src = REPORTS / name
         if src.exists():
             (SRC_DATA / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-    print("board", board.get("date"), board.get("count"), "pts", board.get("points_per_race"))
+    # mark volume rules disabled if present
+    vol = REPORTS / "volume_rules.json"
+    if vol.exists():
+        try:
+            v = json.loads(vol.read_text(encoding="utf-8"))
+            v["enabled"] = False
+            v["disabled_reason"] = "honmei_roi replaces fixed-volume system"
+            vol.write_text(json.dumps(v, ensure_ascii=False, indent=2), encoding="utf-8")
+            (SRC_DATA / "volume_rules.json").write_text(vol.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
+    print("board", board.get("date"), board.get("count"), "mode", board.get("mode"))
 
 
 if __name__ == "__main__":

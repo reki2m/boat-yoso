@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          本命6点。1号が相対最強のレースを1日8レース前後抽出し、3連単6点で出す。当日はスタート展示を必ず確認し、進入変更や予期しない事態はスキップ。
+          回収重視の本命のみ有効。本命Sは厚く、通常は薄く。固定本数はやめ、スコア下限・オッズ・展示ゲートを通ったレースだけ出す。押し目・穴は無効。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -756,9 +756,9 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命6点</strong>
+            <strong>本命回収重視</strong>
             <p>
-              押し目・穴は出さない。検証上ベストは 1日8R・3連単6点（1-2-3/4/5/6 + 1-3-2/4）。軸は1号固定だが、1号が相対最強のレースだけ採用。
+              押し目・穴は無効。可変本数（スコア下限）／本命Sは1点200円・本命は100円／買われすぎオッズは回避／展示悪化はスキップ。買い目は3連単6点。
             </p>
           </div>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (
@@ -860,15 +860,12 @@ export default function Home() {
             将来の利益を保証しません。
           </p>
           <div className="band-grid">
-            {(["honmei", "oshi", "ana"] as const).map((key) => {
+            {(["honmei"] as const).map((key) => {
               const b = research.equity10k?.bands?.[key];
               if (!b) return null;
-              const label = key === "honmei" ? "本命" : key === "oshi" ? "押し目" : "穴目";
-              const color =
-                key === "honmei" ? "#3ad0c4" : key === "oshi" ? "#f0b429" : "#f97316";
               return (
                 <div key={key} className="side-card on">
-                  <span>{label}</span>
+                  <span>本命（押し目・穴は無効）</span>
                   <strong>
                     最終 {b.final_equity.toLocaleString()}円 / ROI {b.roi.toFixed(1)}%
                   </strong>
@@ -876,7 +873,7 @@ export default function Home() {
                     {b.selected}R / 的中 {b.hit_rate.toFixed(1)}% / 損益{" "}
                     {b.pnl.toLocaleString()}円
                   </div>
-                  <EquityMiniChart curve={b.curve} color={color} />
+                  <EquityMiniChart curve={b.curve} color="#3ad0c4" />
                 </div>
               );
             })}

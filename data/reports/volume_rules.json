@@ -8,5 +8,7 @@
     "evidence": "本命日次12R運用。elite本命Sのみ履歴回収150%超だが低頻度。",
     "best_volume_test_roi": 73.2,
     "elite_historical_roi": 174.3
-  }
+  },
+  "enabled": false,
+  "disabled_reason": "honmei_roi replaces fixed-volume system"
 }

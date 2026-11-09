@@ -5,6 +5,7 @@ export type HonmeiRule = {
   ticket: string;
   tickets?: string[];
   points?: number;
+  stake_per_ticket?: number;
   min_stadium_innige: number;
   max_c1_class: number;
   min_c1_nat: number;
@@ -13,12 +14,20 @@ export type HonmeiRule = {
   min_gap_c2: number;
   require_leading_score?: boolean;
   min_score_gap?: number;
+  min_pick_score?: number;
   grades: number[];
   stadium_whitelist: number[] | null;
   validated_test_roi: number;
   validated_train_roi?: number;
   validated_test_hit_rate?: number;
   validated_test_selected: number;
+  selection_mode?: string;
+  odds?: {
+    min_favorite_odds?: number;
+    ticket_odds_lo?: number;
+    ticket_odds_hi?: number;
+    block_overbet?: boolean;
+  };
 };
 
 export const HONMEI_RULE = locked as HonmeiRule;
@@ -94,7 +103,7 @@ export function evaluateHonmeiEligibility(input: {
       ? [
           `イン逃げ率 ${(rate * 100).toFixed(1)}%`,
           `1号 ${input.className} / 勝率 ${input.nationalWin.toFixed(2)} / ST ${input.avgStart.toFixed(2)}`,
-          `本命6点条件を充足`,
+          `回収重視の本命条件を充足`,
         ]
       : reasons,
     tickets: ok ? buildHonmeiTickets() : [],

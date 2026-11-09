@@ -287,7 +287,7 @@ function buildWhyText(input: {
   }
   const top = input.active[0];
   if (!top) {
-    return `${place}はロック済みの本命/押し目/穴条件に当てはまらないため見送りです。`;
+    return `${place}は回収重視の本命条件に当てはまらないため見送りです。`;
   }
   const c1 = byCourse(input.racers, 1);
   const c2 = byCourse(input.racers, 2);
@@ -354,15 +354,21 @@ export function buildTriplePrediction(input: {
 
   let honmeiTickets = honmeiEval.ok ? honmeiEval.tickets : [];
   let honmeiBlocked = false;
-  if (honmeiTickets.length && anomaly.overbet) {
+  const anomalyBlock = Boolean((LOCKED.honmei as BandRule | undefined)?.anomaly_block ?? true);
+  if (honmeiTickets.length && anomalyBlock && (anomaly.overbet || anomaly.moneyConcentrate)) {
     honmeiTickets = [];
     honmeiBlocked = true;
   }
   if (honmeiTickets.length && input.trifectaOdds && Object.keys(input.trifectaOdds).length) {
-    const lo = Number((LOCKED.honmei as BandRule | undefined)?.odds_lo ?? 8);
-    const hi = Number((LOCKED.honmei as BandRule | undefined)?.odds_hi ?? 80);
+    const lo = Number((LOCKED.honmei as BandRule | undefined)?.odds_lo ?? 6);
+    const hi = Number((LOCKED.honmei as BandRule | undefined)?.odds_hi ?? 120);
     const filtered = filterTicketsByOddsBand(honmeiTickets, input.trifectaOdds, lo, hi);
-    if (filtered.length) honmeiTickets = filtered;
+    if (!filtered.length) {
+      honmeiTickets = [];
+      honmeiBlocked = true;
+    } else {
+      honmeiTickets = filtered;
+    }
   }
 
   const wind = input.windSpeed ?? input.exhibition.windSpeed ?? null;
@@ -370,7 +376,7 @@ export function buildTriplePrediction(input: {
 
   const honmeiOk = honmeiEval.ok && honmeiTickets.length > 0;
   const honmeiReasons = honmeiBlocked
-    ? [...honmeiEval.reasons, "異常オッズ（買われすぎ）で回避"]
+    ? [...honmeiEval.reasons, "異常オッズ（買われすぎ/資金集中）で回避"]
     : honmeiOk && c1
       ? [
           `場イン逃げ率 ${(innigeRate(input.placeNo) * 100).toFixed(1)}%`,
@@ -435,7 +441,7 @@ export function buildTriplePrediction(input: {
     focus,
     why,
     disclaimer:
-      "本命専用。押し目・穴は出さない。スタート展示確認後に確定。進入変更・異常はスキップ。必ず勝てる保証はない。",
+      "回収重視の本命のみ。押し目・穴は無効。可変本数・オッズ回避・展示厳格。進入変更・異常・締切済みはスキップ。必ず勝てる保証はない。",
     exhibition: input.exhibition,
     ticketsLocked,
     liveUrls,

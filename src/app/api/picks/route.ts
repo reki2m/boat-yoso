@@ -58,8 +58,12 @@ export async function GET() {
       day_before: true,
       skip_on_entry_change: true,
       require_start_exhibition: true,
-      mode: "honmei",
-      note: "本命専用。押し目・穴は出さない。前日に本命を出し、当日はスタート展示確認。進入変更・異常はスキップ。",
+      mode: "honmei_roi",
+      disabled_systems: ["oshi", "ana"],
+      variable_count: true,
+      odds_filter: true,
+      exhibition_strict: true,
+      note: "回収重視の本命のみ。可変本数・本命S厚買い・オッズ回避・展示厳格。押し目・穴は無効。",
     },
   });
 }
