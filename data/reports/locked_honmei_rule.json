@@ -10,7 +10,7 @@
   "min_c1_nat": 6.8,
   "max_c1_st": 0.15,
   "min_motor2": 32,
-  "min_gap_c2": 0.8,
+  "min_gap_c2": 1.0,
   "require_leading_score": true,
   "min_score_gap": 1.5,
   "min_pick_score": 0,
@@ -21,20 +21,19 @@
   "stadium_whitelist": [
     8,
     9,
-    11,
     12,
     13,
     15,
-    16,
     17,
     18,
-    19,
-    20,
-    24
+    19
   ],
-  "validated_test_roi": 107.5,
-  "validated_train_roi": 105.4,
-  "validated_test_hit_rate": 14.7,
+  "race_blacklist": [
+    1,
+    9
+  ],
+  "validated_test_roi": 113.6,
+  "validated_train_roi": 107.2,
   "band": "honmei",
   "meets_target": true,
   "odds_lo": 6,

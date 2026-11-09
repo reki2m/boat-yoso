@@ -100,11 +100,14 @@ def boat_strength(entry: dict, course: int, skills: dict) -> float:
     )
 
 
-def passes(rule: dict, place: int, e1: dict, e2: dict, inn: float, score_gap: float) -> bool:
+def passes(rule: dict, place: int, e1: dict, e2: dict, inn: float, score_gap: float, race_no: int | None = None) -> bool:
     if not rule:
         return False
     wl = rule.get("stadium_whitelist")
     if isinstance(wl, list) and wl and place not in wl:
+        return False
+    rbl = rule.get("race_blacklist")
+    if race_no is not None and isinstance(rbl, list) and rbl and int(race_no) in {int(x) for x in rbl}:
         return False
     if rule.get("require_leading_score", True) and score_gap < float(rule.get("min_score_gap") or 0):
         return False
@@ -317,7 +320,7 @@ def generate(date_key: str, phase: str) -> dict:
             "generated_at": datetime.now(JST).isoformat(),
             "picks": [],
             "status": "programs_unavailable",
-            "mode": "honmei_stadium_wl_single",
+            "mode": "honmei_fix_race_filter",
             "note": "番組未公開。夜中再取得待ち。",
             "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         }
@@ -362,8 +365,9 @@ def generate(date_key: str, phase: str) -> dict:
             strengths = {e: boat_strength(v, e, skills) for e, v in entries.items()}
             score_gap = strengths[1] - max(strengths[e] for e in strengths if e != 1)
             e1, e2 = entries[1], entries[2]
-            is_elite = passes(elite, place, e1, e2, inn, score_gap)
-            is_standard = passes(standard, place, e1, e2, inn, score_gap)
+            race_no = int(rid)
+            is_elite = passes(elite, place, e1, e2, inn, score_gap, race_no)
+            is_standard = passes(standard, place, e1, e2, inn, score_gap, race_no)
             if not (is_elite or is_standard):
                 continue
 
@@ -418,7 +422,7 @@ def generate(date_key: str, phase: str) -> dict:
                         "odds_overbet",
                         "odds_missing_near_close",
                     ],
-                    "mode": "honmei_stadium_wl_single",
+                    "mode": "honmei_fix_race_filter",
                     "band": "honmei_s" if is_elite else "honmei",
                     "label": label,
                     "tickets": tickets,
@@ -465,7 +469,7 @@ def generate(date_key: str, phase: str) -> dict:
         "picks": picks,
         "count": len(picks),
         "status": "ok",
-        "mode": "honmei_stadium_wl_single",
+        "mode": "honmei_fix_race_filter",
         "selection": rules.get("selection"),
         "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         "stadium_blacklist": sorted(blacklist),
@@ -540,7 +544,7 @@ def main():
         "count": active.get("count") or 0,
         "status": active.get("status"),
         "note": active.get("note"),
-        "mode": "honmei_stadium_wl_single",
+        "mode": "honmei_fix_race_filter",
         "selection": active.get("selection"),
         "disabled_systems": active.get("disabled_systems") or ["oshi", "ana"],
         "stadium_blacklist": active.get("stadium_blacklist") or [21],

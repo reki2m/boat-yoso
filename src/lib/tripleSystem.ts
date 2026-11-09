@@ -349,6 +349,7 @@ export function buildTriplePrediction(input: {
           avgStart: c1.avgStart,
           motorTop2: c1.motorTop2,
           secondNationalWin: c2?.nationalWin ?? 0,
+          raceNo: input.raceNo,
         })
       : { ok: false, reasons: ["1コースデータなし"], tickets: [] };
 

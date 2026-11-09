@@ -18,6 +18,7 @@ export type HonmeiRule = {
   grades: number[];
   stadium_whitelist: number[] | null;
   stadium_blacklist?: number[];
+  race_blacklist?: number[];
   validated_test_roi: number;
   validated_train_roi?: number;
   validated_test_hit_rate?: number;
@@ -73,14 +74,19 @@ export function evaluateHonmeiEligibility(input: {
   avgStart: number;
   motorTop2: number;
   secondNationalWin: number;
+  raceNo?: number;
 }): { ok: boolean; reasons: string[]; tickets: string[] } {
   const reasons: string[] = [];
   const classMap: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
   const c1class = classMap[input.className] ?? 4;
   const wl = HONMEI_RULE.stadium_whitelist;
   const bl = HONMEI_RULE.stadium_blacklist || [];
+  const rbl = HONMEI_RULE.race_blacklist || [];
   const rate = innigeRate(input.placeNo);
   if (bl.includes(input.placeNo)) reasons.push("除外場（回収悪化場）");
+  if (input.raceNo != null && rbl.includes(input.raceNo)) {
+    reasons.push(`除外レース（${input.raceNo}R）`);
+  }
   if (Array.isArray(wl) && wl.length > 0) {
     if (!wl.includes(input.placeNo)) reasons.push("本命対象場外");
   } else if (rate < HONMEI_RULE.min_stadium_innige) {
@@ -106,7 +112,7 @@ export function evaluateHonmeiEligibility(input: {
       ? [
           `イン逃げ率 ${(rate * 100).toFixed(1)}%`,
           `1号 ${input.className} / 勝率 ${input.nationalWin.toFixed(2)} / ST ${input.avgStart.toFixed(2)}`,
-          `本命ボリューム単点条件を充足`,
+          `本命FIX場条件を充足`,
         ]
       : reasons,
     tickets: ok ? buildHonmeiTickets() : [],
