@@ -1,0 +1,34 @@
+{
+  "ask": "100%超えたなら1日5Rで100%超もあるのでは？",
+  "answer": "ない。少なくとも現行特徴量・三連単1-2-3系では成立しない。",
+  "evidence": {
+    "all100_volume_cap": {
+      "avg_per_day": 1.1,
+      "note": "2021-26全年金100%超の上限付近"
+    },
+    "near_5R_best_min_year": {
+      "avg_per_day": 3.95,
+      "min_year_roi": 93.8,
+      "yearly": {
+        "2021": 94.2,
+        "2022": 107.8,
+        "2023": 94.0,
+        "2024": 96.3,
+        "2025": 93.8,
+        "2026": 96.4
+      }
+    },
+    "at_5R_best_min_year": {
+      "avg_per_day": 4.78,
+      "min_year_roi": 89.9
+    },
+    "at_5_5R_best_min_year": {
+      "avg_per_day": 5.53,
+      "min_year_roi": 88.5
+    },
+    "sleeve_stack_to_5R": {
+      "result": "100%袖は実質1本のみ。重ねると合算ROIが90%前後へ低下"
+    }
+  },
+  "tradeoff": "件数を増やすほど年最低ROIが単調に落ちる。100%ラインの実用上限は約1.0-1.2R/日。"
+}
