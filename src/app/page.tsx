@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          本命FIX場のみ（押し目・穴は出さない）。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。平均約1.1R/日。
+          本命だけ。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。1日だいたい1レース前後。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -756,9 +756,9 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命FIX場 + レース除外</strong>
+            <strong>本命FIX場</strong>
             <p>
-              押し目・穴は無効。3連単は 1-2-3 のみ。対象場 8/9/12/13/15/17/18/19、1R・9R除外、A1・勝率6.8・ST0.15・モーター32・差1.0。展示・オッズ未通過はスキップ。
+              3連単は 1-2-3 のみ。対象場 8/9/12/13/15/17/18/19、1R・9R除外、A1・勝率6.8・ST0.15・モーター32・差1.0。展示・オッズ未通過はスキップ。
             </p>
           </div>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (
@@ -865,7 +865,7 @@ export default function Home() {
               if (!b) return null;
               return (
                 <div key={key} className="side-card on">
-                  <span>本命FIX（押し目・穴なし）</span>
+                  <span>本命</span>
                   <strong>
                     最終 {b.final_equity.toLocaleString()}円 / ROI {b.roi.toFixed(1)}%
                   </strong>
@@ -878,24 +878,6 @@ export default function Home() {
               );
             })}
           </div>
-          {research.equity10k.portfolio ? (
-            <div className="side-card on" style={{ marginTop: "0.75rem" }}>
-              <span>本命のみ（単一ルール）</span>
-              <strong>
-                最終 {research.equity10k.portfolio.final_equity.toLocaleString()}円 / ROI{" "}
-                {research.equity10k.portfolio.roi.toFixed(1)}%
-              </strong>
-              <div className="note" style={{ margin: "0.35rem 0 0.5rem" }}>
-                {research.equity10k.portfolio.selected}R / 的中{" "}
-                {research.equity10k.portfolio.hit_rate.toFixed(1)}% /{" "}
-                {research.equity10k.portfolio.rule}
-              </div>
-              <EquityMiniChart
-                curve={research.equity10k.portfolio.curve}
-                color="#d7f3ff"
-              />
-            </div>
-          ) : null}
         </section>
       ) : null}
 

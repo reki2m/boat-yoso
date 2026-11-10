@@ -6,7 +6,6 @@ import lockedTriple from "@/data/locked_triple_rules.json";
 import backtest from "@/data/honmei_backtest.json";
 import equity from "@/data/equity_10k.json";
 import { TICKET_LABEL } from "@/lib/honmeiRule";
-import { BAND_TICKET_LABEL } from "@/lib/tripleSystem";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +26,7 @@ export async function GET() {
       cadence: "毎晩（最新データ取得→本命買い目→展示確認→的中再計算）",
       script: "scripts/nightly_update.py",
       policy: {
-        mode: "honmei",
+        mode: "honmei_fix_race_filter",
         day_before_picks: true,
         skip_on_entry_change: true,
         require_start_exhibition: true,
@@ -40,22 +39,8 @@ export async function GET() {
     },
     lockedTriple: {
       honmei: triple.honmei,
-      oshi: triple.oshi
-        ? {
-            ...triple.oshi,
-            ticketLabel:
-              BAND_TICKET_LABEL[String((triple.oshi as { ticket?: string }).ticket ?? "")] ??
-              "押し目",
-          }
-        : null,
-      ana: triple.ana
-        ? {
-            ...triple.ana,
-            ticketLabel:
-              BAND_TICKET_LABEL[String((triple.ana as { ticket?: string }).ticket ?? "")] ??
-              "穴目",
-          }
-        : null,
+      oshi: null,
+      ana: null,
     },
     stadiumInnige: stadium,
     hotRacers: hot,
@@ -75,8 +60,15 @@ export async function GET() {
     oddsAnomaly: {
       overbet_threshold: 6,
       money_concentrate_threshold: 0.55,
-      note: "買われすぎ・大口集中を検知し、本命/押し目を回避してイン戦買い目を出す。",
+      note: "買われすぎ・大口集中を検知し、本命を見送りにする。",
     },
-    equity10k: equity,
+    equity10k: {
+      ...(equity as Record<string, unknown>),
+      bands: {
+        honmei: (equity as { bands?: { honmei?: unknown } }).bands?.honmei,
+      },
+      portfolio: null,
+      note: "本命FIX場のみ。押し目・穴の回収は出さない。",
+    },
   });
 }

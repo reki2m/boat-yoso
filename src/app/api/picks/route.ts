@@ -68,7 +68,7 @@ export async function GET() {
       stadium_blacklist: [21],
       odds_filter: true,
       exhibition_strict: true,
-      note: "本命FIX場+レース除外。押し目・穴無効。1-2-3単点・対象8場・1R/9R除外・平均約1.1R/日。",
+      note: "本命のみ。1-2-3単点・対象8場・1R/9R除外・1日だいたい1レース前後。",
     },
   });
 }
