@@ -22,7 +22,7 @@ export type HonmeiRule = {
   validated_test_roi: number;
   validated_train_roi?: number;
   validated_test_hit_rate?: number;
-  validated_test_selected: number;
+  validated_test_selected?: number;
   selection_mode?: string;
   odds?: {
     min_favorite_odds?: number;

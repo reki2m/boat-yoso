@@ -188,101 +188,6 @@ type LiveStadium = {
   beforeInfo: string;
 };
 
-type DayPick = {
-  date: string;
-  stadium: number;
-  stadium_name: string;
-  race: number;
-  band: string;
-  label: string;
-  tickets: string[];
-  status: string;
-  skip_reason?: string | null;
-  validated_roi?: number;
-  why?: string;
-  reasons?: string[];
-};
-
-type PicksPayload = {
-  board: {
-    active_date?: string;
-    date?: string;
-    count?: number;
-    status?: string;
-    note?: string;
-    picks?: DayPick[];
-    confirmed?: number;
-    skipped?: number;
-    provisional?: number;
-    feasibility?: {
-      ten_races_and_roi_150?: boolean;
-      evidence?: string;
-      best_volume_test_roi?: number;
-      elite_historical_roi?: number;
-    };
-  };
-  recent?: DayPick[];
-  accuracy: {
-    scored_at?: string;
-    aggregate?: {
-      selected: number;
-      hits: number;
-      bets: number;
-      pay: number;
-      skipped: number;
-      hit_rate: number;
-      roi: number;
-      pnl: number;
-    };
-    days?: Array<{
-      date: string;
-      selected?: number;
-      hits?: number;
-      hit_rate?: number;
-      roi?: number;
-      skipped?: number;
-      status?: string;
-    }>;
-  };
-  policy?: { note?: string };
-};
-
-function PickExplainCards({ picks }: { picks: DayPick[] }) {
-  if (!picks.length) return null;
-  return (
-    <div className="picks-explain-list">
-      {picks.map((p) => (
-        <article key={`${p.date}-${p.stadium}-${p.race}-${p.band}`} className="pick-explain-card">
-          <div className="pick-explain-head">
-            <strong>
-              {p.date ? `${p.date} · ` : ""}
-              {p.stadium_name} {p.race}R · {p.label || p.band}
-            </strong>
-            <span>
-              {p.status === "confirmed"
-                ? "確定"
-                : p.status === "skipped"
-                  ? "スキップ"
-                  : "展示待ち"}
-            </span>
-          </div>
-          <div className="sanren" style={{ fontSize: "1.35rem", margin: "0.55rem 0" }}>
-            {(p.tickets || []).join(" / ")}
-          </div>
-          <p className="why-text">{p.why || "条件一致のため抽出。"}</p>
-          {(p.reasons?.length ?? 0) > 0 ? (
-            <ul className="why-list">
-              {p.reasons?.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-          ) : null}
-        </article>
-      ))}
-    </div>
-  );
-}
-
 function EquityMiniChart({
   curve,
   color,
@@ -327,7 +232,6 @@ export default function Home() {
   const [liveStadiums, setLiveStadiums] = useState<LiveStadium[]>([]);
   const [liveDate, setLiveDate] = useState("");
   const [activeLive, setActiveLive] = useState<LiveStadium | null>(null);
-  const [picksPayload, setPicksPayload] = useState<PicksPayload | null>(null);
 
   useEffect(() => {
     fetch("/api/schedule")
@@ -352,10 +256,6 @@ export default function Home() {
         const firstOpen = (json.stadiums as LiveStadium[] | undefined)?.find((s) => s.open);
         if (firstOpen) setActiveLive(firstOpen);
       })
-      .catch(() => undefined);
-    fetch("/api/picks")
-      .then((r) => r.json())
-      .then((json) => setPicksPayload(json))
       .catch(() => undefined);
   }, []);
 
@@ -742,156 +642,96 @@ export default function Home() {
         ) : null}
       </section>
 
-      {picksPayload ? (
-        <section className="panel" style={{ marginTop: "1rem" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>
-            前日〜当日の買い目ボード
-          </h2>
-          <p className="note">
-            対象 {picksPayload.board.active_date || picksPayload.board.date || "—"} /{" "}
-            {picksPayload.board.count ?? 0} レース / 状態 {picksPayload.board.status || "—"}
-            {picksPayload.board.confirmed != null
-              ? ` / 確定 ${picksPayload.board.confirmed}・スキップ ${picksPayload.board.skipped ?? 0}・展示待ち ${picksPayload.board.provisional ?? 0}`
-              : ""}
-          </p>
-          <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
-          <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命FIX場</strong>
-            <p>
-              3連単は 1-2-3 のみ。対象場 8/9/12/13/15/17/18/19、1R・9R除外、A1・勝率6.8・ST0.15・モーター32・差1.0。展示・オッズ未通過はスキップ。
-            </p>
-          </div>
-          {(picksPayload.board.picks?.length ?? 0) === 0 ? (
-            <p className="status">本日の条件該当はまだありません。直近の採用例と理由を下に表示します。</p>
-          ) : (
-            <PickExplainCards picks={picksPayload.board.picks || []} />
-          )}
-          {(picksPayload.recent?.length ?? 0) > 0 &&
-          (picksPayload.board.picks?.length ?? 0) === 0 ? (
-            <>
-              <h3 style={{ fontFamily: "var(--font-display)", margin: "1rem 0 0.35rem" }}>
-                直近の買い目と理由
-              </h3>
-              <PickExplainCards picks={picksPayload.recent || []} />
-            </>
-          ) : null}
-        </section>
-      ) : null}
-
-      {picksPayload?.accuracy ? (
-        <section className="panel" style={{ marginTop: "1rem" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>
-            予想の的中再計算
-          </h2>
-          <p className="note">
-            夜間ジョブが結果と突き合わせ、進入変更はスキップ扱い。保証ではありません。
-          </p>
-          {picksPayload.accuracy.aggregate ? (
-            <div className="band-grid">
-              <div className="side-card on">
-                <span>的中率</span>
-                <strong>{picksPayload.accuracy.aggregate.hit_rate.toFixed(1)}%</strong>
-                <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                  {picksPayload.accuracy.aggregate.hits}/
-                  {picksPayload.accuracy.aggregate.selected}R（スキップ{" "}
-                  {picksPayload.accuracy.aggregate.skipped}）
-                </div>
-              </div>
-              <div className="side-card on">
-                <span>ROI</span>
-                <strong>{picksPayload.accuracy.aggregate.roi.toFixed(1)}%</strong>
-                <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                  投資 {picksPayload.accuracy.aggregate.bets.toLocaleString()} / 払戻{" "}
-                  {picksPayload.accuracy.aggregate.pay.toLocaleString()}
-                </div>
-              </div>
-              <div className="side-card on">
-                <span>損益</span>
-                <strong>
-                  {picksPayload.accuracy.aggregate.pnl.toLocaleString()}円
-                </strong>
-                <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                  更新 {picksPayload.accuracy.scored_at || "—"}
-                </div>
-              </div>
-            </div>
-          ) : null}
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>日付</th>
-                  <th>対象</th>
-                  <th>的中</th>
-                  <th>ROI</th>
-                  <th>スキップ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(picksPayload.accuracy.days || [])
-                  .filter((d) => d.status !== "no_picks" || (d.selected ?? 0) > 0)
-                  .slice(0, 14)
-                  .map((d) => (
-                    <tr key={d.date}>
-                      <td>{d.date}</td>
-                      <td>{d.selected ?? 0}</td>
-                      <td>
-                        {d.hits ?? 0}
-                        {d.hit_rate != null ? ` (${d.hit_rate.toFixed(0)}%)` : ""}
-                      </td>
-                      <td>{d.roi != null ? `${d.roi.toFixed(1)}%` : "—"}</td>
-                      <td>{d.skipped ?? 0}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
-      {research?.equity10k ? (
-        <section className="panel" style={{ marginTop: "1rem" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>
-            1レース1万円の収支推移
-          </h2>
-          <p className="note">
-            検証期間 {research.equity10k.period} / 投資単位{" "}
-            {research.equity10k.stake_per_race.toLocaleString()}円（点数で等分）。
-            将来の利益を保証しません。
-          </p>
-          <div className="band-grid">
-            {(["honmei"] as const).map((key) => {
-              const b = research.equity10k?.bands?.[key];
-              if (!b) return null;
-              return (
-                <div key={key} className="side-card on">
-                  <span>本命</span>
-                  <strong>
-                    最終 {b.final_equity.toLocaleString()}円 / ROI {b.roi.toFixed(1)}%
-                  </strong>
-                  <div className="note" style={{ margin: "0.35rem 0 0.5rem" }}>
-                    {b.selected}R / 的中 {b.hit_rate.toFixed(1)}% / 損益{" "}
-                    {b.pnl.toLocaleString()}円
-                  </div>
-                  <EquityMiniChart curve={b.curve} color="#3ad0c4" />
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
-      {research ? (
-        <section className="panel" style={{ marginTop: "1rem" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>3段検証レポート</h2>
-          <p className="note">
-            学習 {research.backtestSummary.train_n.toLocaleString()} レース /
-            検証 {research.backtestSummary.test_n.toLocaleString()} レース
-          </p>
-          <p className="note">{research.exhibition.note}</p>
-          <p className="note">{research.oddsAnomaly?.note}</p>
-        </section>
-      ) : null}
+      <StakeSimulationPanel
+        band={research?.equity10k?.bands?.honmei}
+        period={research?.equity10k?.period}
+        baseStake={research?.equity10k?.stake_per_race || 10000}
+      />
     </main>
+  );
+}
+
+const STAKE_OPTIONS = [1000, 2000, 3000] as const;
+
+function scaleEquityBand(band: EquityBand, baseStake: number, stake: number): EquityBand {
+  const ratio = stake / Math.max(baseStake, 1);
+  return {
+    ...band,
+    bets: Math.round(band.bets * ratio),
+    pay: Math.round(band.pay * ratio),
+    pnl: Math.round(band.pnl * ratio),
+    final_equity: Math.round(band.final_equity * ratio),
+    curve: band.curve.map((c) => ({
+      ...c,
+      equity: Math.round(c.equity * ratio),
+    })),
+  };
+}
+
+function StakeSimulationPanel({
+  band,
+  period,
+  baseStake,
+}: {
+  band?: EquityBand;
+  period?: string;
+  baseStake: number;
+}) {
+  const [stake, setStake] = useState<(typeof STAKE_OPTIONS)[number]>(1000);
+  if (!band) {
+    return (
+      <section className="panel" style={{ marginTop: "1rem" }}>
+        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>資金別シミュレーション</h2>
+        <p className="status">検証データを読み込み中…</p>
+      </section>
+    );
+  }
+  const scaled = scaleEquityBand(band, baseStake, stake);
+  return (
+    <section className="panel" style={{ marginTop: "1rem" }}>
+      <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>資金別シミュレーション</h2>
+      <p className="note">
+        本命FIXの検証期間 {period || "—"} を、1レースあたりの投資額で換算した参考値です。将来の利益を保証しません。
+      </p>
+      <div className="cta-row" style={{ margin: "0.85rem 0 1rem" }}>
+        {STAKE_OPTIONS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            className={`btn ${stake === s ? "" : "ghost"}`}
+            onClick={() => setStake(s)}
+          >
+            {s.toLocaleString()}円/レース
+          </button>
+        ))}
+      </div>
+      <div className="band-grid">
+        <div className="side-card on">
+          <span>最終損益</span>
+          <strong>{scaled.pnl.toLocaleString()}円</strong>
+          <div className="note" style={{ margin: "0.35rem 0 0" }}>
+            ROI {scaled.roi.toFixed(1)}%
+          </div>
+        </div>
+        <div className="side-card on">
+          <span>投資合計</span>
+          <strong>{scaled.bets.toLocaleString()}円</strong>
+          <div className="note" style={{ margin: "0.35rem 0 0" }}>
+            払戻 {scaled.pay.toLocaleString()}円
+          </div>
+        </div>
+        <div className="side-card on">
+          <span>対象レース</span>
+          <strong>{scaled.selected}R</strong>
+          <div className="note" style={{ margin: "0.35rem 0 0" }}>
+            的中 {scaled.hit_rate.toFixed(1)}%（{scaled.hits}本）
+          </div>
+        </div>
+      </div>
+      <div className="side-card on" style={{ marginTop: "0.85rem" }}>
+        <span>{stake.toLocaleString()}円/レースの収支推移</span>
+        <EquityMiniChart curve={scaled.curve} color="#3ad0c4" />
+      </div>
+    </section>
   );
 }
