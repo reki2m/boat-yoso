@@ -49,3 +49,7 @@ next-env.d.ts
 /data/update_state.json
 scripts/__pycache__/
 **/__pycache__/
+
+# local API cache
+data/api_full/
+AGENTS.md

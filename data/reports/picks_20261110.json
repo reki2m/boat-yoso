@@ -1,16 +1,69 @@
 {
   "date": "20261110",
-  "phase": "tomorrow",
-  "generated_at": "2026-11-09T23:27:19.024984+09:00",
+  "phase": "today",
+  "generated_at": "2026-11-10T21:03:55.893190+09:00",
   "picks": [],
-  "status": "programs_unavailable",
-  "mode": "honmei_volume_single",
-  "note": "番組未公開。夜中再取得待ち。",
+  "count": 0,
+  "status": "ok",
+  "mode": "honmei_fix_race_filter",
+  "selection": {
+    "mode": "threshold",
+    "min_score": 0,
+    "min_score_gap": 1.5,
+    "soft_max_per_day": 4,
+    "hard_max_per_day": 4,
+    "min_per_day": 0,
+    "fill_to_target": false
+  },
   "disabled_systems": [
     "oshi",
     "ana",
     "volume_fixed_12",
     "tri_1axis_6",
     "honmei_roi_6pt"
-  ]
+  ],
+  "stadium_blacklist": [
+    21
+  ],
+  "pool_size": 0,
+  "elite_count": 0,
+  "standard_count": 0,
+  "points_per_race": 2,
+  "closed_skipped": 96,
+  "odds_blocked": 0,
+  "blacklisted_stadiums_seen": 1,
+  "stake_s": 100,
+  "stake_standard": 100,
+  "feasibility": {
+    "target_races_per_day": "1.0-1.2",
+    "points_per_race": 1,
+    "validated_raw_2021_2023": {
+      "2021": 100.6,
+      "2022": 108.3,
+      "2023": 117.3,
+      "avg": 1.1
+    },
+    "validated_raw_2024_2025": {
+      "2024": 109.9,
+      "2025": 100.2
+    },
+    "validated_raw_2026": {
+      "roi": 115.5,
+      "H1": 109.5,
+      "H2": 121.4
+    },
+    "validated_gated_2024_2025": {
+      "2024": 109.2,
+      "2025": 105.3,
+      "roi": 107.2
+    },
+    "validated_gated_2026": {
+      "roi": 113.6,
+      "H1": 110.8,
+      "H2": 116.3
+    },
+    "period": "2021-2026 + API展示ゲート",
+    "note": "前回の内枠率WLより、回収の悪い場を外し1R/9Rを切った方が年次が揃う。"
+  },
+  "note": "本命ボリューム単点。1日最大2R（平均約1.7）。A1/勝率6.5/ST0.15/モーター35。1-2-3のみ。芦屋除外。"
 }
