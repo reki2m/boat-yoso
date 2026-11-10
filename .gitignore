@@ -53,3 +53,9 @@ scripts/__pycache__/
 # local API cache
 data/api_full/
 AGENTS.md
+
+# ephemeral backfill day dumps
+data/reports/accuracy_2026*.json
+data/reports/picks_202608*.json
+data/reports/picks_202609*.json
+data/reports/picks_202610*.json
