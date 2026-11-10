@@ -121,6 +121,12 @@ def main() -> None:
     except subprocess.CalledProcessError as e:
         print("exhibition confirm deferred", e)
 
+    # Discord へ買い目送信（Webhook未設定ならスキップ）
+    try:
+        run(["python3", str(ROOT / "scripts" / "send_discord_picks.py")])
+    except subprocess.CalledProcessError as e:
+        print("discord notify deferred", e)
+
     # 的中再計算
     run(["python3", str(ROOT / "scripts" / "score_picks.py"), "--days", "14"])
 

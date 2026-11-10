@@ -232,6 +232,7 @@ export default function Home() {
   const [liveStadiums, setLiveStadiums] = useState<LiveStadium[]>([]);
   const [liveDate, setLiveDate] = useState("");
   const [activeLive, setActiveLive] = useState<LiveStadium | null>(null);
+  const [discordMsg, setDiscordMsg] = useState("");
 
   useEffect(() => {
     fetch("/api/schedule")
@@ -321,7 +322,30 @@ export default function Home() {
           >
             展示デモで確認
           </button>
+          <button
+            className="btn ghost"
+            onClick={() => {
+              setDiscordMsg("");
+              startTransition(async () => {
+                try {
+                  const res = await fetch("/api/discord/notify", { method: "POST" });
+                  const json = await res.json();
+                  if (!res.ok) {
+                    setDiscordMsg(json.hint || json.error || "Discord送信に失敗しました");
+                    return;
+                  }
+                  setDiscordMsg("Discordへ送信しました");
+                } catch {
+                  setDiscordMsg("Discord送信に失敗しました");
+                }
+              });
+            }}
+            disabled={pending}
+          >
+            Discordに送る
+          </button>
         </div>
+        {discordMsg ? <p className="note">{discordMsg}</p> : null}
       </section>
 
       <section className="panel">
