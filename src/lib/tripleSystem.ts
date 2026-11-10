@@ -442,7 +442,7 @@ export function buildTriplePrediction(input: {
     focus,
     why,
     disclaimer:
-      "本命ボリューム単点。押し目・穴は無効。1日最大2R（平均約1.7）・A1/勝率6.5/ST0.15/モーター35・芦屋除外・オッズ回避・展示厳格。必ず勝てる保証はない。",
+      "本命FIX場+レース除外。押し目・穴は無効。1-2-3単点・対象8場・1R/9R除外・A1/勝率6.8/ST0.15/モーター32・展示とオッズ通過後のみ。必ず勝てる保証はない。",
     exhibition: input.exhibition,
     ticketsLocked,
     liveUrls,

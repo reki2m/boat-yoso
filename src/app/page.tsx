@@ -405,7 +405,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="brand">潮読み</h1>
         <p className="lede">
-          本命ボリューム単点（1-2-3のみ）。1日最大2R（平均約1.7）、A1・勝率6.5以上・ST0.15以下・モーター35%以上、芦屋除外、資金均一100円。
+          本命FIX場のみ（押し目・穴は出さない）。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。平均約1.1R/日。
         </p>
         <div className="cta-row">
           <button className="btn" onClick={() => load()} disabled={pending}>
@@ -756,9 +756,9 @@ export default function Home() {
           </p>
           <p className="note">{picksPayload.policy?.note || picksPayload.board.note}</p>
           <div className="anomaly ok" style={{ marginTop: "0.75rem" }}>
-            <strong>本命ボリューム単点</strong>
+            <strong>本命FIX場 + レース除外</strong>
             <p>
-              押し目・穴は無効。3連単は 1-2-3 のみ。1日最大2R（平均約1.7）、A1・勝率6.5・ST0.15・モーター35以上、芦屋除外、資金均一。オッズ回避・展示悪化はスキップ。
+              押し目・穴は無効。3連単は 1-2-3 のみ。対象場 8/9/12/13/15/17/18/19、1R・9R除外、A1・勝率6.8・ST0.15・モーター32・差1.0。展示・オッズ未通過はスキップ。
             </p>
           </div>
           {(picksPayload.board.picks?.length ?? 0) === 0 ? (
@@ -865,7 +865,7 @@ export default function Home() {
               if (!b) return null;
               return (
                 <div key={key} className="side-card on">
-                  <span>本命（押し目・穴は無効）</span>
+                  <span>本命FIX（押し目・穴なし）</span>
                   <strong>
                     最終 {b.final_equity.toLocaleString()}円 / ROI {b.roi.toFixed(1)}%
                   </strong>
@@ -880,7 +880,7 @@ export default function Home() {
           </div>
           {research.equity10k.portfolio ? (
             <div className="side-card on" style={{ marginTop: "0.75rem" }}>
-              <span>合算（本命優先で同一レースは1帯）</span>
+              <span>本命のみ（単一ルール）</span>
               <strong>
                 最終 {research.equity10k.portfolio.final_equity.toLocaleString()}円 / ROI{" "}
                 {research.equity10k.portfolio.roi.toFixed(1)}%
