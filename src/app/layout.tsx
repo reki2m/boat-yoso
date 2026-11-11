@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "潮読み — 本命・押し目・穴の3段予想",
+  title: "律丸ボート部 — 本命・押し目・穴の3段予想",
   description:
     "得意コース・異常オッズ回避・イン戦起点の本命/押し目/穴買い目システム（検証ベース・保証なし）",
 };
