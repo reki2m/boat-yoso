@@ -242,6 +242,9 @@ export async function fetchKyoteiRaceBundle(
           lapTime: ex.lapTime,
           entryChanged: ex.entryChanged,
         });
+        const seriesMarks = [row.seiseki1, row.seiseki2, row.seiseki3, row.seiseki4, row.seiseki5, row.seiseki6]
+          .map((v) => (v == null || String(v).trim() === "" ? null : String(v)))
+          .filter((v): v is string => Boolean(v));
         return {
           course: entry,
           entry,
@@ -263,6 +266,25 @@ export async function fetchKyoteiRaceBundle(
           exhibitionCourse: ex.course,
           exhibitionSlit: ex.slit,
           exhibitionLap: ex.lapTime,
+          recentWin: num(row.saikin_shoritsu, num(row.zenkoku_shoritsu)),
+          seriesPoints: num(row.tokutenritsu),
+          seriesDisplayAvg:
+            row.konsetsu_display_ave == null || row.konsetsu_display_ave === ""
+              ? null
+              : num(row.konsetsu_display_ave),
+          seriesStartAvg:
+            row.konsetsu_start_ave == null || row.konsetsu_start_ave === ""
+              ? null
+              : num(row.konsetsu_start_ave),
+          abilityIndex:
+            row.konki_nouryoku_shisuu == null || row.konki_nouryoku_shisuu === ""
+              ? null
+              : num(row.konki_nouryoku_shisuu),
+          motorIndex:
+            row.motor_shisuu == null || row.motor_shisuu === ""
+              ? null
+              : num(row.motor_shisuu),
+          seriesMarks,
         };
       })
       .sort((a, b) => a.course - b.course);

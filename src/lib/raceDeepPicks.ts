@@ -1,0 +1,332 @@
+import type { ScoredRacer } from "./predict";
+import type { RacerRow } from "./types";
+import type { ExhibitionStatus } from "./exhibition";
+import type { SeriesFinish, SeriesForm } from "./seriesForm";
+import { courseWinRate } from "./courseSkills";
+
+export type DeepRacerView = {
+  course: number;
+  name: string;
+  className: string;
+  score: number;
+  nationalWin: number;
+  recentWin: number;
+  localWin: number;
+  motorTop2: number;
+  boatTop2: number;
+  avgStart: number;
+  abilityIndex: number | null;
+  seriesPoints: number | null;
+  seriesLabel: string;
+  motorIndex: number | null;
+  exhibitionLap: number | null;
+  exhibitionSlit: number | null;
+  reasons: string[];
+};
+
+export type DeepTicket = {
+  combo: string;
+  rank: number;
+  role: "本線" | "抑え" | "相手拡張";
+  why: string;
+};
+
+export type RaceDeepPicks = {
+  tickets: DeepTicket[];
+  count: number;
+  axis: number;
+  partners: number[];
+  confidence: "高め" | "中" | "低め";
+  commentary: string[];
+  racerViews: DeepRacerView[];
+  method: string;
+};
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function num(v: unknown, fallback = 0): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v.replace(/[^\d.-]/g, ""));
+    return Number.isFinite(n) ? n : fallback;
+  }
+  return fallback;
+}
+
+function uniqueTickets(list: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of list) {
+    if (seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+function ticketWhy(combo: string, byCourse: Map<number, DeepRacerView>): string {
+  const [a, b, c] = combo.split("-").map(Number);
+  const A = byCourse.get(a);
+  const B = byCourse.get(b);
+  const C = byCourse.get(c);
+  const bits: string[] = [];
+  if (A) bits.push(`${a}号軸（${A.className}・勝率${A.nationalWin.toFixed(2)}）`);
+  if (B) bits.push(`${b}号相手（モーター${B.motorTop2.toFixed(0)}%）`);
+  if (C) bits.push(`${c}号三着`);
+  return bits.join(" / ");
+}
+
+export function buildRaceDeepPicks(input: {
+  racers: RacerRow[];
+  scored?: ScoredRacer[];
+  exhibition?: ExhibitionStatus | null;
+  seriesForms?: Map<number, SeriesForm>;
+  placeName?: string;
+  raceNo?: number;
+}): RaceDeepPicks {
+  const seriesForms = input.seriesForms ?? new Map();
+  const scoredByCourse = new Map(
+    (input.scored ?? []).map((r) => [r.course, r] as const),
+  );
+
+  const views: DeepRacerView[] = input.racers.map((r) => {
+    const series = seriesForms.get(r.playerNo);
+    const recentWin = num(r.recentWin, r.nationalWin);
+    const ability = r.abilityIndex != null ? num(r.abilityIndex) : null;
+    const seriesPts =
+      r.seriesPoints != null
+        ? num(r.seriesPoints)
+        : series
+          ? series.points / Math.max(series.starts, 1)
+          : null;
+    const motorIndex = r.motorIndex != null ? num(r.motorIndex) : null;
+    const skillWin = courseWinRate(r.playerNo, r.course);
+    const reasons: string[] = [];
+
+    // 選手能力（級別・全国・当地・直近）
+    const classScore =
+      r.className === "A1" ? 1 : r.className === "A2" ? 0.72 : r.className === "B1" ? 0.42 : 0.22;
+    const national = clamp(r.nationalWin / 8, 0, 1);
+    const local = clamp(r.localWin / 8, 0, 1);
+    const recent = clamp(recentWin / 8, 0, 1);
+
+    // 過去コース適性
+    const skill = clamp(skillWin / 0.35, 0, 1);
+
+    // エンジン / ボート
+    const motor = clamp(r.motorTop2 / 60, 0, 1);
+    const boat = clamp(r.boatTop2 / 60, 0, 1);
+    const motorIdx = motorIndex != null ? clamp((motorIndex + 0.5) / 1.2, 0, 1) : 0.5;
+
+    // 今節
+    const seriesScore =
+      seriesPts != null
+        ? clamp(seriesPts / 10, 0, 1)
+        : series
+          ? clamp(1.15 - (series.avgPlace ?? 4) / 6, 0, 1)
+          : 0.45;
+    const seriesFinishes: SeriesFinish[] = series?.finishes ?? [];
+    const seriesStTimes = seriesFinishes
+      .map((f: SeriesFinish) => f.startTiming)
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    const seriesStAvgFromResults =
+      seriesStTimes.length > 0
+        ? seriesStTimes.reduce((a: number, b: number) => a + b, 0) / seriesStTimes.length
+        : null;
+    const seriesSt =
+      r.seriesStartAvg != null
+        ? clamp(1 - (num(r.seriesStartAvg) - 0.1) / 0.2, 0, 1)
+        : seriesStAvgFromResults != null
+          ? clamp(1 - (seriesStAvgFromResults - 0.1) / 0.2, 0, 1)
+          : 0.5;
+    const seriesDisplay =
+      r.seriesDisplayAvg != null
+        ? clamp(1 - (num(r.seriesDisplayAvg) - 6.55) / 0.35, 0, 1)
+        : 0.5;
+
+    // スタート / 展示
+    const st = clamp(1 - (r.avgStart - 0.1) / 0.2, 0, 1);
+    const exLap = r.exhibitionLap;
+    const exSlit = r.exhibitionSlit;
+    const lapScore =
+      exLap != null ? clamp(1 - (exLap - 6.55) / 0.35, 0, 1) : 0.5;
+    const slitScore =
+      exSlit != null ? clamp(1 - (exSlit - 0.1) / 0.2, 0, 1) : 0.5;
+    const abilityScore =
+      ability != null ? clamp(ability / 6500, 0, 1) : national;
+
+    const courseBias =
+      r.course === 1 ? 0.16 : r.course === 2 ? 0.08 : r.course === 3 ? 0.05 : 0.02;
+
+    if (r.className === "A1") reasons.push("級別A1");
+    if (r.nationalWin >= 6.2) reasons.push(`全国勝率 ${r.nationalWin.toFixed(2)}`);
+    if (recentWin >= 6.2 && Math.abs(recentWin - r.nationalWin) >= 0.15) {
+      reasons.push(`直近勝率 ${recentWin.toFixed(2)}`);
+    }
+    if (r.localWin >= 6) reasons.push(`当地勝率 ${r.localWin.toFixed(2)}`);
+    if (r.motorTop2 >= 38) reasons.push(`モーター2連対 ${r.motorTop2.toFixed(1)}%`);
+    if (motorIndex != null && motorIndex >= 0.25) reasons.push(`モーター指数 +${motorIndex.toFixed(2)}`);
+    if (r.boatTop2 >= 40) reasons.push(`ボート2連対 ${r.boatTop2.toFixed(1)}%`);
+    if (r.avgStart <= 0.15) reasons.push(`平均ST ${r.avgStart.toFixed(2)}`);
+    if (series?.starts) reasons.push(series.label);
+    else if (seriesPts != null) reasons.push(`今節得点率 ${seriesPts.toFixed(2)}`);
+    if (ability != null && ability >= 5200) reasons.push(`能力指数 ${ability}`);
+    if (skillWin >= 0.22) reasons.push(`${r.course}コース勝率 ${(skillWin * 100).toFixed(1)}%`);
+    if (exLap != null && exLap <= 6.7) reasons.push(`展示 ${exLap.toFixed(2)}`);
+    if (exSlit != null && exSlit <= 0.14) reasons.push(`スリット ${exSlit.toFixed(2)}`);
+
+    const base = scoredByCourse.get(r.course)?.score ?? 0;
+    const score =
+      classScore * 10 +
+      national * 12 +
+      local * 6 +
+      recent * 10 +
+      skill * 10 +
+      motor * 12 +
+      boat * 6 +
+      motorIdx * 6 +
+      seriesScore * 12 +
+      seriesSt * 5 +
+      seriesDisplay * 4 +
+      st * 6 +
+      lapScore * 5 +
+      slitScore * 4 +
+      abilityScore * 8 +
+      courseBias * 14 +
+      base * 0.15;
+
+    return {
+      course: r.course,
+      name: r.name,
+      className: r.className,
+      score: Math.round(score * 10) / 10,
+      nationalWin: r.nationalWin,
+      recentWin,
+      localWin: r.localWin,
+      motorTop2: r.motorTop2,
+      boatTop2: r.boatTop2,
+      avgStart: r.avgStart,
+      abilityIndex: ability,
+      seriesPoints: seriesPts,
+      seriesLabel: series?.label ?? (seriesPts != null ? `今節得点率 ${seriesPts.toFixed(2)}` : "今節データ薄"),
+      motorIndex,
+      exhibitionLap: exLap ?? null,
+      exhibitionSlit: exSlit ?? null,
+      reasons,
+    };
+  });
+
+  const ranked = [...views].sort((a, b) => b.score - a.score);
+  const byCourse = new Map(views.map((v) => [v.course, v]));
+  const axis = ranked[0]?.course ?? 1;
+  const partners = ranked.slice(1, 5).map((v) => v.course);
+  const secondPool = ranked.slice(1, 4).map((v) => v.course);
+  const thirdPool = ranked.slice(1, 5).map((v) => v.course);
+
+  const raw: string[] = [];
+  // 軸頭固定の本線〜相手拡張
+  for (const b of secondPool) {
+    for (const c of thirdPool) {
+      if (b === c || b === axis || c === axis) continue;
+      raw.push(`${axis}-${b}-${c}`);
+    }
+  }
+  // 2着軸の崩し（差が大きい時は少なめ）
+  const gap = (ranked[0]?.score ?? 0) - (ranked[1]?.score ?? 0);
+  if (gap < 8 && secondPool[0]) {
+    const alt = secondPool[0];
+    for (const c of thirdPool) {
+      if (c === alt || c === axis) continue;
+      raw.push(`${alt}-${axis}-${c}`);
+      if (raw.length > 10) break;
+    }
+  }
+
+  let tickets = uniqueTickets(raw);
+  // 4〜6点に調整
+  if (tickets.length < 4) {
+    const fillers = [
+      `${axis}-${partners[0] ?? 2}-${partners[1] ?? 3}`,
+      `${axis}-${partners[0] ?? 2}-${partners[2] ?? 4}`,
+      `${axis}-${partners[1] ?? 3}-${partners[0] ?? 2}`,
+      `${axis}-${partners[1] ?? 3}-${partners[2] ?? 4}`,
+      `${axis}-${partners[2] ?? 4}-${partners[0] ?? 2}`,
+      `${axis}-${partners[0] ?? 2}-${partners[3] ?? 5}`,
+    ];
+    tickets = uniqueTickets([...tickets, ...fillers]).slice(0, 6);
+  } else if (tickets.length > 6) {
+    // 信頼ギャップが大きいほど絞る
+    const keep = gap >= 10 ? 4 : gap >= 6 ? 5 : 6;
+    tickets = tickets.slice(0, keep);
+  }
+  if (tickets.length < 4) {
+    tickets = uniqueTickets([
+      ...tickets,
+      "1-2-3",
+      "1-2-4",
+      "1-3-2",
+      "1-3-4",
+    ]).slice(0, 4);
+  }
+
+  const deepTickets: DeepTicket[] = tickets.map((combo, i) => ({
+    combo,
+    rank: i + 1,
+    role: i === 0 ? "本線" : i < 3 ? "抑え" : "相手拡張",
+    why: ticketWhy(combo, byCourse),
+  }));
+
+  const top = ranked[0];
+  const second = ranked[1];
+  const motorBest = [...views].sort((a, b) => b.motorTop2 - a.motorTop2)[0];
+  const seriesBest = [...views]
+    .filter((v) => v.seriesPoints != null)
+    .sort((a, b) => (b.seriesPoints ?? 0) - (a.seriesPoints ?? 0))[0];
+
+  const commentary: string[] = [];
+  if (top) {
+    commentary.push(
+      `【選手能力】${top.course}号 ${top.name}（${top.className}）を軸。全国${top.nationalWin.toFixed(2)} / 直近${top.recentWin.toFixed(2)} / 当地${top.localWin.toFixed(2)}、平均ST ${top.avgStart.toFixed(2)}。`,
+    );
+  }
+  if (seriesBest) {
+    commentary.push(
+      `【今節】一番調子が良いのは ${seriesBest.course}号 ${seriesBest.name}。${seriesBest.seriesLabel}${seriesBest.abilityIndex != null ? ` / 能力指数 ${seriesBest.abilityIndex}` : ""}。`,
+    );
+  } else {
+    commentary.push("【今節】節間の確定着順がまだ薄いので、得点率・展示平均を補助指標にしています。");
+  }
+  if (motorBest) {
+    commentary.push(
+      `【モーター／ボート】機力上位は ${motorBest.course}号（モーター2連対 ${motorBest.motorTop2.toFixed(1)}% / ボート ${motorBest.boatTop2.toFixed(1)}%${motorBest.motorIndex != null ? ` / 指数 ${motorBest.motorIndex.toFixed(2)}` : ""}）。伸び負けしやすい並びでは相手に残します。`,
+    );
+  }
+  if (second && top) {
+    commentary.push(
+      `【展開】軸との差は ${(top.score - second.score).toFixed(1)}点。${
+        gap >= 10
+          ? "差が開いているので本線寄り4点中心。"
+          : "接戦なので相手を広げて5〜6点。"
+      } ${input.exhibition && !input.exhibition.ready ? "展示未確定のため、進入確定後に再評価推奨。" : "展示データもスコアに反映済み。"}`,
+    );
+  }
+  commentary.push(
+    `【買い目】3連単 ${deepTickets.length}点（${deepTickets.map((t) => t.combo).join(" / ")}）。参考コメントであり的中を保証しません。`,
+  );
+
+  const confidence = gap >= 10 ? "高め" : gap >= 6 ? "中" : "低め";
+
+  return {
+    tickets: deepTickets,
+    count: deepTickets.length,
+    axis,
+    partners,
+    confidence,
+    commentary,
+    racerViews: ranked,
+    method:
+      "今節着順・得点率、直近/全国/当地勝率、能力指数、モーター/ボート、コース適性、ST・展示を合成して4〜6点を構成",
+  };
+}

@@ -132,6 +132,29 @@ type RaceResponse = {
       placeName: string;
     };
   };
+  deepPicks?: {
+    tickets: Array<{ combo: string; rank: number; role: string; why: string }>;
+    count: number;
+    axis: number;
+    partners: number[];
+    confidence: string;
+    commentary: string[];
+    method: string;
+    racerViews?: Array<{
+      course: number;
+      name: string;
+      className: string;
+      score: number;
+      nationalWin: number;
+      recentWin: number;
+      localWin: number;
+      motorTop2: number;
+      boatTop2: number;
+      avgStart: number;
+      seriesLabel: string;
+      reasons: string[];
+    }>;
+  };
 };
 
 type Research = {
@@ -572,9 +595,91 @@ export default function Home() {
               ) : null}
             </div>
 
+            {data.deepPicks ? (
+              <div className="panel" style={{ marginTop: "1rem", padding: "1rem" }}>
+                <div className="meta" style={{ marginBottom: "0.65rem" }}>
+                  <span className="badge">考察買い目</span>
+                  <span className="badge">
+                    3連単 {data.deepPicks.count}点
+                  </span>
+                  <span className="badge">信頼度 {data.deepPicks.confidence}</span>
+                  <span className="badge">軸 {data.deepPicks.axis}号</span>
+                </div>
+                <div className="sanren" style={{ marginBottom: "0.75rem" }}>
+                  {data.deepPicks.tickets.map((t) => t.combo).join(" / ")}
+                </div>
+                <div className="band-grid">
+                  {data.deepPicks.tickets.map((t) => (
+                    <div key={t.combo} className="side-card on">
+                      <span>
+                        {t.rank}. {t.role}
+                      </span>
+                      <strong>{t.combo}</strong>
+                      <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                        {t.why}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="why-box" style={{ marginTop: "0.85rem" }}>
+                  <strong>考察コメント</strong>
+                  {data.deepPicks.commentary.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                  <p className="note" style={{ marginBottom: 0 }}>
+                    {data.deepPicks.method}
+                  </p>
+                </div>
+                {data.deepPicks.racerViews?.length ? (
+                  <div className="table-wrap" style={{ marginTop: "0.85rem" }}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>枠</th>
+                          <th>選手</th>
+                          <th>全国/直近</th>
+                          <th>M/B</th>
+                          <th>今節</th>
+                          <th>評価</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.deepPicks.racerViews.map((r) => (
+                          <tr key={r.course}>
+                            <td>
+                              <span className={`lane c${r.course}`}>{r.course}</span>
+                            </td>
+                            <td>
+                              {r.name}
+                              <div className="note" style={{ margin: 0 }}>
+                                {r.className}
+                              </div>
+                            </td>
+                            <td>
+                              {r.nationalWin.toFixed(2)} / {r.recentWin.toFixed(2)}
+                            </td>
+                            <td>
+                              {r.motorTop2.toFixed(0)}% / {r.boatTop2.toFixed(0)}%
+                            </td>
+                            <td>{r.seriesLabel}</td>
+                            <td>{r.score.toFixed(1)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null}
+                <div className="cta-row" style={{ marginTop: "1rem" }}>
+                  <button type="button" className="btn" onClick={() => setPurchased(true)}>
+                    購入した
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <div className="pick">
               <div className="pick-main">
-                <span className="badge">{triple?.focus ?? "参考スコア"}</span>
+                <span className="badge">{triple?.focus ?? "運用本命（参考）"}</span>
                 <h2>
                   {triple?.skipped
                     ? "スキップ"
@@ -582,7 +687,7 @@ export default function Home() {
                       ? "買い目ロック中"
                       : activeBand
                         ? `${activeBand.label}採用`
-                        : "見送り"}
+                        : "運用本命は見送り"}
                 </h2>
                 <p>
                   {triple?.skipped
@@ -591,7 +696,7 @@ export default function Home() {
                       ? "進入状況・スリット・周回タイムの確定後に買い目を出します。"
                       : activeBand
                         ? `${activeBand.ticketLabel} / ${activeBand.tickets.join(" · ")}`
-                        : data.prediction.summary}
+                        : "上の考察買い目（4〜6点）を優先表示。運用FIX本命は条件該当時のみ。"}
                 </p>
                 <div className="sanren">
                   {triple?.skipped
@@ -600,12 +705,12 @@ export default function Home() {
                       ? "WAIT"
                       : (activeBand?.tickets?.length
                           ? activeBand.tickets
-                          : ["見送り"]
+                          : data.deepPicks?.tickets.map((t) => t.combo) ?? ["見送り"]
                         ).join(" / ")}
                 </div>
                 {triple?.why ? (
                   <div className="why-box">
-                    <strong>なぜこのレースか</strong>
+                    <strong>なぜこのレースか（運用本命）</strong>
                     <p>{triple.why}</p>
                     {activeBand?.reasons?.length ? (
                       <ul>
@@ -614,18 +719,6 @@ export default function Home() {
                         ))}
                       </ul>
                     ) : null}
-                  </div>
-                ) : null}
-                {!triple?.ticketsLocked &&
-                !triple?.skipped &&
-                (triple?.portfolioTickets?.length ?? 0) > 0 ? (
-                  <div className="cta-row" style={{ marginTop: "1rem" }}>
-                    <button
-                      className="btn"
-                      onClick={() => setPurchased(true)}
-                    >
-                      購入した
-                    </button>
                   </div>
                 ) : null}
                 <p className="note" style={{ marginTop: "0.4rem" }}>

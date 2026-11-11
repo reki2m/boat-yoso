@@ -6,6 +6,8 @@ import { fetchTrifectaOdds } from "@/lib/oddsFetch";
 import { annotateCourseSkills } from "@/lib/courseSkills";
 import { remapRacersToExhibitionCourses } from "@/lib/exhibition";
 import { jstDateKey } from "@/lib/stadiums";
+import { fetchStadiumSeriesForms } from "@/lib/seriesForm";
+import { buildRaceDeepPicks } from "@/lib/raceDeepPicks";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +29,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "invalid date" }, { status: 400 });
   }
 
-  const { payload, exhibition } = await fetchKyoteiRaceBundle(place, race, date, {
-    forceSampleExhibition: demoExhibition,
-  });
+  const [{ payload, exhibition }, seriesForms] = await Promise.all([
+    fetchKyoteiRaceBundle(place, race, date, {
+      forceSampleExhibition: demoExhibition,
+    }),
+    fetchStadiumSeriesForms(place, date, race),
+  ]);
   const windSpeed =
     windParam != null && windParam !== "" && Number.isFinite(Number(windParam))
       ? Number(windParam)
@@ -53,11 +58,20 @@ export async function GET(req: NextRequest) {
     exhibition,
   });
   const courseAnnotated = annotateCourseSkills(racersForScore);
+  const deepPicks = buildRaceDeepPicks({
+    racers: racersForScore,
+    scored: prediction.rankings,
+    exhibition,
+    seriesForms,
+    placeName: payload.placeName,
+    raceNo: race,
+  });
 
   return NextResponse.json({
     ...payload,
     prediction,
     exhibition,
+    deepPicks,
     courseSkills: courseAnnotated.map((r) => ({
       course: r.course,
       name: r.name,
