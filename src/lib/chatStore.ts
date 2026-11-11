@@ -7,6 +7,19 @@ export type ChatRole = "operator" | "member";
 /** public=全員 / private=依頼者のみ / admin=管理人のみ */
 export type ChatVisibility = "public" | "private" | "admin";
 
+/** チャット欄の「〇〇場 〇〇R」UI用 */
+export type ChatRaceChip = {
+  placeNo: number;
+  placeName: string;
+  raceNo: number;
+  label: string;
+  tickets?: string[];
+  status?: string;
+  why?: string;
+  /** waiting=展示前 / after=展示後反映 */
+  exhibition?: "waiting" | "after" | "unknown";
+};
+
 export type ChatMessageMeta = {
   date?: string;
   mode?: string;
@@ -18,6 +31,9 @@ export type ChatMessageMeta = {
   visibility?: ChatVisibility;
   owner_session_id?: string;
   owner_name?: string;
+  /** チャット欄レースUI（〇〇場 〇〇R） */
+  races?: ChatRaceChip[];
+  race_label?: string;
 };
 
 export type ChatMessage = {

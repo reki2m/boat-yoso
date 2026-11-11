@@ -31,6 +31,7 @@ import {
 } from "@/lib/chatSession";
 import { allowAuthAttempt } from "@/lib/authRateLimit";
 import { listAdminPredictionOversight } from "@/lib/chatAdminOversight";
+import { buildRaceChipsFromPicks, buildSingleRaceChip } from "@/lib/chatRaceUi";
 import { STADIUMS } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 
@@ -92,10 +93,19 @@ async function createAppRacePick(opts: {
       raceNo: opts.raceNo,
       raw: `${placeName}${opts.raceNo}R`,
     });
+    const tickets = [...built.tickets, ...built.anaTickets];
+    const raceChip = buildSingleRaceChip({
+      placeNo: built.placeNo,
+      placeName,
+      raceNo: built.raceNo,
+      tickets,
+      status: "provisional",
+      exhibition: "waiting",
+    });
     // 依頼した友達本人だけにアプリ予想本文を見せる（共有チャットは汚さない）
     const reply = await appendChatMessage({
       kind: "note",
-      title: `${placeName}${opts.raceNo}R アプリ予想`,
+      title: `${placeName} ${opts.raceNo}R アプリ予想`,
       body: built.text,
       author_name: "律丸ボート部",
       author_role: "operator",
@@ -105,17 +115,19 @@ async function createAppRacePick(opts: {
         count: built.tickets.length,
         placeNo: built.placeNo,
         raceNo: built.raceNo,
-        tickets: [...built.tickets, ...built.anaTickets],
+        tickets,
         visibility: "private",
         owner_session_id: opts.sessionId,
         owner_name: opts.ownerName,
+        race_label: raceChip.label,
+        races: [raceChip],
       },
     });
-    // 管理人専用チャット: 誰がどのレースを見たかだけ短く残す
+    // 管理人専用チャット欄: 「〇〇場 〇〇R」UIで誰が見たかを残す
     const adminLog = await appendChatMessage({
       kind: "note",
-      title: "予想ログ",
-      body: `${opts.ownerName} が ${placeName}${opts.raceNo}R のアプリ予想を表示しました。`,
+      title: `${opts.ownerName} · ${raceChip.label}`,
+      body: `${opts.ownerName} が ${raceChip.label} のアプリ予想を表示しました。`,
       author_name: "システム",
       author_role: "operator",
       meta: {
@@ -123,10 +135,12 @@ async function createAppRacePick(opts: {
         mode: "admin_predict_log",
         placeNo: built.placeNo,
         raceNo: built.raceNo,
-        tickets: [...built.tickets, ...built.anaTickets],
+        tickets,
         visibility: "admin",
         owner_session_id: opts.sessionId,
         owner_name: opts.ownerName,
+        race_label: raceChip.label,
+        races: [raceChip],
       },
     });
     return { ok: true, reply, adminLog };
@@ -371,6 +385,7 @@ export async function POST(req: NextRequest) {
     skipped?: number;
     discord?: boolean;
     visibility?: "public";
+    races?: ReturnType<typeof buildRaceChipsFromPicks>;
   } = { visibility: "public" };
 
   if (kind === "picks") {
@@ -400,7 +415,7 @@ export async function POST(req: NextRequest) {
       note: board.note,
       picks: livePicks,
     });
-    title = built.title;
+    title = built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`;
     text = built.body;
     meta = {
       date: built.dateKey,
@@ -408,8 +423,8 @@ export async function POST(req: NextRequest) {
       count: built.count,
       skipped: built.skippedCount,
       visibility: "public",
+      races: buildRaceChipsFromPicks(livePicks),
     };
-    title = built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`;
   } else if (!text) {
     return NextResponse.json({ ok: false, error: "メモ本文が空です" }, { status: 400 });
   }

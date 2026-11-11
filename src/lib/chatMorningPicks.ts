@@ -1,5 +1,6 @@
 import { buildPicksMessage } from "@/lib/buildPicksMessage";
 import { appendChatMessage } from "@/lib/chatStore";
+import { buildRaceChipsFromPicks } from "@/lib/chatRaceUi";
 import { sql } from "@/lib/db";
 import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
 import { loadPicksBoardForDate, type PicksBoardDoc } from "@/lib/loadPicksBoard";
@@ -99,6 +100,7 @@ export async function maybePostMorningHonmeiPicks(
       picks: livePicks,
     });
 
+    const races = buildRaceChipsFromPicks(livePicks);
     await appendChatMessage({
       kind: "picks",
       title: built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`,
@@ -110,6 +112,7 @@ export async function maybePostMorningHonmeiPicks(
         mode: "morning_auto_honmei",
         count: built.count,
         visibility: "public",
+        races,
       },
     });
 
