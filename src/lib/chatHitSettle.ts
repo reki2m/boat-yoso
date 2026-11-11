@@ -1,6 +1,6 @@
 import {
   appendChatMessage,
-  readChatFeed,
+  readAllChatMessagesForJobs,
   type ChatMessage,
 } from "@/lib/chatStore";
 import { sql } from "@/lib/db";
@@ -47,7 +47,13 @@ function raceMeta(m: ChatMessage): { date: string; stadium: number; race: number
     race?: number;
     mode?: string;
   } | undefined;
-  if (meta?.mode !== "chat_race_reply") return null;
+  if (
+    meta?.mode !== "chat_race_reply" &&
+    meta?.mode !== "private_race_pick" &&
+    meta?.mode !== "app_race_pick"
+  ) {
+    return null;
+  }
   const date = String(meta.date || "");
   const stadium = Number(meta.placeNo || meta.stadium || 0);
   const race = Number(meta.raceNo || meta.race || 0);
@@ -63,10 +69,11 @@ function yen(n: number): string {
  * チャット予想メッセージを結果照合し、的中時に 的中🎯 と払戻を投稿する。
  */
 export async function settleChatPredictionHits(): Promise<number> {
-  const feed = await readChatFeed();
+  // アプリ予想（依頼者 private）も含めて精算する
+  const messages = await readAllChatMessagesForJobs();
   let posted = 0;
 
-  for (const m of feed.messages) {
+  for (const m of messages) {
     const info = raceMeta(m);
     if (!info) continue;
     const flag = `hit_posted:${info.date}:${info.stadium}:${info.race}:${m.id}`;
@@ -92,6 +99,7 @@ export async function settleChatPredictionHits(): Promise<number> {
       `合計払戻目安 ${yen(hits.reduce((s, h) => s + h.payout, 0))}（各100円購入時）`,
       "※払戻は公式発表の100円あたり金額です。",
     ];
+    const privateHit = m.meta?.visibility === "private";
     await appendChatMessage({
       kind: "note",
       title: `的中🎯 ${placeName}${info.race}R`,
@@ -102,6 +110,16 @@ export async function settleChatPredictionHits(): Promise<number> {
         date: info.date,
         mode: "chat_hit",
         count: hits.length,
+        placeNo: info.stadium,
+        raceNo: info.race,
+        ...(privateHit
+          ? {
+              // 的中通知も依頼者本人だけ（管理人チャットは別ログ）
+              visibility: "private" as const,
+              owner_session_id: m.meta?.owner_session_id,
+              owner_name: m.meta?.owner_name,
+            }
+          : { visibility: "public" as const }),
       },
     });
     posted += 1;

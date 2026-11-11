@@ -1,9 +1,11 @@
 import { buildPicksMessage } from "@/lib/buildPicksMessage";
 import { appendChatMessage } from "@/lib/chatStore";
+import { buildRaceChipsFromPicks } from "@/lib/chatRaceUi";
 import { sql } from "@/lib/db";
 import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
 import { loadPicksBoardForDate, type PicksBoardDoc } from "@/lib/loadPicksBoard";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
+import { maybePostExhibitionHonmeiUpdates } from "@/lib/chatExhibitionPicks";
 import { jstDateKey } from "@/lib/stadiums";
 
 const META_KEY = "morning_honmei_posted_for";
@@ -99,9 +101,10 @@ export async function maybePostMorningHonmeiPicks(
       picks: livePicks,
     });
 
+    const races = buildRaceChipsFromPicks(livePicks);
     await appendChatMessage({
       kind: "picks",
-      title: built.title,
+      title: built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`,
       body: built.body,
       author_name: "律丸ボート部",
       author_role: "operator",
@@ -109,6 +112,8 @@ export async function maybePostMorningHonmeiPicks(
         date: dateKey,
         mode: "morning_auto_honmei",
         count: built.count,
+        visibility: "public",
+        races,
       },
     });
 
@@ -134,8 +139,9 @@ export function startMorningHonmeiScheduler(): void {
 
   const tick = () => {
     void maybePostMorningHonmeiPicks().catch(() => null);
+    void maybePostExhibitionHonmeiUpdates().catch(() => null);
   };
-  // 起動直後と以降1分ごと
+  // 起動直後と以降1分ごと（朝本命＋展示後確定）
   tick();
   setInterval(tick, 60_000);
 }
