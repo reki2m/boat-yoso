@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { STADIUMS } from "@/lib/stadiums";
 
 type ChatMessage = {
   id: string;
@@ -233,16 +234,27 @@ export default function ChatPage() {
   }, [messages.length, unlocked]);
 
   async function loadSchedule() {
+    const allRaces = Array.from({ length: 12 }, (_, i) => i + 1);
+    const fallback: StadiumOpt[] = Object.entries(STADIUMS).map(([id, name]) => ({
+      id: Number(id),
+      name,
+    }));
     try {
       const res = await fetch("/api/schedule");
-      const json = await res.json();
-      const next: StadiumOpt[] = json.stadiums || [];
-      setStadiums(next);
-      setRaces(json.races || Array.from({ length: 12 }, (_, i) => i + 1));
-      if (next[0]?.id) setPickStadium(next[0].id);
+      const json = await res.json().catch(() => ({}));
+      const next: StadiumOpt[] = Array.isArray(json.stadiums) ? json.stadiums : [];
+      if (next.length) {
+        setStadiums(next);
+        setRaces(json.races || allRaces);
+        setPickStadium((prev) => prev || next[0]?.id || 0);
+        return;
+      }
     } catch {
-      // ignore
+      // fall through to full list
     }
+    setStadiums(fallback);
+    setRaces(allRaces);
+    setPickStadium((prev) => prev || fallback[0]?.id || 0);
   }
 
   async function enterAndLoad(code: string, name: string, quiet: boolean) {

@@ -28,6 +28,8 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
     pathname.startsWith("/api/chat") ||
+    // チャットの場選択用。本日開催場の公開一覧のみ（鍵不要）
+    pathname.startsWith("/api/schedule") ||
     pathname.startsWith("/api/app-auth") ||
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
