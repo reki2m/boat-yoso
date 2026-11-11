@@ -27,7 +27,7 @@ export type DeepRacerView = {
 export type DeepTicket = {
   combo: string;
   rank: number;
-  role: "本線" | "抑え" | "相手拡張";
+  role: "本線" | "抑え" | "相手拡張" | "穴本線" | "穴抑え";
   why: string;
 };
 
@@ -38,6 +38,12 @@ export type RaceDeepPicks = {
   partners: number[];
   confidence: "高め" | "中" | "低め";
   commentary: string[];
+  /** 穴目（外枠軸の長め） */
+  anaTickets: DeepTicket[];
+  anaCount: number;
+  anaAxis: number | null;
+  anaConfidence: "高め" | "中" | "低め" | "見送り";
+  anaCommentary: string[];
   racerViews: DeepRacerView[];
   method: string;
 };
@@ -313,10 +319,129 @@ export function buildRaceDeepPicks(input: {
     );
   }
   commentary.push(
-    `【買い目】3連単 ${deepTickets.length}点（${deepTickets.map((t) => t.combo).join(" / ")}）。参考コメントであり的中を保証しません。`,
+    `【買い目】本線〜抑えの3連単 ${deepTickets.length}点（${deepTickets.map((t) => t.combo).join(" / ")}）。参考コメントであり的中を保証しません。`,
   );
 
   const confidence = gap >= 10 ? "高め" : gap >= 6 ? "中" : "低め";
+
+  // ---- 穴目: 外枠(4-6)の機力・今節・直近が相対的に強い場合 ----
+  const c1 = byCourse.get(1);
+  const outer = views
+    .filter((v) => v.course >= 4)
+    .map((v) => {
+      const upside =
+        v.score * 0.55 +
+        clamp(v.motorTop2 / 55, 0, 1) * 18 +
+        clamp((v.motorIndex ?? -0.2) + 0.4, 0, 1) * 10 +
+        clamp((v.seriesPoints ?? 4) / 10, 0, 1) * 12 +
+        clamp(v.recentWin / 7.5, 0, 1) * 10 +
+        (v.avgStart <= 0.15 ? 4 : 0) +
+        (c1 && v.avgStart + 0.01 < c1.avgStart ? 5 : 0) +
+        (c1 && v.nationalWin + 0.3 >= c1.nationalWin ? 3 : 0) -
+        (c1 && c1.nationalWin >= 7.2 && c1.avgStart <= 0.13 ? 8 : 0);
+      return { v, upside: Math.round(upside * 10) / 10 };
+    })
+    .sort((a, b) => b.upside - a.upside);
+
+  const anaLead = outer[0];
+  const anaAxis = anaLead?.v.course ?? null;
+  const anaRaw: string[] = [];
+  const anaCommentary: string[] = [];
+  let anaConfidence: RaceDeepPicks["anaConfidence"] = "見送り";
+
+  if (anaLead && anaAxis != null && anaLead.upside >= 38) {
+    const ana = anaLead.v;
+    // 相手は総合上位＋機力上位から（軸以外）
+    const partnerOrder: number[] = [];
+    for (const r of ranked) {
+      if (r.course !== anaAxis && !partnerOrder.includes(r.course)) partnerOrder.push(r.course);
+    }
+    for (const r of [...views].sort((a, b) => b.motorTop2 - a.motorTop2)) {
+      if (r.course !== anaAxis && !partnerOrder.includes(r.course)) partnerOrder.push(r.course);
+    }
+    const anaPartners = partnerOrder.slice(0, 4);
+
+    for (let i = 0; i < anaPartners.length; i++) {
+      for (let j = 0; j < anaPartners.length; j++) {
+        if (i === j) continue;
+        const b = anaPartners[i];
+        const c = anaPartners[j];
+        anaRaw.push(`${anaAxis}-${b}-${c}`);
+      }
+    }
+    // 1号を2着に残す穴（差し・まくり差し想定）
+    if (c1) {
+      for (const c of anaPartners.slice(0, 3)) {
+        if (c === 1) continue;
+        anaRaw.push(`${anaAxis}-1-${c}`);
+      }
+    }
+
+    let anaTicketsList = uniqueTickets(anaRaw);
+    const keepAna = anaLead.upside >= 52 ? 4 : anaLead.upside >= 45 ? 5 : 6;
+    anaTicketsList = anaTicketsList.slice(0, Math.min(6, Math.max(4, keepAna)));
+    if (anaTicketsList.length < 4) {
+      const fb = [2, 3, 1, 5, 6, 4].filter((n) => n !== anaAxis);
+      anaTicketsList = uniqueTickets([
+        ...anaTicketsList,
+        `${anaAxis}-${fb[0]}-${fb[1]}`,
+        `${anaAxis}-${fb[0]}-${fb[2]}`,
+        `${anaAxis}-${fb[1]}-${fb[0]}`,
+        `${anaAxis}-1-${fb[0]}`,
+      ]).slice(0, 4);
+    }
+
+    const anaDeep: DeepTicket[] = anaTicketsList.map((combo, i) => ({
+      combo,
+      rank: i + 1,
+      role: i === 0 ? "穴本線" : "穴抑え",
+      why: ticketWhy(combo, byCourse),
+    }));
+
+    anaConfidence =
+      anaLead.upside >= 52 ? "高め" : anaLead.upside >= 45 ? "中" : "低め";
+    anaCommentary.push(
+      `【穴軸】${ana.course}号 ${ana.name}（${ana.className}）。全国${ana.nationalWin.toFixed(2)} / 直近${ana.recentWin.toFixed(2)}、モーター${ana.motorTop2.toFixed(1)}%${ana.motorIndex != null ? ` / 指数${ana.motorIndex.toFixed(2)}` : ""}、${ana.seriesLabel}。`,
+    );
+    if (c1) {
+      const weakIn =
+        c1.nationalWin <= 6.2 || c1.avgStart >= 0.16 || (c1.motorTop2 ?? 0) < 35;
+      anaCommentary.push(
+        weakIn
+          ? `【狙い目】1号 ${c1.name} は勝率${c1.nationalWin.toFixed(2)} / ST${c1.avgStart.toFixed(2)} / モーター${c1.motorTop2.toFixed(0)}%で絶対ではなく、外の伸び・まくり差しが残る。`
+          : `【注意】1号 ${c1.name} も強い（勝率${c1.nationalWin.toFixed(2)} / ST${c1.avgStart.toFixed(2)}）。穴は少点数・抑え寄りで。`,
+      );
+    }
+    anaCommentary.push(
+      `【穴買い目】3連単 ${anaDeep.length}点（${anaDeep.map((t) => t.combo).join(" / ")}）。本線と併売せず、資金は小さめ推奨。的中保証なし。`,
+    );
+
+    commentary.push(
+      `【穴目】${ana.course}号軸で ${anaDeep.length}点も併記（信頼度${anaConfidence}）。`,
+    );
+
+    return {
+      tickets: deepTickets,
+      count: deepTickets.length,
+      axis,
+      partners,
+      confidence,
+      commentary,
+      anaTickets: anaDeep,
+      anaCount: anaDeep.length,
+      anaAxis,
+      anaConfidence,
+      anaCommentary,
+      racerViews: ranked,
+      method:
+        "本線は今節・過去・機力・選手能力の合成4〜6点。穴目は外枠(4〜6)の機力・今節・ST優位を軸に4〜6点。",
+    };
+  }
+
+  anaCommentary.push(
+    "【穴目】外枠に明確な機力・今節・STの上振れが見当たらないため、今回は穴目見送り。",
+  );
+  commentary.push("【穴目】今回は条件不足のため見送り。");
 
   return {
     tickets: deepTickets,
@@ -325,8 +450,13 @@ export function buildRaceDeepPicks(input: {
     partners,
     confidence,
     commentary,
+    anaTickets: [],
+    anaCount: 0,
+    anaAxis: null,
+    anaConfidence: "見送り",
+    anaCommentary,
     racerViews: ranked,
     method:
-      "今節着順・得点率、直近/全国/当地勝率、能力指数、モーター/ボート、コース適性、ST・展示を合成して4〜6点を構成",
+      "本線は今節・過去・機力・選手能力の合成4〜6点。穴目は外枠(4〜6)の機力・今節・ST優位を軸に4〜6点。",
   };
 }

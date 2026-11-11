@@ -139,6 +139,11 @@ type RaceResponse = {
     partners: number[];
     confidence: string;
     commentary: string[];
+    anaTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
+    anaCount?: number;
+    anaAxis?: number | null;
+    anaConfidence?: string;
+    anaCommentary?: string[];
     method: string;
     racerViews?: Array<{
       course: number;
@@ -629,6 +634,55 @@ export default function Home() {
                   <p className="note" style={{ marginBottom: 0 }}>
                     {data.deepPicks.method}
                   </p>
+                </div>
+
+                <div style={{ marginTop: "1rem" }}>
+                  <div className="meta" style={{ marginBottom: "0.65rem" }}>
+                    <span className="badge">穴目</span>
+                    <span className="badge">
+                      {data.deepPicks.anaCount
+                        ? `3連単 ${data.deepPicks.anaCount}点`
+                        : "見送り"}
+                    </span>
+                    <span className="badge">
+                      信頼度 {data.deepPicks.anaConfidence || "見送り"}
+                    </span>
+                    {data.deepPicks.anaAxis ? (
+                      <span className="badge">軸 {data.deepPicks.anaAxis}号</span>
+                    ) : null}
+                  </div>
+                  {(data.deepPicks.anaTickets?.length ?? 0) > 0 ? (
+                    <>
+                      <div className="sanren" style={{ marginBottom: "0.75rem" }}>
+                        {data.deepPicks.anaTickets!.map((t) => t.combo).join(" / ")}
+                      </div>
+                      <div className="band-grid">
+                        {data.deepPicks.anaTickets!.map((t) => (
+                          <div key={`ana-${t.combo}`} className="side-card band-ana on">
+                            <span>
+                              {t.rank}. {t.role}
+                            </span>
+                            <strong>{t.combo}</strong>
+                            <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                              {t.why}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="status" style={{ marginBottom: 0 }}>
+                      今回の穴目は見送りです。
+                    </p>
+                  )}
+                  {(data.deepPicks.anaCommentary?.length ?? 0) > 0 ? (
+                    <div className="why-box" style={{ marginTop: "0.85rem" }}>
+                      <strong>穴目コメント</strong>
+                      {data.deepPicks.anaCommentary!.map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 {data.deepPicks.racerViews?.length ? (
                   <div className="table-wrap" style={{ marginTop: "0.85rem" }}>
