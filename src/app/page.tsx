@@ -310,6 +310,8 @@ export default function Home() {
   const [operatorKey, setOperatorKey] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
   const [chatMsg, setChatMsg] = useState("");
+  /** none=出さない / board=本日の本命 / race=表示中レース予想 */
+  const [chatShareMode, setChatShareMode] = useState<"none" | "board" | "race">("none");
 
   useEffect(() => {
     try {
@@ -488,6 +490,21 @@ export default function Home() {
           >
             展示デモで確認
           </button>
+          <div className="field" style={{ minWidth: 220 }}>
+            <label htmlFor="chatShareMode">チャット欄への反映</label>
+            <select
+              id="chatShareMode"
+              value={chatShareMode}
+              onChange={(e) =>
+                setChatShareMode(e.target.value as "none" | "board" | "race")
+              }
+              className="chat-input"
+            >
+              <option value="none">出さない</option>
+              <option value="board">本日の本命を出す</option>
+              <option value="race">表示中のレース予想を出す</option>
+            </select>
+          </div>
           <button
             type="button"
             className="btn"
@@ -498,29 +515,58 @@ export default function Home() {
                 setChatMsg("運営キーを入力してからアップしてください");
                 return;
               }
+              if (chatShareMode === "none") {
+                setChatMsg("「チャット欄への反映」で出す内容を選んでください");
+                return;
+              }
+              if (chatShareMode === "race" && !data) {
+                setChatMsg("先にレースを予想してからアップしてください");
+                return;
+              }
               setChatBusy(true);
               void (async () => {
                 try {
+                  const body =
+                    chatShareMode === "board"
+                      ? {
+                          operatorKey: key,
+                          kind: "picks" as const,
+                          mirrorDiscord: false,
+                        }
+                      : {
+                          operatorKey: key,
+                          kind: "note" as const,
+                          mirrorDiscord: false,
+                          note: [
+                            `【管理人予想】${data?.placeName || `場${place}`} ${race}R`,
+                            triple?.skipped
+                              ? "スキップ"
+                              : triple?.ticketsLocked
+                                ? "買い目ロック中（展示待ち）"
+                                : activeBand
+                                  ? `${activeBand.label}: ${activeBand.tickets.join(" · ")}`
+                                  : (data?.deepPicks?.tickets.map((t) => t.combo) || []).join(" · ") ||
+                                    "見送り",
+                            triple?.why ? `理由: ${triple.why}` : "",
+                          ]
+                            .filter(Boolean)
+                            .join("\n"),
+                        };
                   const res = await fetch("/api/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      operatorKey: key,
-                      kind: "picks",
-                      mirrorDiscord: false,
-                    }),
+                    body: JSON.stringify(body),
                   });
                   const json = await res.json();
                   if (!res.ok) {
                     setChatMsg(json.hint || json.error || "アップに失敗しました");
                     return;
                   }
-                  const discordNote = json.discord?.ok
-                    ? " / Discordにも反映"
-                    : json.discord?.detail
-                      ? ` / Discord未反映（${json.discord.detail}）`
-                      : "";
-                  setChatMsg(`専用チャットにアップしました${discordNote}`);
+                  setChatMsg(
+                    chatShareMode === "board"
+                      ? "本日の本命を専用チャットにアップしました"
+                      : "表示中のレース予想を専用チャットにアップしました",
+                  );
                 } catch {
                   setChatMsg("アップに失敗しました");
                 } finally {
@@ -528,9 +574,9 @@ export default function Home() {
                 }
               })();
             }}
-            disabled={chatBusy}
+            disabled={chatBusy || chatShareMode === "none"}
           >
-            {chatBusy ? "アップ中…" : "専用チャットにアップ"}
+            {chatBusy ? "アップ中…" : "チャットにアップ"}
           </button>
           <a className="btn ghost" href="/chat">
             専用チャットを開く
@@ -635,7 +681,12 @@ export default function Home() {
                   onClick={() => void load({ placeNo: sid, raceNo: rid })}
                   disabled={loading || !sid || !rid}
                 >
-                  {(p.stadium_name || `場${sid}`) + ` ${rid}R ` + (p.tickets || ["1-2-3"]).join("/")}
+                  <span>
+                    {(p.stadium_name || `場${sid}`) + ` ${rid}R `}
+                    <span className="board-pick-tickets">
+                      {(p.tickets || ["1-2-3"]).join("/")}
+                    </span>
+                  </span>
                 </button>
               );
             })}
