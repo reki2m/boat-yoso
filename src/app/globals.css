@@ -680,3 +680,31 @@ th {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+.chat-live-panel {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.85rem 0.95rem 1rem;
+  background: rgba(8, 28, 38, 0.45);
+}
+
+.chat-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.chat-live-head strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.chat-live-targets {
+  margin-bottom: 0.75rem;
+}
+
+.chat-live-box {
+  margin-top: 0.35rem;
+}

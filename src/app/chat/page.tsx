@@ -19,6 +19,26 @@ type ChatMessage = {
   };
 };
 
+type LiveUrls = {
+  placeName: string;
+  mediaTop: string;
+  raceIndex: string;
+  raceList: string;
+  beforeInfo: string;
+};
+
+type ChatLiveTarget = {
+  date: string;
+  stadium: number;
+  stadium_name: string;
+  race: number;
+  tickets: string[];
+  status: string;
+  skip_detail: string | null;
+  why: string | null;
+  live: LiveUrls;
+};
+
 const INVITE_KEY = "shioyomi_chat_invite";
 const NAME_KEY = "shioyomi_chat_name";
 const OP_KEY = "shioyomi_operator_key";
@@ -43,6 +63,13 @@ function kindLabel(kind: ChatMessage["kind"]): string {
   return "会話";
 }
 
+function statusLabel(status: string): string {
+  if (status === "confirmed") return "確定";
+  if (status === "skipped") return "スキップ";
+  if (status === "provisional") return "展示待ち";
+  return status || "—";
+}
+
 export default function ChatPage() {
   const [invite, setInvite] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -53,6 +80,9 @@ export default function ChatPage() {
   const [status, setStatus] = useState("");
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [targets, setTargets] = useState<ChatLiveTarget[]>([]);
+  const [liveDate, setLiveDate] = useState("");
+  const [activeKey, setActiveKey] = useState("");
   const [pending, startTransition] = useTransition();
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -69,31 +99,53 @@ export default function ChatPage() {
     }
     if (savedInvite) {
       setInvite(savedInvite);
-      void loadFeed(savedInvite, false);
+      void loadFeed(savedInvite, { quiet: false, refresh: true });
     }
   }, []);
 
   useEffect(() => {
     if (!unlocked) return;
-    const timer = window.setInterval(() => {
-      void loadFeed(invite.trim(), true);
+    const msgTimer = window.setInterval(() => {
+      void loadFeed(invite.trim(), { quiet: true, refresh: false });
     }, 5000);
-    return () => window.clearInterval(timer);
+    const liveTimer = window.setInterval(() => {
+      void loadFeed(invite.trim(), { quiet: true, refresh: true });
+    }, 30000);
+    return () => {
+      window.clearInterval(msgTimer);
+      window.clearInterval(liveTimer);
+    };
   }, [unlocked, invite]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length, unlocked]);
 
-  async function loadFeed(code: string, quiet: boolean) {
-    if (!quiet) setError("");
+  useEffect(() => {
+    if (!targets.length) {
+      setActiveKey("");
+      return;
+    }
+    if (!activeKey || !targets.some((t) => `${t.stadium}-${t.race}` === activeKey)) {
+      setActiveKey(`${targets[0].stadium}-${targets[0].race}`);
+    }
+  }, [targets, activeKey]);
+
+  async function loadFeed(
+    code: string,
+    opts: { quiet: boolean; refresh: boolean },
+  ) {
+    if (!opts.quiet) setError("");
     try {
-      const res = await fetch(`/api/chat?invite=${encodeURIComponent(code)}`);
+      const q = new URLSearchParams({ invite: code });
+      if (opts.refresh) q.set("refresh", "1");
+      const res = await fetch(`/api/chat?${q.toString()}`);
       const json = await res.json();
       if (!res.ok) {
         setUnlocked(false);
         setMessages([]);
-        if (!quiet) {
+        setTargets([]);
+        if (!opts.quiet) {
           setError(json.error || "入場できません");
           window.localStorage.removeItem(INVITE_KEY);
         }
@@ -102,8 +154,10 @@ export default function ChatPage() {
       window.localStorage.setItem(INVITE_KEY, code);
       setUnlocked(true);
       setMessages(json.messages || []);
+      setTargets(json.targets || []);
+      setLiveDate(json.liveDate || "");
     } catch {
-      if (!quiet) setError("読み込みに失敗しました");
+      if (!opts.quiet) setError("読み込みに失敗しました");
     }
   }
 
@@ -131,7 +185,7 @@ export default function ChatPage() {
         return;
       }
       setStatus(`チャットを消去しました（${json.deleted ?? 0}件）`);
-      await loadFeed(invite.trim(), true);
+      await loadFeed(invite.trim(), { quiet: true, refresh: false });
     } catch {
       setError("消去に失敗しました");
     } finally {
@@ -174,13 +228,15 @@ export default function ChatPage() {
       }
       setDraft("");
       setStatus("送信しました");
-      await loadFeed(code, true);
+      await loadFeed(code, { quiet: true, refresh: false });
     } catch {
       setError("送信に失敗しました");
     } finally {
       setSending(false);
     }
   }
+
+  const active = targets.find((t) => `${t.stadium}-${t.race}` === activeKey) || null;
 
   return (
     <main className="shell chat-shell">
@@ -191,7 +247,7 @@ export default function ChatPage() {
         <h1 className="brand" style={{ fontSize: "clamp(2rem, 6vw, 3.4rem)" }}>
           専用チャット
         </h1>
-        <p className="lede">招待メンバーと会話できます。運営の買い目もここに流れます。</p>
+        <p className="lede">会話しながら、対象レースの公式ライブも同じ画面で見れます。</p>
       </section>
 
       {!unlocked ? (
@@ -227,7 +283,7 @@ export default function ChatPage() {
               onClick={() => {
                 window.localStorage.setItem(NAME_KEY, displayName.trim());
                 startTransition(() => {
-                  void loadFeed(invite.trim(), false);
+                  void loadFeed(invite.trim(), { quiet: false, refresh: true });
                 });
               }}
             >
@@ -242,6 +298,76 @@ export default function ChatPage() {
             <span className="badge">招待入場中</span>
             <span className="badge">{displayName || "名無し"}</span>
             <span className="badge">{messages.length}件</span>
+            {liveDate ? <span className="badge">{liveDate}</span> : null}
+          </div>
+
+          <div className="chat-live-panel">
+            <div className="chat-live-head">
+              <strong>対象レースライブ</strong>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={pending}
+                onClick={() => {
+                  startTransition(() => {
+                    void loadFeed(invite.trim(), { quiet: false, refresh: true });
+                  });
+                }}
+              >
+                ライブ更新
+              </button>
+            </div>
+            {targets.length === 0 ? (
+              <p className="note">いま対象レースはありません。</p>
+            ) : (
+              <>
+                <div className="cta-row chat-live-targets">
+                  {targets.map((t) => {
+                    const key = `${t.stadium}-${t.race}`;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`btn ${activeKey === key ? "" : "ghost"}`}
+                        onClick={() => setActiveKey(key)}
+                      >
+                        {t.stadium_name} {t.race}R · {statusLabel(t.status)}
+                      </button>
+                    );
+                  })}
+                </div>
+                {active ? (
+                  <div className="live-box purchased chat-live-box">
+                    <strong>
+                      {active.stadium_name} {active.race}R
+                    </strong>
+                    <p className="note" style={{ marginTop: "0.35rem" }}>
+                      買い目 {active.tickets.join("/")} / {statusLabel(active.status)}
+                      {active.skip_detail ? ` — ${active.skip_detail}` : ""}
+                    </p>
+                    {active.why ? <p className="note">{active.why}</p> : null}
+                    <div className="cta-row">
+                      <a className="btn" href={active.live.mediaTop} target="_blank" rel="noreferrer">
+                        公式ライブを見る
+                      </a>
+                      <a className="btn ghost" href={active.live.beforeInfo} target="_blank" rel="noreferrer">
+                        直前情報
+                      </a>
+                      <a className="btn ghost" href={active.live.raceList} target="_blank" rel="noreferrer">
+                        出走表
+                      </a>
+                    </div>
+                    <iframe
+                      title={`${active.stadium_name}-${active.race}-live`}
+                      className="live-frame"
+                      src={active.live.mediaTop}
+                      referrerPolicy="no-referrer"
+                      allow="autoplay; fullscreen"
+                    />
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
 
           <div className="chat-stream" ref={listRef}>
@@ -331,7 +457,7 @@ export default function ChatPage() {
                 disabled={pending}
                 onClick={() => {
                   startTransition(() => {
-                    void loadFeed(invite.trim(), false);
+                    void loadFeed(invite.trim(), { quiet: false, refresh: true });
                   });
                 }}
               >
@@ -356,6 +482,7 @@ export default function ChatPage() {
                   window.localStorage.removeItem(INVITE_KEY);
                   setUnlocked(false);
                   setMessages([]);
+                  setTargets([]);
                 }}
               >
                 退出

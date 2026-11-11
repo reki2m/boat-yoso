@@ -12,6 +12,7 @@ import {
   type ChatKind,
   type ChatRole,
 } from "@/lib/chatStore";
+import { getChatLiveTargets } from "@/lib/chatLiveTargets";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 
 export const dynamic = "force-dynamic";
@@ -38,9 +39,19 @@ export async function GET(req: NextRequest) {
       { status: 401, headers: { "cache-control": "no-store" } },
     );
   }
-  const feed = await readChatFeed();
+  const refresh = req.nextUrl.searchParams.get("refresh") === "1";
+  const [feed, live] = await Promise.all([
+    readChatFeed(),
+    getChatLiveTargets({ refresh }),
+  ]);
   return NextResponse.json(
-    { ok: true, updated_at: feed.updated_at, messages: feed.messages },
+    {
+      ok: true,
+      updated_at: feed.updated_at,
+      messages: feed.messages,
+      liveDate: live.date,
+      targets: live.targets,
+    },
     { headers: { "cache-control": "no-store" } },
   );
 }
