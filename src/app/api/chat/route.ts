@@ -110,7 +110,7 @@ async function createAppRacePick(opts: {
     // 依頼した友達本人だけにアプリ予想本文を見せる（共有チャットは汚さない）
     const reply = await appendChatMessage({
       kind: "note",
-      title: `${placeName} ${opts.raceNo}R アプリ予想`,
+      title: "AI予想",
       body: built.text,
       author_name: "律丸ボート部",
       author_role: "operator",
@@ -128,11 +128,11 @@ async function createAppRacePick(opts: {
         races: [raceChip],
       },
     });
-    // 管理人専用チャット欄: 「〇〇場 〇〇R」UIで誰が見たかを残す
+    // 管理人専用ログ（友達のメッセージ欄には出さない）
     const adminLog = await appendChatMessage({
       kind: "note",
-      title: `${opts.ownerName} · ${raceChip.label}`,
-      body: `${opts.ownerName} が ${raceChip.label} のアプリ予想を表示しました。`,
+      title: "AI予想ログ",
+      body: `${opts.ownerName} が ${raceChip.label} のAI予想を表示しました。`,
       author_name: "システム",
       author_role: "operator",
       meta: {

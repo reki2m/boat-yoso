@@ -3,17 +3,6 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 
-type ChatRaceChip = {
-  placeNo: number;
-  placeName: string;
-  raceNo: number;
-  label: string;
-  tickets?: string[];
-  status?: string;
-  why?: string;
-  exhibition?: "waiting" | "after" | "unknown";
-};
-
 type ChatMessage = {
   id: string;
   created_at: string;
@@ -33,7 +22,6 @@ type ChatMessage = {
     visibility?: "public" | "private" | "admin";
     owner_session_id?: string;
     owner_name?: string;
-    races?: ChatRaceChip[];
     race_label?: string;
   };
 };
@@ -117,9 +105,9 @@ const LEGACY_ADMIN_KEY = "shioyomi_admin_key";
 const LEGACY_SESSION_KEY = "shioyomi_chat_session";
 
 const DEFAULT_RULES = [
-  "雑談と本命予想は全員のチャット欄に表示されます。",
-  "「〇〇場 〇〇R」を押すと、詳細予想が自分のチャット欄と管理人のチャット欄に出ます（他の友達には共有されません）。",
-  "他の友達がどのレースを詳しく見たかは分かりません。",
+  "メッセージ欄は雑談用です。",
+  "メッセージの上で場とレースを選び「AI予想」を押すと、詳細が自分と管理人だけに出ます（友達同士では共有しません）。",
+  "他の友達がどのレースをAI予想したかは分かりません。",
   "チャット履歴は当日のレース終了から約1時間後に自動リセットされます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
@@ -144,42 +132,15 @@ function kindLabel(m: ChatMessage): string {
     return "管理人ログ";
   }
   if (m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private") {
-    return "詳細予想（自分のみ）";
+    return "AI予想（自分のみ）";
   }
   if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中🎯";
-  if (m.meta?.mode === "exhibition_after_honmei") return "展示後予想";
+  if (m.meta?.mode === "exhibition_after_honmei") return "展示後本命";
   if (m.kind === "picks" || m.meta?.mode === "morning_auto_honmei" || m.meta?.mode === "honmei_board") {
-    return "本命予想";
+    return "本命配信";
   }
   if (m.kind === "note") return "メモ";
   return "雑談";
-}
-
-function raceStatusLabel(chip: ChatRaceChip): string {
-  if (chip.status === "skipped") return "見送り";
-  if (chip.exhibition === "after" || chip.status === "confirmed") return "展示後";
-  if (chip.exhibition === "waiting" || chip.status === "provisional") return "展示待ち";
-  return "";
-}
-
-function messageRaceChips(m: ChatMessage): ChatRaceChip[] {
-  if (Array.isArray(m.meta?.races) && m.meta!.races!.length) return m.meta!.races!;
-  if (m.meta?.placeNo && m.meta?.raceNo) {
-    const placeName = m.meta.race_label?.replace(/\s*\d+R$/, "") || `場${m.meta.placeNo}`;
-    const label =
-      m.meta.race_label || `${placeName} ${m.meta.raceNo}R`;
-    return [
-      {
-        placeNo: m.meta.placeNo,
-        placeName,
-        raceNo: m.meta.raceNo,
-        label,
-        tickets: m.meta.tickets || [],
-        exhibition: "unknown",
-      },
-    ];
-  }
-  return [];
 }
 
 export default function ChatPage() {
@@ -198,7 +159,6 @@ export default function ChatPage() {
   const [presence, setPresence] = useState<PresenceMember[]>([]);
   const [adminOversight, setAdminOversight] = useState<AdminPredictionOversight | null>(null);
   const [selectedAdminPickId, setSelectedAdminPickId] = useState<string>("");
-  const [expandedRaceKey, setExpandedRaceKey] = useState<string>("");
   const [liveDate, setLiveDate] = useState("");
   const [stadiums, setStadiums] = useState<StadiumOpt[]>([]);
   const [races, setRaces] = useState<number[]>(Array.from({ length: 12 }, (_, i) => i + 1));
@@ -353,7 +313,6 @@ export default function ChatPage() {
         setPresence([]);
         setAdminOversight(null);
         setSelectedAdminPickId("");
-        setExpandedRaceKey("");
         setIsAdmin(false);
         if (!opts.quiet) {
           setError(json.error || "入場できません");
@@ -400,7 +359,6 @@ export default function ChatPage() {
     setPresence([]);
     setAdminOversight(null);
     setSelectedAdminPickId("");
-    setExpandedRaceKey("");
     setIsAdmin(false);
   }
 
@@ -531,9 +489,7 @@ export default function ChatPage() {
         setError(json.error || "予想の取得に失敗しました");
         return;
       }
-      setStatus(
-        "詳細予想を自分のチャット欄に出しました（管理人にも通知／他の友達には見えません）",
-      );
+      setStatus("AI予想を表示しました（自分と管理人のみ／他の友達には見えません）");
       await loadFeed(code, {
         quiet: true,
         refresh: false,
@@ -561,7 +517,7 @@ export default function ChatPage() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          雑談と本命は全員共有。「〇〇場 〇〇R」を押すと詳細予想が自分と管理人のチャットに出ます（友達同士では共有しません）。
+          メッセージは雑談。場とレースを選んで「AI予想」を押すと、詳細が自分と管理人だけに出ます。
         </p>
       </section>
 
@@ -623,7 +579,7 @@ export default function ChatPage() {
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
           <p className="chat-reset-note">
-            「〇〇場 〇〇R」は押せます。押した詳細予想は自分のチャット欄と管理人だけに出ます。他の友達には共有されません。本命・展示後の配信自体は全員に見えます。
+            メッセージは雑談用。AI予想は上の場・レース選択から。結果は自分と管理人だけに出ます。
           </p>
 
           <div className="presence-panel">
@@ -651,14 +607,99 @@ export default function ChatPage() {
             )}
           </div>
 
-          <div className="chat-predict-panel">
+          {isAdmin ? (
+            <div className="chat-admin-panel">
+              <div className="chat-live-head">
+                <strong>管理人専用・回収率</strong>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={sending}
+                  onClick={() => {
+                    void clearChatBulk();
+                  }}
+                >
+                  一括消去
+                </button>
+              </div>
+              <p className="note">友達のAI予想ログです。行を押すと本文と回収率を見られます。</p>
+              {adminOversight ? (
+                <div className="admin-roi-summary">
+                  <span>
+                    全体回収率{" "}
+                    <strong>
+                      {adminOversight.totals.recoveryPct == null
+                        ? "未確定"
+                        : `${adminOversight.totals.recoveryPct.toFixed(1)}%`}
+                    </strong>
+                  </span>
+                  <span>
+                    確定 {adminOversight.totals.settledCount}/{adminOversight.totals.pickCount}件
+                  </span>
+                  <span>
+                    投資 {adminOversight.totals.stakeYen.toLocaleString("ja-JP")}円 / 払戻{" "}
+                    {adminOversight.totals.payoutYen.toLocaleString("ja-JP")}円
+                  </span>
+                </div>
+              ) : null}
+              {!adminOversight || adminOversight.picks.length === 0 ? (
+                <p className="note">まだAI予想ログはありません。</p>
+              ) : (
+                <ul className="chat-predict-log">
+                  {adminOversight.picks.map((p) => (
+                    <li key={p.message_id}>
+                      <button
+                        type="button"
+                        className={`btn ghost ${selectedAdminPickId === p.message_id ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedAdminPickId((cur) =>
+                            cur === p.message_id ? "" : p.message_id,
+                          );
+                          setPickStadium(p.placeNo);
+                          setPickRace(p.raceNo);
+                        }}
+                      >
+                        {p.owner_name} · {p.label}
+                        {p.result.recoveryPct == null
+                          ? ""
+                          : ` · ${p.result.recoveryPct.toFixed(1)}%`}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {(() => {
+                const pick =
+                  adminOversight?.picks.find((p) => p.message_id === selectedAdminPickId) || null;
+                if (!pick) return null;
+                return (
+                  <article className="chat-bubble op admin-log admin-pick-detail">
+                    <div className="chat-bubble-meta">
+                      <strong>
+                        {pick.owner_name} · {pick.label}
+                      </strong>
+                      <span>
+                        回収率{" "}
+                        {pick.result.recoveryPct == null
+                          ? "未確定"
+                          : `${pick.result.recoveryPct.toFixed(1)}%`}
+                      </span>
+                    </div>
+                    <pre className="chat-bubble-body">{pick.body || "予想本文なし"}</pre>
+                  </article>
+                );
+              })()}
+            </div>
+          ) : null}
+
+          <div className="chat-predict-panel chat-ai-bar">
             <div className="chat-live-head">
-              <strong>詳細予想</strong>
+              <strong>AI予想</strong>
               <span className="note">自分＋管理人のみ</span>
             </div>
             <div className="chat-predict-row">
               <label className="field">
-                <span>競艇場</span>
+                <span>場</span>
                 <select
                   value={pickStadium || ""}
                   onChange={(e) => setPickStadium(Number(e.target.value))}
@@ -696,251 +737,54 @@ export default function ChatPage() {
                   void requestPredict();
                 }}
               >
-                {predicting ? "取得中…" : "予想する"}
+                {predicting ? "取得中…" : "AI予想"}
               </button>
             </div>
-            <p className="note">
-              「予想する」または下の「〇〇場 〇〇R」タップで、詳細が自分のチャット欄と管理人に出ます（他の友達には見えません）。
-            </p>
+            {targets.length > 0 ? (
+              <p className="note">
+                本日の本命対象:{" "}
+                {targets
+                  .slice(0, 6)
+                  .map((t) => `${t.stadium_name}${t.race}R`)
+                  .join(" / ")}
+                {targets.length > 6 ? " …" : ""}
+                （上で選んで AI予想）
+              </p>
+            ) : (
+              <p className="note">場とレースを選んで「AI予想」を押してください。</p>
+            )}
           </div>
 
-          {targets.length > 0 ? (
-            <div className="chat-live-panel">
-              <div className="chat-live-head">
-                <strong>本日の本命対象（全員共有）</strong>
-              </div>
-              <div className="chat-race-chips">
-                {targets.map((t) => {
-                  const phaseClass =
-                    t.status === "skipped"
-                      ? "skipped"
-                      : t.status === "confirmed"
-                        ? "after"
-                        : "waiting";
-                  const st =
-                    t.status === "skipped"
-                      ? "見送り"
-                      : t.status === "confirmed"
-                        ? "展示後"
-                        : "展示待ち";
-                  return (
-                    <button
-                      key={`${t.stadium}-${t.race}`}
-                      type="button"
-                      className={`chat-race-chip ${phaseClass}`}
-                      disabled={predicting}
-                      onClick={() => {
-                        void requestPredict({ placeNo: t.stadium, raceNo: t.race });
-                      }}
-                    >
-                      <span className="chat-race-chip-label">
-                        {t.stadium_name} {t.race}R
-                      </span>
-                      <em>{st}</em>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          {isAdmin ? (
-            <div className="chat-admin-panel">
-              <div className="chat-live-head">
-                <strong>管理人専用・回収率</strong>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={sending}
-                  onClick={() => {
-                    void clearChatBulk();
-                  }}
-                >
-                  一括消去
-                </button>
-              </div>
-              <p className="note">
-                下のチャット欄の「〇〇場 〇〇R」をタップすると予想本文と回収率が見えます（友達には非表示）。
-              </p>
-              {adminOversight ? (
-                <div className="admin-roi-summary">
-                  <span>
-                    全体回収率{" "}
-                    <strong>
-                      {adminOversight.totals.recoveryPct == null
-                        ? "未確定"
-                        : `${adminOversight.totals.recoveryPct.toFixed(1)}%`}
-                    </strong>
-                  </span>
-                  <span>
-                    確定 {adminOversight.totals.settledCount}/{adminOversight.totals.pickCount}件
-                  </span>
-                  <span>
-                    投資 {adminOversight.totals.stakeYen.toLocaleString("ja-JP")}円 / 払戻{" "}
-                    {adminOversight.totals.payoutYen.toLocaleString("ja-JP")}円
-                  </span>
-                  <span className="note">
-                    1点{adminOversight.stake_per_ticket}円想定（三連単）
-                  </span>
-                </div>
-              ) : (
-                <p className="note">まだ予想ログはありません。</p>
-              )}
-            </div>
-          ) : null}
-
           <div className="chat-stream" ref={listRef}>
-            {messages.filter((m) => m.meta?.visibility !== "admin" || isAdmin).length === 0 ? (
-              <p className="status">まだメッセージがありません。雑談か本命予想の配信をお待ちください。</p>
+            {messages.filter((m) => m.meta?.visibility !== "admin").length === 0 ? (
+              <p className="status">まだ雑談がありません。下からメッセージを送れます。</p>
             ) : (
               messages
-                .filter((m) => m.meta?.visibility !== "admin" || isAdmin)
+                .filter((m) => m.meta?.visibility !== "admin")
                 .map((m) => {
                 const isPrivate = m.meta?.visibility === "private";
-                const isAdminLog = m.meta?.visibility === "admin";
                 const isOp =
                   m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
                 const isMine =
                   m.kind === "chat" && m.author_name === displayName.trim() && !isOp;
-                const chips = messageRaceChips(m);
-                const hasRaceUi = chips.length > 0;
-                const isHonmei =
-                  m.kind === "picks" ||
-                  m.meta?.mode === "morning_auto_honmei" ||
-                  m.meta?.mode === "honmei_board" ||
-                  m.meta?.mode === "exhibition_after_honmei";
-                const isExhibitionAfter = m.meta?.mode === "exhibition_after_honmei";
-                const adminPick = isAdminLog
-                  ? adminOversight?.picks.find((p) => p.message_id === m.id) || null
-                  : null;
                 return (
                   <article
                     key={m.id}
                     className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""} ${
                       isPrivate ? "private" : ""
-                    } ${isAdminLog ? "admin-log" : ""} ${hasRaceUi ? "has-race-ui" : ""} ${
-                      isExhibitionAfter ? "exhibition-after" : ""
                     }`}
                   >
                     <div className="chat-bubble-meta">
                       <strong>
-                        {isAdminLog
-                          ? m.meta?.owner_name || m.author_name || "管理人ログ"
+                        {m.kind === "chat"
+                          ? m.author_name || "メンバー"
                           : m.author_name || m.title || (isOp ? "運営" : "メンバー")}
                       </strong>
                       <span>{kindLabel(m)}</span>
                       {isPrivate ? <span>自分のみ</span> : null}
-                      {isAdminLog ? <span>管理人のみ</span> : null}
                       <span>{formatJst(m.created_at)} JST</span>
                     </div>
-
-                    {hasRaceUi ? (
-                      <div className="chat-race-ui">
-                        <div className="chat-race-chips">
-                          {chips.map((chip, idx) => {
-                            const key = `${m.id}:${chip.placeNo}:${chip.raceNo}:${idx}`;
-                            const selected =
-                              expandedRaceKey === key ||
-                              (isAdminLog && selectedAdminPickId === m.id && chips.length === 1);
-                            const st = raceStatusLabel(chip);
-                            const phaseClass =
-                              chip.status === "skipped"
-                                ? "skipped"
-                                : chip.exhibition === "after" || chip.status === "confirmed"
-                                  ? "after"
-                                  : chip.exhibition === "waiting" || chip.status === "provisional"
-                                    ? "waiting"
-                                    : "";
-                            return (
-                              <button
-                                key={key}
-                                type="button"
-                                className={`chat-race-chip ${selected ? "active" : ""} ${phaseClass}`}
-                                disabled={predicting && !isAdminLog && !isPrivate}
-                                onClick={() => {
-                                  setPickStadium(chip.placeNo || pickStadium);
-                                  setPickRace(chip.raceNo || pickRace);
-                                  if (isAdminLog) {
-                                    setSelectedAdminPickId((cur) => (cur === m.id ? "" : m.id));
-                                    setExpandedRaceKey((cur) => (cur === key ? "" : key));
-                                    return;
-                                  }
-                                  if (isPrivate) {
-                                    setExpandedRaceKey((cur) => (cur === key ? "" : key));
-                                    return;
-                                  }
-                                  // 友達が押した詳細予想 → 本人チャット＋管理人のみ（他友達には共有しない）
-                                  setExpandedRaceKey(key);
-                                  void requestPredict({
-                                    placeNo: chip.placeNo,
-                                    raceNo: chip.raceNo,
-                                  });
-                                }}
-                              >
-                                <span className="chat-race-chip-label">{chip.label}</span>
-                                {st ? <em>{st}</em> : null}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {chips.map((chip, idx) => {
-                          const key = `${m.id}:${chip.placeNo}:${chip.raceNo}:${idx}`;
-                          const open =
-                            expandedRaceKey === key ||
-                            (isAdminLog && selectedAdminPickId === m.id && chips.length === 1);
-                          if (!open) return null;
-                          return (
-                            <div key={`${key}-detail`} className="chat-race-detail">
-                              {isAdminLog && adminPick ? (
-                                <p className="note">
-                                  回収率{" "}
-                                  {adminPick.result.recoveryPct == null
-                                    ? "未確定"
-                                    : `${adminPick.result.recoveryPct.toFixed(1)}%`}
-                                  {" · "}
-                                  {adminPick.result.settled
-                                    ? `結果 ${adminPick.result.finishCombo || "—"} / 的中 ${
-                                        adminPick.result.hitTickets.join("・") || "なし"
-                                      } / 投資 ${adminPick.result.stakeYen.toLocaleString("ja-JP")}円 → 払戻 ${adminPick.result.payoutYen.toLocaleString("ja-JP")}円`
-                                    : `結果待ち（買い目 ${adminPick.tickets.join("・") || "—"}）`}
-                                </p>
-                              ) : null}
-                              {!isAdminLog && (chip.tickets?.length || chip.why) ? (
-                                <p className="note">
-                                  {chip.tickets?.length
-                                    ? `買い目 ${chip.tickets.join(" / ")}`
-                                    : null}
-                                  {chip.why ? ` — ${chip.why}` : null}
-                                </p>
-                              ) : null}
-                              {isAdminLog && (adminPick?.body || m.body) ? (
-                                <pre className="chat-bubble-body">
-                                  {adminPick?.body || m.body}
-                                </pre>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-
-                        {isPrivate && m.body ? (
-                          <pre className="chat-bubble-body">{m.body}</pre>
-                        ) : null}
-
-                        {isExhibitionAfter ? (
-                          <p className="note chat-race-hint">
-                            展示後の配信です。チップを押すと詳細予想が自分と管理人のチャット欄に出ます（他の友達には見えません）。
-                          </p>
-                        ) : null}
-                        {isHonmei && !isExhibitionAfter ? (
-                          <p className="note chat-race-hint">
-                            「〇〇場 〇〇R」を押すと詳細予想が自分と管理人のチャット欄に出ます。他の友達同士では共有されません。
-                          </p>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <pre className="chat-bubble-body">{m.body}</pre>
-                    )}
+                    <pre className="chat-bubble-body">{m.body}</pre>
                   </article>
                 );
               })

@@ -891,6 +891,22 @@ th {
     rgba(2, 10, 18, 0.55);
 }
 
+.chat-ai-bar {
+  margin-bottom: 0.55rem;
+  border-color: rgba(120, 220, 255, 0.45);
+}
+
+.chat-predict-log .btn {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.chat-predict-log .btn.active {
+  border-color: rgba(255, 176, 32, 0.7);
+  background: rgba(255, 176, 32, 0.16);
+}
+
 .chat-admin-panel {
   background:
     linear-gradient(180deg, rgba(255, 176, 32, 0.1), transparent 45%),
