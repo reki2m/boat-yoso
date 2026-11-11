@@ -33,7 +33,7 @@ function LoginForm() {
   }
 
   return (
-    <section className="panel" style={{ maxWidth: 480 }}>
+    <section className="panel login-panel">
       <div className="field">
         <label htmlFor="appKey">管理人キー</label>
         <input
@@ -82,13 +82,16 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="shell">
-      <section className="hero" style={{ minHeight: "auto", paddingBottom: "1rem" }}>
-        <h1 className="brand" style={{ fontSize: "clamp(2rem, 6vw, 3.4rem)" }}>
-          潮読み
-        </h1>
+      <section className="hero">
+        <p className="brand-kicker">Restricted Access</p>
+        <h1 className="brand">潮読み</h1>
+        <p className="brand-sub">ADMIN GATE</p>
+        <div className="gate-rail" aria-hidden>
+          <i /><i /><i /><i /><i /><i />
+        </div>
         <p className="lede">アプリ本体は管理人のみ。友達は専用チャットへどうぞ。</p>
       </section>
-      <Suspense fallback={<section className="panel">読み込み中…</section>}>
+      <Suspense fallback={<section className="panel login-panel">読み込み中…</section>}>
         <LoginForm />
       </Suspense>
     </main>
