@@ -16,6 +16,7 @@ function LoginForm() {
     try {
       const res = await fetch("/api/app-auth", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: key.trim(), action: "login" }),
       });

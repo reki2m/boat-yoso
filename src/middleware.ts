@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 const APP_GATE_COOKIE = "shioyomi_app_gate";
 
 function gateSecret(): string {
-  const admin = (process.env.CHAT_ADMIN_KEY || "").normalize("NFKC").trim();
-  const op = (process.env.CHAT_OPERATOR_KEY || "").normalize("NFKC").trim();
-  return (
-    admin ||
-    op ||
-    (process.env.NODE_ENV === "production" ? "" : "shio-op")
-  );
+  const strip = (v: string | undefined) =>
+    String(v || "")
+      .normalize("NFKC")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .trim();
+  const admin = strip(process.env.CHAT_ADMIN_KEY);
+  const op = strip(process.env.CHAT_OPERATOR_KEY);
+  return admin || op || (process.env.NODE_ENV === "production" ? "" : "shio-op");
 }
 
 async function expectedToken(secret: string): Promise<string> {

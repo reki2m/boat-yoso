@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   APP_GATE_COOKIE,
   appGateToken,
+  appUnlockKeysConfigured,
   checkAppGateToken,
   checkAppUnlockKey,
 } from "@/lib/appGate";
@@ -15,6 +16,7 @@ function cookieOptions() {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
+    // 公開ホストは HTTPS。ローカル http でも動くよう production のみ secure
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
@@ -23,9 +25,9 @@ function cookieOptions() {
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(APP_GATE_COOKIE)?.value;
-  const ok = checkAppGateToken(token);
+  const ok = await checkAppGateToken(token);
   return NextResponse.json(
-    { ok, gated: true },
+    { ok, gated: true, keysConfigured: appUnlockKeysConfigured() },
     { headers: { "cache-control": "no-store" } },
   );
 }
@@ -42,6 +44,17 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ ok: true, unlocked: false });
     res.cookies.set(APP_GATE_COOKIE, "", { ...cookieOptions(), maxAge: 0 });
     return res;
+  }
+
+  if (!appUnlockKeysConfigured()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "管理人キーがサーバーに未設定です",
+        hint: "Cursor Apps の Secrets に CHAT_ADMIN_KEY（または CHAT_OPERATOR_KEY）を入れ、再公開してください",
+      },
+      { status: 503 },
+    );
   }
 
   const key = normalizeSecret(body.key);
@@ -75,13 +88,19 @@ export async function POST(req: NextRequest) {
         error: looksLikeInvite
           ? "それは招待コードです。本体は CHAT_ADMIN_KEY または CHAT_OPERATOR_KEY で開けます"
           : "管理人キーが違います",
-        hint: "Cursor の Apps → Secrets で CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY を確認してください（招待コードでは開けません）",
+        hint: "Cursor の Apps → Secrets で CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY の値そのものを入力してください（名前ではなく値、招待コード不可）",
       },
       { status: 401 },
     );
   }
 
-  const token = appGateToken();
+  const token = await appGateToken();
+  if (!token) {
+    return NextResponse.json(
+      { ok: false, error: "解錠トークンを発行できませんでした" },
+      { status: 503 },
+    );
+  }
   const res = NextResponse.json({ ok: true, unlocked: true });
   res.cookies.set(APP_GATE_COOKIE, token, cookieOptions());
   return res;
