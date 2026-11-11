@@ -528,9 +528,6 @@ export default function ChatPage() {
         <div className="gate-rail" aria-hidden>
           <i /><i /><i /><i /><i /><i />
         </div>
-        <p className="lede">
-          メッセージは雑談。場とレースを選んで「AI予想」を押すと、詳細が自分と管理人だけに出ます。
-        </p>
       </section>
 
       {!unlocked ? (
@@ -590,10 +587,6 @@ export default function ChatPage() {
             {isAdmin ? <span className="badge">管理人</span> : null}
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
-          <p className="chat-reset-note">
-            メッセージは雑談用。AI予想は上の場・レース選択から。結果は自分と管理人だけに出ます。
-          </p>
-
           <div className="presence-panel">
             <div className="presence-head">
               <strong>入室中</strong>
