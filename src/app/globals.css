@@ -921,6 +921,14 @@ th {
   margin-bottom: 0.55rem;
 }
 
+.chat-honmei-targets {
+  margin: 0.35rem 0 0;
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
 .chat-predict-row .field {
   margin: 0;
 }
