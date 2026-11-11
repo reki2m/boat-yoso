@@ -49,6 +49,26 @@ const INVITE_KEY = "shioyomi_chat_invite";
 const NAME_KEY = "shioyomi_chat_name";
 const OP_KEY = "shioyomi_operator_key";
 const ADMIN_KEY = "shioyomi_admin_key";
+const SESSION_KEY = "shioyomi_chat_session";
+
+type PresenceMember = {
+  session_id: string;
+  display_name: string;
+  role: "operator" | "member";
+  last_seen: string;
+};
+
+function ensureSessionId(): string {
+  try {
+    const existing = window.localStorage.getItem(SESSION_KEY) || "";
+    if (existing) return existing;
+    const next = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    window.localStorage.setItem(SESSION_KEY, next);
+    return next;
+  } catch {
+    return `s_${Date.now().toString(36)}`;
+  }
+}
 
 const DEFAULT_RULES = [
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
@@ -100,6 +120,8 @@ export default function ChatPage() {
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [targets, setTargets] = useState<ChatLiveTarget[]>([]);
+  const [presence, setPresence] = useState<PresenceMember[]>([]);
+  const [sessionId, setSessionId] = useState("");
   const [liveDate, setLiveDate] = useState("");
   const [activeKey, setActiveKey] = useState("");
   const [pending, startTransition] = useTransition();
@@ -108,6 +130,8 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const sid = ensureSessionId();
+    setSessionId(sid);
     const savedInvite = window.localStorage.getItem(INVITE_KEY) || "";
     const savedName = window.localStorage.getItem(NAME_KEY) || "";
     const savedOp = window.localStorage.getItem(OP_KEY) || "";
@@ -123,23 +147,60 @@ export default function ChatPage() {
     }
     if (savedInvite) {
       setInvite(savedInvite);
-      void loadFeed(savedInvite, { quiet: false, refresh: true });
+      void loadFeed(savedInvite, {
+        quiet: false,
+        refresh: true,
+        session: sid,
+        name: savedName,
+        asOp: Boolean(savedOp),
+      });
     }
   }, []);
 
   useEffect(() => {
+    if (!unlocked || !sessionId) return;
+    const onLeave = () => {
+      const payload = JSON.stringify({
+        kind: "leave",
+        invite: invite.trim(),
+        sessionId,
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(
+          "/api/chat",
+          new Blob([payload], { type: "application/json" }),
+        );
+      }
+    };
+    window.addEventListener("pagehide", onLeave);
+    return () => window.removeEventListener("pagehide", onLeave);
+  }, [unlocked, sessionId, invite]);
+
+  useEffect(() => {
     if (!unlocked) return;
     const msgTimer = window.setInterval(() => {
-      void loadFeed(invite.trim(), { quiet: true, refresh: false });
+      void loadFeed(invite.trim(), {
+        quiet: true,
+        refresh: false,
+        session: sessionId,
+        name: displayName,
+        asOp: asOperator,
+      });
     }, 5000);
     const liveTimer = window.setInterval(() => {
-      void loadFeed(invite.trim(), { quiet: true, refresh: true });
+      void loadFeed(invite.trim(), {
+        quiet: true,
+        refresh: true,
+        session: sessionId,
+        name: displayName,
+        asOp: asOperator,
+      });
     }, 30000);
     return () => {
       window.clearInterval(msgTimer);
       window.clearInterval(liveTimer);
     };
-  }, [unlocked, invite]);
+  }, [unlocked, invite, sessionId, displayName, asOperator]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -157,18 +218,32 @@ export default function ChatPage() {
 
   async function loadFeed(
     code: string,
-    opts: { quiet: boolean; refresh: boolean },
+    opts: {
+      quiet: boolean;
+      refresh: boolean;
+      session?: string;
+      name?: string;
+      asOp?: boolean;
+    },
   ) {
     if (!opts.quiet) setError("");
     try {
+      const sid = opts.session || sessionId || ensureSessionId();
+      const name = (opts.name ?? displayName).trim();
       const q = new URLSearchParams({ invite: code });
       if (opts.refresh) q.set("refresh", "1");
+      if (sid && name) {
+        q.set("session", sid);
+        q.set("name", name);
+        q.set("role", (opts.asOp ?? asOperator) ? "operator" : "member");
+      }
       const res = await fetch(`/api/chat?${q.toString()}`);
       const json = await res.json();
       if (!res.ok) {
         setUnlocked(false);
         setMessages([]);
         setTargets([]);
+        setPresence([]);
         if (!opts.quiet) {
           setError(json.error || "入場できません");
           window.localStorage.removeItem(INVITE_KEY);
@@ -179,11 +254,32 @@ export default function ChatPage() {
       setUnlocked(true);
       setMessages(json.messages || []);
       setTargets(json.targets || []);
+      setPresence(Array.isArray(json.presence) ? json.presence : []);
       setLiveDate(json.liveDate || "");
       if (Array.isArray(json.rules) && json.rules.length) setRules(json.rules);
     } catch {
       if (!opts.quiet) setError("読み込みに失敗しました");
     }
+  }
+
+  async function leaveRoom() {
+    const code = invite.trim();
+    const sid = sessionId || ensureSessionId();
+    try {
+      await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "leave", invite: code, sessionId: sid }),
+        keepalive: true,
+      });
+    } catch {
+      // ignore
+    }
+    window.localStorage.removeItem(INVITE_KEY);
+    setUnlocked(false);
+    setMessages([]);
+    setTargets([]);
+    setPresence([]);
   }
 
   async function clearChatBulk() {
@@ -214,7 +310,13 @@ export default function ChatPage() {
         return;
       }
       setStatus(`一括消去しました（${json.deleted ?? 0}件）`);
-      await loadFeed(invite.trim(), { quiet: true, refresh: false });
+      await loadFeed(invite.trim(), {
+        quiet: true,
+        refresh: false,
+        session: sessionId,
+        name: displayName,
+        asOp: asOperator,
+      });
     } catch {
       setError("消去に失敗しました");
     } finally {
@@ -257,7 +359,13 @@ export default function ChatPage() {
       }
       setDraft("");
       setStatus("送信しました");
-      await loadFeed(code, { quiet: true, refresh: false });
+      await loadFeed(code, {
+        quiet: true,
+        refresh: false,
+        session: sessionId,
+        name,
+        asOp: asOperator,
+      });
     } catch {
       setError("送信に失敗しました");
     } finally {
@@ -326,8 +434,16 @@ export default function ChatPage() {
               disabled={pending || !invite.trim() || !displayName.trim()}
               onClick={() => {
                 window.localStorage.setItem(NAME_KEY, displayName.trim());
+                const sid = sessionId || ensureSessionId();
+                setSessionId(sid);
                 startTransition(() => {
-                  void loadFeed(invite.trim(), { quiet: false, refresh: true });
+                  void loadFeed(invite.trim(), {
+                    quiet: false,
+                    refresh: true,
+                    session: sid,
+                    name: displayName.trim(),
+                    asOp: asOperator,
+                  });
                 });
               }}
             >
@@ -343,6 +459,33 @@ export default function ChatPage() {
             <span className="badge">{displayName || "名無し"}</span>
             <span className="badge">{messages.length}件</span>
             {liveDate ? <span className="badge">{liveDate}</span> : null}
+          </div>
+          <div className="presence-panel">
+            <div className="presence-head">
+              <strong>入室中</strong>
+              <span>{presence.length}人</span>
+            </div>
+            {presence.length === 0 ? (
+              <p className="note" style={{ margin: 0 }}>
+                まだ誰も表示されていません。
+              </p>
+            ) : (
+              <ul className="presence-list">
+                {presence.map((p) => (
+                  <li
+                    key={p.session_id}
+                    className={`presence-chip ${p.role === "operator" ? "op" : ""} ${
+                      p.session_id === sessionId ? "me" : ""
+                    }`}
+                  >
+                    <i aria-hidden />
+                    <span>{p.display_name}</span>
+                    {p.role === "operator" ? <em>運営</em> : null}
+                    {p.session_id === sessionId ? <em>自分</em> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="chat-rules compact">
             <strong>注意 / 免責</strong>
@@ -362,7 +505,13 @@ export default function ChatPage() {
                 disabled={pending}
                 onClick={() => {
                   startTransition(() => {
-                    void loadFeed(invite.trim(), { quiet: false, refresh: true });
+                    void loadFeed(invite.trim(), {
+                      quiet: false,
+                      refresh: true,
+                      session: sessionId,
+                      name: displayName,
+                      asOp: asOperator,
+                    });
                   });
                 }}
               >
@@ -533,7 +682,13 @@ export default function ChatPage() {
                 disabled={pending}
                 onClick={() => {
                   startTransition(() => {
-                    void loadFeed(invite.trim(), { quiet: false, refresh: true });
+                    void loadFeed(invite.trim(), {
+                      quiet: false,
+                      refresh: true,
+                      session: sessionId,
+                      name: displayName,
+                      asOp: asOperator,
+                    });
                   });
                 }}
               >
@@ -555,10 +710,7 @@ export default function ChatPage() {
                 type="button"
                 className="btn ghost"
                 onClick={() => {
-                  window.localStorage.removeItem(INVITE_KEY);
-                  setUnlocked(false);
-                  setMessages([]);
-                  setTargets([]);
+                  void leaveRoom();
                 }}
               >
                 退出

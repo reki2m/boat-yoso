@@ -911,6 +911,86 @@ th {
   margin-top: 0.35rem;
 }
 
+.presence-panel {
+  margin: 0 0 0.85rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(157, 255, 74, 0.06), transparent 45%),
+    rgba(2, 10, 18, 0.5);
+}
+
+.presence-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.presence-head strong {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: 0.95rem;
+}
+
+.presence-head span {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--go);
+  letter-spacing: 0.06em;
+}
+
+.presence-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+}
+
+.presence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: rgba(4, 16, 28, 0.75);
+  font-size: 0.86rem;
+}
+
+.presence-chip i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--go);
+  box-shadow: 0 0 8px rgba(157, 255, 74, 0.55);
+}
+
+.presence-chip.op {
+  border-color: rgba(46, 230, 255, 0.4);
+}
+
+.presence-chip.op i {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(46, 230, 255, 0.55);
+}
+
+.presence-chip.me {
+  border-color: rgba(255, 176, 32, 0.45);
+}
+
+.presence-chip em {
+  font-style: normal;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
 .chat-rules {
   margin-top: 0.85rem;
   padding: 0.8rem 0.95rem;
