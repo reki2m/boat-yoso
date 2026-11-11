@@ -47,16 +47,20 @@ export type RaceDeepPicks = {
   anaTickets: DeepTicket[];
   anaCount: number;
   anaAxis: number | null;
-  /** 穴目信頼度 1-5（見送りは 0） */
-  anaConfidence: ConfidenceScore;
+  /**
+   * 穴目の参考的中率（%）。
+   * 穴は本線の1-5表現と混ぜない。見送りは 0。
+   */
+  anaHitPct: number;
   anaConfidenceLabel: string;
+  /** @deprecated 互換用。anaHitPct と同じ */
+  anaConfidence: number;
   anaCommentary: string[];
   racerViews: DeepRacerView[];
   method: string;
 };
 
-function confidenceLabelOf(score: ConfidenceScore, kind: "main" | "ana" = "main"): string {
-  if (kind === "ana" && score === 0) return "見送り";
+function confidenceLabelOf(score: ConfidenceScore): string {
   const map: Record<1 | 2 | 3 | 4 | 5, string> = {
     1: "1/5 弱い",
     2: "2/5 やや弱い",
@@ -78,14 +82,22 @@ function mainConfidenceFromGap(gap: number, topScore: number): ConfidenceScore {
   return Math.max(1, Math.min(5, score)) as ConfidenceScore;
 }
 
-function anaConfidenceFromUpside(upside: number, c1Strong: boolean): ConfidenceScore {
-  let score: ConfidenceScore = 1;
-  if (upside >= 38) score = 2;
-  if (upside >= 42) score = 3;
-  if (upside >= 48) score = 4;
-  if (upside >= 55) score = 5;
-  if (c1Strong && score > 1) score = (score - 1) as ConfidenceScore;
-  return score;
+/** 穴目は「強い/5」ではなく、セット参考的中率%で出す（だいたい数%〜十数%） */
+function anaHitPctFromUpside(upside: number, c1Strong: boolean, ticketCount: number): number {
+  // upside 38〜60 を 概ね 4%〜14% に写像（穴の体感に合わせる）
+  let pct = 4 + (upside - 38) * 0.4;
+  if (ticketCount >= 6) pct += 1.2;
+  else if (ticketCount <= 4) pct -= 0.4;
+  if (c1Strong) pct *= 0.72;
+  return Math.round(clamp(pct, 3, 16) * 10) / 10;
+}
+
+function anaPctLabel(pct: number): string {
+  if (pct <= 0) return "見送り";
+  if (pct < 6) return `参考的中率 ${pct}%（薄い）`;
+  if (pct < 10) return `参考的中率 ${pct}%（控えめ）`;
+  if (pct < 13) return `参考的中率 ${pct}%（標準的な穴）`;
+  return `参考的中率 ${pct}%（穴としては厚め）`;
 }
 
 function clamp(n: number, min: number, max: number) {
@@ -414,9 +426,10 @@ export function buildRaceDeepPicks(input: {
       }
     }
 
-    const anaConfidence = anaConfidenceFromUpside(anaLead.upside, c1Strong);
     let anaTicketsList = uniqueTickets(anaRaw);
-    const keepAna = anaConfidence >= 4 ? 4 : anaConfidence >= 3 ? 5 : 6;
+    // まず点数を仮決めしてから参考的中率を出す
+    const provisionalPct = anaHitPctFromUpside(anaLead.upside, c1Strong, 5);
+    const keepAna = provisionalPct >= 12 ? 4 : provisionalPct >= 8 ? 5 : 6;
     anaTicketsList = anaTicketsList.slice(0, Math.min(6, Math.max(4, keepAna)));
     if (anaTicketsList.length < 4) {
       const fb = [2, 3, 1, 5, 6, 4].filter((n) => n !== anaAxis);
@@ -429,6 +442,7 @@ export function buildRaceDeepPicks(input: {
       ]).slice(0, 4);
     }
 
+    const anaHitPct = anaHitPctFromUpside(anaLead.upside, c1Strong, anaTicketsList.length);
     const anaDeep: DeepTicket[] = anaTicketsList.map((combo, i) => ({
       combo,
       rank: i + 1,
@@ -449,11 +463,11 @@ export function buildRaceDeepPicks(input: {
       );
     }
     anaCommentary.push(
-      `【穴買い目】3連単 ${anaDeep.length}点（${anaDeep.map((t) => t.combo).join(" / ")}）。信頼度 ${anaConfidence}/5。本線と併売せず、資金は小さめ推奨。的中保証なし。`,
+      `【穴買い目】3連単 ${anaDeep.length}点（${anaDeep.map((t) => t.combo).join(" / ")}）。${anaPctLabel(anaHitPct)}。本線の「5/5」とは別物で、穴は数%帯が普通です。併売せず資金は小さめ。的中保証なし。`,
     );
 
     commentary.push(
-      `【穴目】${ana.course}号軸で ${anaDeep.length}点も併記（信頼度 ${anaConfidence}/5）。`,
+      `【穴目】${ana.course}号軸で ${anaDeep.length}点も併記（参考的中率 ${anaHitPct}%）。`,
     );
 
     return {
@@ -462,24 +476,25 @@ export function buildRaceDeepPicks(input: {
       axis,
       partners,
       confidence,
-      confidenceLabel: confidenceLabelOf(confidence, "main"),
+      confidenceLabel: confidenceLabelOf(confidence),
       commentary,
       anaTickets: anaDeep,
       anaCount: anaDeep.length,
       anaAxis,
-      anaConfidence,
-      anaConfidenceLabel: confidenceLabelOf(anaConfidence, "ana"),
+      anaHitPct,
+      anaConfidence: anaHitPct,
+      anaConfidenceLabel: anaPctLabel(anaHitPct),
       anaCommentary,
       racerViews: ranked,
       method:
-        "本線は今節・過去・機力・選手能力の合成4〜6点。穴目はUI参考（2020-2026検証でOOS崩れのため運用ロックなし）。信頼度は1〜5。",
+        "本線信頼度は1〜5。穴目は参考的中率%（数%〜十数%）で表示。穴の運用ロックはなし。",
     };
   }
 
   anaCommentary.push(
-    "【穴目】外枠に明確な機力・今節・STの上振れが見当たらないため、今回は穴目見送り（信頼度 0/5）。2020-2026検証では穴の運用ロックは見送り。",
+    "【穴目】外枠に明確な機力・今節・STの上振れが見当たらないため、今回は穴目見送り（参考的中率 0%）。",
   );
-  commentary.push("【穴目】今回は条件不足のため見送り（信頼度 0/5）。");
+  commentary.push("【穴目】今回は条件不足のため見送り（参考的中率 0%）。");
 
   return {
     tickets: deepTickets,
@@ -487,16 +502,17 @@ export function buildRaceDeepPicks(input: {
     axis,
     partners,
     confidence,
-    confidenceLabel: confidenceLabelOf(confidence, "main"),
+    confidenceLabel: confidenceLabelOf(confidence),
     commentary,
     anaTickets: [],
     anaCount: 0,
     anaAxis: null,
+    anaHitPct: 0,
     anaConfidence: 0,
-    anaConfidenceLabel: confidenceLabelOf(0, "ana"),
+    anaConfidenceLabel: anaPctLabel(0),
     anaCommentary,
     racerViews: ranked,
     method:
-      "本線は今節・過去・機力・選手能力の合成4〜6点。穴目はUI参考（2020-2026検証でOOS崩れのため運用ロックなし）。信頼度は1〜5。",
+      "本線信頼度は1〜5。穴目は参考的中率%（数%〜十数%）で表示。穴の運用ロックはなし。",
   };
 }

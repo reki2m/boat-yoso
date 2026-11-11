@@ -143,6 +143,7 @@ type RaceResponse = {
     anaTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
     anaCount?: number;
     anaAxis?: number | null;
+    anaHitPct?: number;
     anaConfidence?: number;
     anaConfidenceLabel?: string;
     anaCommentary?: string[];
@@ -720,33 +721,28 @@ export default function Home() {
                         : "見送り"}
                     </span>
                     <span className="badge">
-                      信頼度 {(data.deepPicks.anaConfidence ?? 0)}/5
-                      {data.deepPicks.anaConfidenceLabel
-                        ? `（${String(data.deepPicks.anaConfidenceLabel).replace(/^\d\/5\s*/, "")}）`
-                        : ""}
+                      参考的中率{" "}
+                      {(data.deepPicks.anaHitPct ?? data.deepPicks.anaConfidence ?? 0).toFixed(1)}%
                     </span>
                     {data.deepPicks.anaAxis ? (
                       <span className="badge">軸 {data.deepPicks.anaAxis}号</span>
                     ) : null}
                   </div>
-                  <div
-                    className="cta-row"
-                    style={{ margin: "0.35rem 0 0.75rem", gap: "0.35rem" }}
-                    aria-label={`穴目信頼度 ${data.deepPicks.anaConfidence ?? 0} of 5`}
-                  >
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <span
-                        key={`ana-conf-${n}`}
-                        className={`badge ${
-                          (data.deepPicks!.anaConfidence ?? 0) > 0 &&
-                          n <= (data.deepPicks!.anaConfidence ?? 0)
-                            ? ""
-                            : "warn"
-                        }`}
-                      >
-                        {n}
-                      </span>
-                    ))}
+                  <div style={{ margin: "0.35rem 0 0.75rem" }}>
+                    <div className="note" style={{ marginBottom: "0.35rem" }}>
+                      {data.deepPicks.anaConfidenceLabel ||
+                        ((data.deepPicks.anaHitPct ?? 0) > 0
+                          ? `参考的中率 ${(data.deepPicks.anaHitPct ?? 0).toFixed(1)}%`
+                          : "見送り")}
+                      。穴は本線の1〜5とは別で、数%帯が普通です。
+                    </div>
+                    <div className="scorebar" aria-label="穴目参考的中率">
+                      <i
+                        style={{
+                          width: `${Math.min(100, ((data.deepPicks.anaHitPct ?? data.deepPicks.anaConfidence ?? 0) / 16) * 100)}%`,
+                        }}
+                      />
+                    </div>
                   </div>
                   {(data.deepPicks.anaTickets?.length ?? 0) > 0 ? (
                     <>
