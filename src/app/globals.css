@@ -939,6 +939,16 @@ th {
   box-shadow: inset 0 0 0 1px rgba(120, 220, 255, 0.12);
 }
 
+.chat-bubble.admin-log {
+  border-color: rgba(255, 176, 32, 0.45);
+}
+
+.admin-only-stream {
+  margin-top: 0.75rem;
+  max-height: 220px;
+  overflow: auto;
+}
+
 .chat-admin-gate {
   margin-top: 0.85rem;
   padding-top: 0.75rem;

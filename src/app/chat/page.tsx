@@ -19,7 +19,7 @@ type ChatMessage = {
     placeNo?: number;
     raceNo?: number;
     tickets?: string[];
-    visibility?: "public" | "private";
+    visibility?: "public" | "private" | "admin";
     owner_session_id?: string;
     owner_name?: string;
   };
@@ -71,11 +71,12 @@ const LEGACY_OP_KEY = "shioyomi_operator_key";
 const LEGACY_ADMIN_KEY = "shioyomi_admin_key";
 
 const DEFAULT_RULES = [
-  "雑談コメントは全員に見えます。個人予想は自分と管理人だけに表示されます。",
+  "雑談コメントは全員に見えます。",
+  "場とレースを選ぶと、アプリと同じ予想（買い目・穴目・理由）が自分だけに表示されます。",
+  "他の友達がどのレースを見たかは分かりません。",
   "チャット履歴は当日のレース終了から約1時間後に自動リセットされます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
-  "舟券の購入は自己責任です（未成年不可）。",
 ];
 
 function ensureSessionId(): string {
@@ -105,7 +106,12 @@ function formatJst(iso: string): string {
 }
 
 function kindLabel(m: ChatMessage): string {
-  if (m.meta?.visibility === "private") return "個人予想";
+  if (m.meta?.mode === "admin_predict_log" || m.meta?.visibility === "admin") {
+    return "管理人ログ";
+  }
+  if (m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private") {
+    return "アプリ予想";
+  }
   if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中🎯";
   if (m.kind === "picks") return "本命配信";
   if (m.kind === "note") return "メモ";
@@ -428,7 +434,7 @@ export default function ChatPage() {
         setError(json.error || "予想の取得に失敗しました");
         return;
       }
-      setStatus("個人予想を表示しました（他の友達には見えません）");
+      setStatus("アプリ予想を表示しました（他の友達のチャットには出ません）");
       await loadFeed(code, {
         quiet: true,
         refresh: false,
@@ -457,7 +463,7 @@ export default function ChatPage() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          雑談はみんなで。本日の場とレースを選ぶと、アプリと同じ買い目・穴目・理由が自分だけに表示されます。
+          雑談はみんなで。本日の場とレースを選んで「予想する」と、アプリと同じ買い目・穴目・理由が自分だけに出ます。
         </p>
       </section>
 
@@ -527,7 +533,7 @@ export default function ChatPage() {
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
           <p className="chat-reset-note">
-            個人予想は自分だけに表示されます。雑談コメントは全員に見えます。毎朝7時に本命配信、レース後に自動リセットします。
+            アプリ予想は押した本人だけに表示されます（共有チャットは汚れません）。雑談は全員に見えます。毎朝7時に本命配信、レース後に自動リセットします。
           </p>
 
           <div className="presence-panel">
@@ -557,7 +563,7 @@ export default function ChatPage() {
 
           <div className="chat-predict-panel">
             <div className="chat-live-head">
-              <strong>本日の予想</strong>
+              <strong>アプリ予想</strong>
               <span className="note">自分だけに表示</span>
             </div>
             <div className="chat-predict-row">
@@ -600,11 +606,11 @@ export default function ChatPage() {
                   void requestPredict();
                 }}
               >
-                {predicting ? "予想中…" : "予想する"}
+                {predicting ? "取得中…" : "予想する"}
               </button>
             </div>
             <p className="note">
-              アプリと同じ本命・穴目・理由を返します。他の友達の画面には出ません。
+              本命・穴目・理由はアプリ本体と同じ内容です。他の友達の雑談欄には出ません。
             </p>
           </div>
 
@@ -634,7 +640,7 @@ export default function ChatPage() {
           {isAdmin ? (
             <div className="chat-admin-panel">
               <div className="chat-live-head">
-                <strong>管理人: 誰がどのレースを予想したか</strong>
+                <strong>管理人チャット（誰がどのレースを見たか）</strong>
                 <button
                   type="button"
                   className="btn ghost"
@@ -646,8 +652,9 @@ export default function ChatPage() {
                   一括消去
                 </button>
               </div>
+              <p className="note">この欄は管理人だけに見えます。友達の画面には出ません。</p>
               {predictions.length === 0 ? (
-                <p className="note">まだ個人予想はありません。</p>
+                <p className="note">まだ予想ログはありません。</p>
               ) : (
                 <ul className="chat-predict-log">
                   {predictions.map((p) => (
@@ -658,19 +665,33 @@ export default function ChatPage() {
                         {p.raceNo}R
                       </span>
                       <span>{formatJst(p.created_at)}</span>
-                      {p.tickets.length ? <span>{p.tickets.slice(0, 3).join("/")}</span> : null}
                     </li>
                   ))}
                 </ul>
               )}
+              <div className="chat-stream admin-only-stream">
+                {messages
+                  .filter((m) => m.meta?.visibility === "admin")
+                  .map((m) => (
+                    <article key={m.id} className="chat-bubble op admin-log">
+                      <div className="chat-bubble-meta">
+                        <strong>管理人ログ</strong>
+                        <span>{formatJst(m.created_at)} JST</span>
+                      </div>
+                      <pre className="chat-bubble-body">{m.body}</pre>
+                    </article>
+                  ))}
+              </div>
             </div>
           ) : null}
 
           <div className="chat-stream" ref={listRef}>
-            {messages.length === 0 ? (
-              <p className="status">まだメッセージがありません。雑談か予想からどうぞ。</p>
+            {messages.filter((m) => m.meta?.visibility !== "admin").length === 0 ? (
+              <p className="status">まだメッセージがありません。雑談かアプリ予想からどうぞ。</p>
             ) : (
-              messages.map((m) => {
+              messages
+                .filter((m) => m.meta?.visibility !== "admin")
+                .map((m) => {
                 const isPrivate = m.meta?.visibility === "private";
                 const isOp =
                   m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
@@ -687,9 +708,6 @@ export default function ChatPage() {
                       <strong>{m.author_name || m.title || (isOp ? "運営" : "メンバー")}</strong>
                       <span>{kindLabel(m)}</span>
                       {isPrivate ? <span>自分のみ</span> : null}
-                      {isAdmin && isPrivate && m.meta?.owner_name ? (
-                        <span>依頼: {m.meta.owner_name}</span>
-                      ) : null}
                       <span>{formatJst(m.created_at)} JST</span>
                     </div>
                     <pre className="chat-bubble-body">{m.body}</pre>

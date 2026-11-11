@@ -4,7 +4,8 @@ import { STADIUMS } from "@/lib/stadiums";
 
 export type ChatKind = "picks" | "note" | "chat";
 export type ChatRole = "operator" | "member";
-export type ChatVisibility = "public" | "private";
+/** public=全員 / private=依頼者のみ / admin=管理人のみ */
+export type ChatVisibility = "public" | "private" | "admin";
 
 export type ChatMessageMeta = {
   date?: string;
@@ -107,16 +108,20 @@ function mapRow(row: ChatRow): ChatMessage {
   };
 }
 
-export function isPrivateMessage(m: ChatMessage): boolean {
-  return m.meta?.visibility === "private";
+export function messageVisibility(m: ChatMessage): ChatVisibility {
+  const v = m.meta?.visibility;
+  if (v === "private" || v === "admin") return v;
+  return "public";
 }
 
 export function canViewMessage(
   m: ChatMessage,
   viewer: { sessionId?: string; isAdmin?: boolean },
 ): boolean {
-  if (!isPrivateMessage(m)) return true;
-  if (viewer.isAdmin) return true;
+  const vis = messageVisibility(m);
+  if (vis === "public") return true;
+  if (vis === "admin") return Boolean(viewer.isAdmin);
+  // private: 依頼した本人のみ（管理人にも本文は出さない。管理人は admin ログを見る）
   const owner = m.meta?.owner_session_id || "";
   return Boolean(viewer.sessionId && owner && owner === viewer.sessionId);
 }
@@ -130,22 +135,26 @@ export function sanitizeChatBody(raw: string | null | undefined): string {
   return (raw || "").trim().slice(0, MAX_BODY);
 }
 
+async function loadMappedMessages(limit = MAX_MESSAGES): Promise<ChatMessage[]> {
+  const rows = await sql<ChatRow>(
+    `select id, created_at, kind, title, body, author_name, author_role, meta
+     from chat_messages
+     order by created_at asc
+     limit $1`,
+    [limit],
+  );
+  return rows.map(mapRow);
+}
+
 export async function readChatFeed(viewer?: {
   sessionId?: string;
   isAdmin?: boolean;
 }): Promise<ChatFeed> {
   try {
-    const rows = await sql<ChatRow>(
-      `select id, created_at, kind, title, body, author_name, author_role, meta
-       from chat_messages
-       order by created_at asc
-       limit $1`,
-      [MAX_MESSAGES],
-    );
-    const mapped = rows.map(mapRow);
+    const mapped = await loadMappedMessages();
     const messages = viewer
       ? mapped.filter((m) => canViewMessage(m, viewer))
-      : mapped.filter((m) => !isPrivateMessage(m));
+      : mapped.filter((m) => messageVisibility(m) === "public");
     return {
       updated_at: messages[messages.length - 1]?.created_at ?? null,
       messages,
@@ -155,14 +164,23 @@ export async function readChatFeed(viewer?: {
   }
 }
 
-/** 管理人用: 誰がどのレースを個人予想したか */
+/** 精算など内部ジョブ用（可視性フィルタなし） */
+export async function readAllChatMessagesForJobs(): Promise<ChatMessage[]> {
+  try {
+    return await loadMappedMessages();
+  } catch {
+    return [];
+  }
+}
+
+/** 管理人用: 誰がどのレースのアプリ予想を開いたか（admin ログ由来） */
 export async function listPrivatePredictionSummary(): Promise<PredictionSummaryRow[]> {
   try {
     const rows = await sql<ChatRow>(
       `select id, created_at, kind, title, body, author_name, author_role, meta
        from chat_messages
-       where coalesce(meta->>'visibility','public') = 'private'
-         and coalesce(meta->>'mode','') in ('private_race_pick', 'chat_race_reply')
+       where coalesce(meta->>'visibility','public') = 'admin'
+         and coalesce(meta->>'mode','') = 'admin_predict_log'
        order by created_at desc
        limit 200`,
     );

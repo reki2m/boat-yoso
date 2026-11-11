@@ -42,14 +42,21 @@ async function mirrorDiscord(body: string): Promise<{ ok: boolean; detail?: stri
   return { ok: true };
 }
 
-async function createPrivateRacePick(opts: {
+async function createAppRacePick(opts: {
   placeNo: number;
   raceNo: number;
   sessionId: string;
   ownerName: string;
   invite: string | null | undefined;
   forwardedFor: string | null;
-}): Promise<{ ok: true; reply: Awaited<ReturnType<typeof appendChatMessage>> } | { ok: false; error: string; status: number; retryAfterSec?: number }> {
+}): Promise<
+  | {
+      ok: true;
+      reply: Awaited<ReturnType<typeof appendChatMessage>>;
+      adminLog: Awaited<ReturnType<typeof appendChatMessage>>;
+    }
+  | { ok: false; error: string; status: number; retryAfterSec?: number }
+> {
   const placeName = STADIUMS[opts.placeNo];
   if (!placeName || opts.raceNo < 1 || opts.raceNo > 12) {
     return { ok: false, error: "場またはレース番号が不正です", status: 400 };
@@ -73,15 +80,16 @@ async function createPrivateRacePick(opts: {
       raceNo: opts.raceNo,
       raw: `${placeName}${opts.raceNo}R`,
     });
+    // 依頼した友達本人だけにアプリ予想本文を見せる（共有チャットは汚さない）
     const reply = await appendChatMessage({
       kind: "note",
-      title: `${placeName}${opts.raceNo}R 個人予想`,
+      title: `${placeName}${opts.raceNo}R アプリ予想`,
       body: built.text,
       author_name: "律丸ボート部",
       author_role: "operator",
       meta: {
         date: built.dateKey,
-        mode: "private_race_pick",
+        mode: "app_race_pick",
         count: built.tickets.length,
         placeNo: built.placeNo,
         raceNo: built.raceNo,
@@ -91,7 +99,25 @@ async function createPrivateRacePick(opts: {
         owner_name: opts.ownerName,
       },
     });
-    return { ok: true, reply };
+    // 管理人専用チャット: 誰がどのレースを見たかだけ短く残す
+    const adminLog = await appendChatMessage({
+      kind: "note",
+      title: "予想ログ",
+      body: `${opts.ownerName} が ${placeName}${opts.raceNo}R のアプリ予想を表示しました。`,
+      author_name: "システム",
+      author_role: "operator",
+      meta: {
+        date: built.dateKey,
+        mode: "admin_predict_log",
+        placeNo: built.placeNo,
+        raceNo: built.raceNo,
+        tickets: [...built.tickets, ...built.anaTickets],
+        visibility: "admin",
+        owner_session_id: opts.sessionId,
+        owner_name: opts.ownerName,
+      },
+    });
+    return { ok: true, reply, adminLog };
   } catch {
     return {
       ok: false,
@@ -210,7 +236,7 @@ export async function POST(req: NextRequest) {
 
   await maybeRunChatMaintenance().catch(() => null);
 
-  // 個人予想: 招待者のみ。結果は本人と管理人だけが見える。
+  // アプリ予想: 招待者のみ。本文は本人だけ、管理人には「誰がどれ」ログのみ。
   if (kind === "predict") {
     if (!checkInvite(invite) && !isOperator) {
       return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
@@ -220,7 +246,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "sessionId が必要です" }, { status: 400 });
     }
     const ownerName = sanitizeDisplayName(body.authorName || "メンバー");
-    const result = await createPrivateRacePick({
+    const result = await createAppRacePick({
       placeNo: Number(body.placeNo || 0),
       raceNo: Number(body.raceNo || 0),
       sessionId,
@@ -239,7 +265,11 @@ export async function POST(req: NextRequest) {
         },
       );
     }
-    return NextResponse.json({ ok: true, reply: result.reply, private: true });
+    return NextResponse.json({
+      ok: true,
+      reply: result.reply,
+      private: true,
+    });
   }
 
   // 雑談: 公開。テキストからの自動予想はしない（予想は predict）。
