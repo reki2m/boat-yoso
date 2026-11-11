@@ -1,8 +1,23 @@
 import { sql } from "@/lib/db";
 import { safeEqualText } from "@/lib/chatSecurity";
+import { STADIUMS } from "@/lib/stadiums";
 
 export type ChatKind = "picks" | "note" | "chat";
 export type ChatRole = "operator" | "member";
+export type ChatVisibility = "public" | "private";
+
+export type ChatMessageMeta = {
+  date?: string;
+  mode?: string;
+  count?: number;
+  discord?: boolean;
+  placeNo?: number;
+  raceNo?: number;
+  tickets?: string[];
+  visibility?: ChatVisibility;
+  owner_session_id?: string;
+  owner_name?: string;
+};
 
 export type ChatMessage = {
   id: string;
@@ -12,15 +27,19 @@ export type ChatMessage = {
   body: string;
   author_name?: string;
   author_role?: ChatRole;
-  meta?: {
-    date?: string;
-    mode?: string;
-    count?: number;
-    discord?: boolean;
-    placeNo?: number;
-    raceNo?: number;
-    tickets?: string[];
-  };
+  meta?: ChatMessageMeta;
+};
+
+export type PredictionSummaryRow = {
+  message_id: string;
+  created_at: string;
+  owner_session_id: string;
+  owner_name: string;
+  date: string;
+  placeNo: number;
+  placeName: string;
+  raceNo: number;
+  tickets: string[];
 };
 
 type ChatFeed = {
@@ -40,7 +59,7 @@ type ChatRow = {
   body: string;
   author_name?: string | null;
   author_role?: string | null;
-  meta: ChatMessage["meta"] | string | null;
+  meta: ChatMessageMeta | string | null;
 };
 
 function asIso(value: string | Date): string {
@@ -48,11 +67,11 @@ function asIso(value: string | Date): string {
   return value;
 }
 
-function parseMeta(meta: ChatRow["meta"]): ChatMessage["meta"] | undefined {
+function parseMeta(meta: ChatRow["meta"]): ChatMessageMeta | undefined {
   if (!meta) return undefined;
   if (typeof meta === "string") {
     try {
-      return JSON.parse(meta) as ChatMessage["meta"];
+      return JSON.parse(meta) as ChatMessageMeta;
     } catch {
       return undefined;
     }
@@ -75,6 +94,33 @@ function emptyFeed(): ChatFeed {
   return { updated_at: null, messages: [] };
 }
 
+function mapRow(row: ChatRow): ChatMessage {
+  return {
+    id: row.id,
+    created_at: asIso(row.created_at),
+    kind: asKind(row.kind),
+    title: row.title,
+    body: row.body,
+    author_name: row.author_name || undefined,
+    author_role: asRole(row.author_role),
+    meta: parseMeta(row.meta),
+  };
+}
+
+export function isPrivateMessage(m: ChatMessage): boolean {
+  return m.meta?.visibility === "private";
+}
+
+export function canViewMessage(
+  m: ChatMessage,
+  viewer: { sessionId?: string; isAdmin?: boolean },
+): boolean {
+  if (!isPrivateMessage(m)) return true;
+  if (viewer.isAdmin) return true;
+  const owner = m.meta?.owner_session_id || "";
+  return Boolean(viewer.sessionId && owner && owner === viewer.sessionId);
+}
+
 export function sanitizeDisplayName(raw: string | null | undefined): string {
   const name = (raw || "").replace(/\s+/g, " ").trim().slice(0, MAX_NAME);
   return name || "名無し";
@@ -84,7 +130,10 @@ export function sanitizeChatBody(raw: string | null | undefined): string {
   return (raw || "").trim().slice(0, MAX_BODY);
 }
 
-export async function readChatFeed(): Promise<ChatFeed> {
+export async function readChatFeed(viewer?: {
+  sessionId?: string;
+  isAdmin?: boolean;
+}): Promise<ChatFeed> {
   try {
     const rows = await sql<ChatRow>(
       `select id, created_at, kind, title, body, author_name, author_role, meta
@@ -93,22 +142,50 @@ export async function readChatFeed(): Promise<ChatFeed> {
        limit $1`,
       [MAX_MESSAGES],
     );
-    const messages: ChatMessage[] = rows.map((row) => ({
-      id: row.id,
-      created_at: asIso(row.created_at),
-      kind: asKind(row.kind),
-      title: row.title,
-      body: row.body,
-      author_name: row.author_name || undefined,
-      author_role: asRole(row.author_role),
-      meta: parseMeta(row.meta),
-    }));
+    const mapped = rows.map(mapRow);
+    const messages = viewer
+      ? mapped.filter((m) => canViewMessage(m, viewer))
+      : mapped.filter((m) => !isPrivateMessage(m));
     return {
       updated_at: messages[messages.length - 1]?.created_at ?? null,
       messages,
     };
   } catch {
     return emptyFeed();
+  }
+}
+
+/** 管理人用: 誰がどのレースを個人予想したか */
+export async function listPrivatePredictionSummary(): Promise<PredictionSummaryRow[]> {
+  try {
+    const rows = await sql<ChatRow>(
+      `select id, created_at, kind, title, body, author_name, author_role, meta
+       from chat_messages
+       where coalesce(meta->>'visibility','public') = 'private'
+         and coalesce(meta->>'mode','') in ('private_race_pick', 'chat_race_reply')
+       order by created_at desc
+       limit 200`,
+    );
+    return rows.map(mapRow).flatMap((m) => {
+      const placeNo = Number(m.meta?.placeNo || 0);
+      const raceNo = Number(m.meta?.raceNo || 0);
+      if (!placeNo || !raceNo) return [];
+      return [
+        {
+          message_id: m.id,
+          created_at: m.created_at,
+          owner_session_id: m.meta?.owner_session_id || "",
+          owner_name: m.meta?.owner_name || m.author_name || "名無し",
+          date: String(m.meta?.date || ""),
+          placeNo,
+          placeName: STADIUMS[placeNo] || `場${placeNo}`,
+          raceNo,
+          tickets: Array.isArray(m.meta?.tickets) ? m.meta!.tickets!.map(String) : [],
+        },
+      ];
+    });
+  } catch {
+    return [];
   }
 }
 
