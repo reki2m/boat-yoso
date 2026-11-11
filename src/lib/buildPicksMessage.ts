@@ -24,7 +24,7 @@ export function buildPicksMessage(board: {
   const skipped = picks.filter((p) => p.status === "skipped");
   const waiting = buyable.filter((p) => p.status === "provisional");
   const lines = [
-    `潮読み 本命買い目 ${dateKey}`,
+    `律丸ボート部 本命買い目 ${dateKey}`,
     `モード: ${board.mode || "honmei_2020_maxminy"} / 買い ${buyable.length} / スキップ ${skipped.length}`,
     "",
   ];

@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
           kind: "note",
           title: `${raceQuery.placeName}${raceQuery.raceNo}R 予測`,
           body: built.text,
-          author_name: "潮読み",
+          author_name: "律丸ボート部",
           author_role: "operator",
           meta: {
             date: built.dateKey,
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
           kind: "note",
           title: `${raceQuery.placeName}${raceQuery.raceNo}R 予測`,
           body: `${raceQuery.placeName}${raceQuery.raceNo}R の予測取得に失敗しました。少し待って再送してください。`,
-          author_name: "潮読み",
+          author_name: "律丸ボート部",
           author_role: "operator",
         });
       }

@@ -271,11 +271,11 @@ export default function ChatPage() {
     <main className="shell chat-shell">
       <section className="hero compact">
         <Link className="top-link" href="/">
-          ← 潮読みアプリ
+          ← 律丸ボート部
         </Link>
         <p className="brand-kicker">Pit Radio Channel</p>
         <h1 className="brand" style={{ fontSize: "clamp(2.2rem, 7vw, 4rem)" }}>
-          潮読み
+          律丸ボート部
         </h1>
         <p className="brand-sub">MEMBER CHAT</p>
         <div className="gate-rail" aria-hidden>

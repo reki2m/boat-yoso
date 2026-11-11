@@ -84,7 +84,7 @@ export default function LoginPage() {
     <main className="shell">
       <section className="hero">
         <p className="brand-kicker">Restricted Access</p>
-        <h1 className="brand">潮読み</h1>
+        <h1 className="brand">律丸ボート部</h1>
         <p className="brand-sub">ADMIN GATE</p>
         <div className="gate-rail" aria-hidden>
           <i /><i /><i /><i /><i /><i />

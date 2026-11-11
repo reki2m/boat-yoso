@@ -423,8 +423,8 @@ export default function Home() {
     <main className="shell">
       <section className="hero">
         <p className="brand-kicker">Night Circuit Telemetry</p>
-        <h1 className="brand">潮読み</h1>
-        <p className="brand-sub">SHIOYOMI RACE SYSTEM</p>
+        <h1 className="brand">律丸ボート部</h1>
+        <p className="brand-sub">RITSUMARU BOAT CLUB</p>
         <div className="gate-rail" aria-hidden>
           <i /><i /><i /><i /><i /><i />
         </div>

@@ -96,7 +96,7 @@ export async function settleChatPredictionHits(): Promise<number> {
       kind: "note",
       title: `的中🎯 ${placeName}${info.race}R`,
       body: lines.join("\n"),
-      author_name: "潮読み",
+      author_name: "律丸ボート部",
       author_role: "operator",
       meta: {
         date: info.date,
