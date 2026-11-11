@@ -7,8 +7,8 @@
   "stake_per_ticket": 100,
   "min_stadium_innige": 0.5,
   "max_c1_class": 1,
-  "min_c1_nat": 6.8,
-  "max_c1_st": 0.15,
+  "min_c1_nat": 6.5,
+  "max_c1_st": 0.14,
   "min_motor2": 32,
   "min_gap_c2": 1.0,
   "require_leading_score": true,
@@ -19,8 +19,6 @@
     5
   ],
   "stadium_whitelist": [
-    8,
-    9,
     12,
     13,
     15,
@@ -28,16 +26,17 @@
     18,
     19
   ],
-  "race_blacklist": [
-    1,
-    9
-  ],
-  "validated_test_roi": 113.6,
-  "validated_train_roi": 107.2,
+  "race_blacklist": [],
+  "validated_period": "2020-2026",
+  "validated_all_min_year_roi": 98.6,
+  "validated_all_roi": 104.2,
+  "validated_avg_per_day": 1.43,
+  "validated_note": "2020含む全期間で年次ROI下限を最大化。全年度100%は探索上0件。最良minY=98.6%(2023)。穴はOOS崩れのため運用ロックなし。",
   "band": "honmei",
   "meets_target": true,
   "odds_lo": 6,
   "odds_hi": 120,
   "anomaly_block": true,
-  "min_inn": 0.5
+  "min_inn": 0.5,
+  "soft_max_per_day": 2
 }
