@@ -934,6 +934,52 @@ th {
   font-size: 0.88rem;
 }
 
+.admin-roi-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.85rem;
+  margin: 0.55rem 0 0.75rem;
+  font-size: 0.88rem;
+}
+
+.admin-roi-summary strong {
+  color: var(--accent, #ffb020);
+}
+
+.admin-owner-groups {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-owner-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.55rem 0.65rem 0.7rem;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.admin-owner-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.admin-race-chips {
+  margin: 0;
+}
+
+.admin-race-chips .btn.active {
+  border-color: rgba(255, 176, 32, 0.7);
+  background: rgba(255, 176, 32, 0.16);
+}
+
+.admin-pick-detail {
+  margin-top: 0.75rem;
+}
+
 .chat-bubble.private {
   border-color: rgba(120, 220, 255, 0.45);
   box-shadow: inset 0 0 0 1px rgba(120, 220, 255, 0.12);

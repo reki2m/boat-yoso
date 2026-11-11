@@ -53,7 +53,7 @@ type PresenceMember = {
 
 type StadiumOpt = { id: number; name: string };
 
-type PredictionRow = {
+type AdminPredictionPick = {
   message_id: string;
   created_at: string;
   owner_name: string;
@@ -62,6 +62,39 @@ type PredictionRow = {
   placeName: string;
   raceNo: number;
   tickets: string[];
+  body: string;
+  label: string;
+  result: {
+    settled: boolean;
+    finishCombo: string | null;
+    hitTickets: string[];
+    stakeYen: number;
+    payoutYen: number;
+    recoveryPct: number | null;
+  };
+};
+
+type AdminOwnerGroup = {
+  owner_name: string;
+  pickCount: number;
+  settledCount: number;
+  stakeYen: number;
+  payoutYen: number;
+  recoveryPct: number | null;
+  picks: AdminPredictionPick[];
+};
+
+type AdminPredictionOversight = {
+  stake_per_ticket: number;
+  totals: {
+    pickCount: number;
+    settledCount: number;
+    stakeYen: number;
+    payoutYen: number;
+    recoveryPct: number | null;
+  };
+  owners: AdminOwnerGroup[];
+  picks: AdminPredictionPick[];
 };
 
 const INVITE_KEY = "shioyomi_chat_invite";
@@ -122,7 +155,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [targets, setTargets] = useState<ChatLiveTarget[]>([]);
   const [presence, setPresence] = useState<PresenceMember[]>([]);
-  const [predictions, setPredictions] = useState<PredictionRow[]>([]);
+  const [adminOversight, setAdminOversight] = useState<AdminPredictionOversight | null>(null);
+  const [selectedAdminPickId, setSelectedAdminPickId] = useState<string>("");
   const [liveDate, setLiveDate] = useState("");
   const [stadiums, setStadiums] = useState<StadiumOpt[]>([]);
   const [races, setRaces] = useState<number[]>(Array.from({ length: 12 }, (_, i) => i + 1));
@@ -275,7 +309,8 @@ export default function ChatPage() {
         setMessages([]);
         setTargets([]);
         setPresence([]);
-        setPredictions([]);
+        setAdminOversight(null);
+        setSelectedAdminPickId("");
         setIsAdmin(false);
         if (!opts.quiet) {
           setError(json.error || "入場できません");
@@ -290,7 +325,9 @@ export default function ChatPage() {
       setPresence(Array.isArray(json.presence) ? json.presence : []);
       setLiveDate(json.liveDate || "");
       setIsAdmin(Boolean(json.isAdmin));
-      setPredictions(Array.isArray(json.predictions) ? json.predictions : []);
+      setAdminOversight(
+        json.isAdmin && json.adminOversight ? (json.adminOversight as AdminPredictionOversight) : null,
+      );
       if (Array.isArray(json.rules) && json.rules.length) setRules(json.rules);
     } catch {
       if (!opts.quiet) setError("読み込みに失敗しました");
@@ -318,7 +355,8 @@ export default function ChatPage() {
     setMessages([]);
     setTargets([]);
     setPresence([]);
-    setPredictions([]);
+    setAdminOversight(null);
+    setSelectedAdminPickId("");
     setIsAdmin(false);
   }
 
@@ -642,7 +680,7 @@ export default function ChatPage() {
           {isAdmin ? (
             <div className="chat-admin-panel">
               <div className="chat-live-head">
-                <strong>管理人チャット（誰がどのレースを見たか）</strong>
+                <strong>管理人専用（予想ログ・回収率）</strong>
                 <button
                   type="button"
                   className="btn ghost"
@@ -654,36 +692,100 @@ export default function ChatPage() {
                   一括消去
                 </button>
               </div>
-              <p className="note">この欄は管理人だけに見えます。友達の画面には出ません。</p>
-              {predictions.length === 0 ? (
+              <p className="note">
+                友達には見えません。入室者が開いたレースをタップすると予想本文と回収率を確認できます。
+              </p>
+              {adminOversight ? (
+                <div className="admin-roi-summary">
+                  <span>
+                    全体回収率{" "}
+                    <strong>
+                      {adminOversight.totals.recoveryPct == null
+                        ? "未確定"
+                        : `${adminOversight.totals.recoveryPct.toFixed(1)}%`}
+                    </strong>
+                  </span>
+                  <span>
+                    確定 {adminOversight.totals.settledCount}/{adminOversight.totals.pickCount}件
+                  </span>
+                  <span>
+                    投資 {adminOversight.totals.stakeYen.toLocaleString("ja-JP")}円 / 払戻{" "}
+                    {adminOversight.totals.payoutYen.toLocaleString("ja-JP")}円
+                  </span>
+                  <span className="note">
+                    1点{adminOversight.stake_per_ticket}円想定（三連単）
+                  </span>
+                </div>
+              ) : null}
+              {!adminOversight || adminOversight.owners.length === 0 ? (
                 <p className="note">まだ予想ログはありません。</p>
               ) : (
-                <ul className="chat-predict-log">
-                  {predictions.map((p) => (
-                    <li key={p.message_id}>
-                      <strong>{p.owner_name}</strong>
-                      <span>
-                        {p.placeName}
-                        {p.raceNo}R
-                      </span>
-                      <span>{formatJst(p.created_at)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="chat-stream admin-only-stream">
-                {messages
-                  .filter((m) => m.meta?.visibility === "admin")
-                  .map((m) => (
-                    <article key={m.id} className="chat-bubble op admin-log">
-                      <div className="chat-bubble-meta">
-                        <strong>管理人ログ</strong>
-                        <span>{formatJst(m.created_at)} JST</span>
+                <div className="admin-owner-groups">
+                  {adminOversight.owners.map((owner) => (
+                    <div key={owner.owner_name} className="admin-owner-card">
+                      <div className="admin-owner-head">
+                        <strong>{owner.owner_name}</strong>
+                        <span>
+                          {owner.pickCount}件 / 回収率{" "}
+                          {owner.recoveryPct == null ? "未確定" : `${owner.recoveryPct.toFixed(1)}%`}
+                        </span>
                       </div>
-                      <pre className="chat-bubble-body">{m.body}</pre>
-                    </article>
+                      <div className="cta-row chat-live-targets admin-race-chips">
+                        {owner.picks.map((p) => (
+                          <button
+                            key={p.message_id}
+                            type="button"
+                            className={`btn ghost ${
+                              selectedAdminPickId === p.message_id ? "active" : ""
+                            }`}
+                            onClick={() => {
+                              setSelectedAdminPickId((cur) =>
+                                cur === p.message_id ? "" : p.message_id,
+                              );
+                            }}
+                          >
+                            {p.label}
+                            {p.result.settled
+                              ? p.result.hitTickets.length
+                                ? " ✓"
+                                : " ×"
+                              : ""}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
-              </div>
+                </div>
+              )}
+              {(() => {
+                const pick =
+                  adminOversight?.picks.find((p) => p.message_id === selectedAdminPickId) || null;
+                if (!pick) return null;
+                return (
+                  <article className="chat-bubble op admin-log admin-pick-detail">
+                    <div className="chat-bubble-meta">
+                      <strong>
+                        {pick.owner_name} · {pick.label}
+                      </strong>
+                      <span>{formatJst(pick.created_at)} JST</span>
+                      <span>
+                        回収率{" "}
+                        {pick.result.recoveryPct == null
+                          ? "未確定"
+                          : `${pick.result.recoveryPct.toFixed(1)}%`}
+                      </span>
+                    </div>
+                    <p className="note" style={{ marginTop: 0 }}>
+                      {pick.result.settled
+                        ? `結果 ${pick.result.finishCombo || "—"} / 的中 ${
+                            pick.result.hitTickets.join("・") || "なし"
+                          } / 投資 ${pick.result.stakeYen.toLocaleString("ja-JP")}円 → 払戻 ${pick.result.payoutYen.toLocaleString("ja-JP")}円`
+                        : `結果待ち（買い目 ${pick.tickets.join("・") || "—"}）`}
+                    </p>
+                    <pre className="chat-bubble-body">{pick.body || "予想本文なし"}</pre>
+                  </article>
+                );
+              })()}
             </div>
           ) : null}
 

@@ -7,7 +7,6 @@ import {
   checkInvite,
   checkOperator,
   clearChatMessages,
-  listPrivatePredictionSummary,
   readChatFeed,
   sanitizeChatBody,
   sanitizeDisplayName,
@@ -31,6 +30,7 @@ import {
   verifyChatSessionCookieValue,
 } from "@/lib/chatSession";
 import { allowAuthAttempt } from "@/lib/authRateLimit";
+import { listAdminPredictionOversight } from "@/lib/chatAdminOversight";
 import { STADIUMS } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 
@@ -163,11 +163,11 @@ export async function GET(req: NextRequest) {
     }).catch(() => null);
   }
   await maybeRunChatMaintenance().catch(() => null);
-  const [feed, live, presence, predictions] = await Promise.all([
+  const [feed, live, presence, adminOversight] = await Promise.all([
     readChatFeed({ sessionId, isAdmin }),
     getChatLiveTargets({ refresh }),
     listPresence(sessionId).catch(() => []),
-    isAdmin ? listPrivatePredictionSummary() : Promise.resolve([]),
+    isAdmin ? listAdminPredictionOversight() : Promise.resolve(null),
   ]);
   return NextResponse.json(
     {
@@ -179,7 +179,8 @@ export async function GET(req: NextRequest) {
       rules: CHAT_HOUSE_RULES,
       presence,
       isAdmin,
-      predictions: isAdmin ? predictions : undefined,
+      // 管理人のみ。友達向けレスポンスには載せない
+      adminOversight: isAdmin ? adminOversight : undefined,
       hasSession: Boolean(sessionId),
     },
     { headers: { "cache-control": "no-store" } },
