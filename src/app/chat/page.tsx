@@ -746,14 +746,13 @@ export default function ChatPage() {
               </button>
             </div>
             {targets.length > 0 ? (
-              <p className="note">
+              <p className="chat-honmei-targets">
                 本日の本命対象:{" "}
                 {targets
                   .slice(0, 6)
                   .map((t) => `${t.stadium_name}${t.race}R`)
                   .join(" / ")}
                 {targets.length > 6 ? " …" : ""}
-                （上で選んで AI予想）
               </p>
             ) : (
               <p className="note">場とレースを選んで「AI予想」を押してください。</p>
