@@ -188,6 +188,25 @@ type LiveStadium = {
   beforeInfo: string;
 };
 
+type BoardPick = {
+  stadium?: number;
+  stadium_name?: string;
+  race?: number;
+  tickets?: string[];
+  status?: string;
+  why?: string;
+  skip_reason?: string | null;
+};
+
+type PicksBoard = {
+  active_date?: string;
+  date?: string;
+  count?: number;
+  mode?: string;
+  picks?: BoardPick[];
+  note?: string;
+};
+
 function EquityMiniChart({
   curve,
   color,
@@ -226,70 +245,119 @@ export default function Home() {
   const [data, setData] = useState<RaceResponse | null>(null);
   const [research, setResearch] = useState<Research | null>(null);
   const [error, setError] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
+  const [discordBusy, setDiscordBusy] = useState(false);
+  const [, startTransition] = useTransition();
   const [purchased, setPurchased] = useState(false);
   const [demoExhibition, setDemoExhibition] = useState(false);
   const [liveStadiums, setLiveStadiums] = useState<LiveStadium[]>([]);
   const [liveDate, setLiveDate] = useState("");
   const [activeLive, setActiveLive] = useState<LiveStadium | null>(null);
   const [discordMsg, setDiscordMsg] = useState("");
+  const [board, setBoard] = useState<PicksBoard | null>(null);
 
   useEffect(() => {
-    fetch("/api/schedule")
-      .then((r) => r.json())
-      .then((json) => {
-        setStadiums(json.stadiums ?? []);
-        setRaces(json.races ?? Array.from({ length: 12 }, (_, i) => i + 1));
-        setDateLabel(json.dateLabel ?? "");
-        if (json.stadiums?.[0]?.id) setPlace(json.stadiums[0].id);
-        setRace(1);
-      })
-      .catch(() => setError("開催場の取得に失敗しました"));
+    let cancelled = false;
+
+    async function bootstrap() {
+      try {
+        const [scheduleRes, picksRes] = await Promise.all([
+          fetch("/api/schedule"),
+          fetch("/api/picks"),
+        ]);
+        const scheduleJson = await scheduleRes.json();
+        const picksJson = await picksRes.json().catch(() => ({}));
+        if (cancelled) return;
+
+        const nextStadiums: Stadium[] = scheduleJson.stadiums ?? [];
+        setStadiums(nextStadiums);
+        setRaces(scheduleJson.races ?? Array.from({ length: 12 }, (_, i) => i + 1));
+        setDateLabel(scheduleJson.dateLabel ?? "");
+
+        const nextBoard = (picksJson.board as PicksBoard) || null;
+        setBoard(nextBoard);
+        const first = (nextBoard?.picks || []).find(
+          (p) => p.status !== "skipped" && p.stadium && p.race,
+        );
+        if (first?.stadium && first?.race) {
+          await load({ placeNo: Number(first.stadium), raceNo: Number(first.race) });
+        } else if (nextStadiums[0]?.id) {
+          await load({ placeNo: nextStadiums[0].id, raceNo: 1 });
+        }
+      } catch {
+        if (!cancelled) setError("開催場の取得に失敗しました");
+      }
+    }
+
+    void bootstrap();
     fetch("/api/research")
       .then((r) => r.json())
-      .then((json) => setResearch(json))
+      .then((json) => {
+        if (!cancelled) setResearch(json);
+      })
       .catch(() => undefined);
     fetch("/api/live")
       .then((r) => r.json())
       .then((json) => {
+        if (cancelled) return;
         setLiveStadiums(json.stadiums ?? []);
         setLiveDate(json.date ?? "");
         const firstOpen = (json.stadiums as LiveStadium[] | undefined)?.find((s) => s.open);
         if (firstOpen) setActiveLive(firstOpen);
       })
       .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function load(opts?: { demo?: boolean }) {
+  async function load(opts?: {
+    demo?: boolean;
+    placeNo?: number;
+    raceNo?: number;
+  }) {
+    const placeNo = opts?.placeNo ?? place;
+    const raceNo = opts?.raceNo ?? race;
+    if (opts?.placeNo != null) setPlace(opts.placeNo);
+    if (opts?.raceNo != null) setRace(opts.raceNo);
     setError("");
     setPurchased(false);
+    setLoading(true);
     const useDemo = opts?.demo ?? demoExhibition;
-    startTransition(async () => {
-      try {
-        const qs = new URLSearchParams({
-          place: String(place),
-          race: String(race),
-        });
-        if (useDemo) qs.set("demoExhibition", "1");
-        const res = await fetch(`/api/race?${qs.toString()}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "取得失敗");
-        setData(json);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "取得失敗");
-      }
-    });
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => ac.abort(), 20000);
+    try {
+      const qs = new URLSearchParams({
+        place: String(placeNo),
+        race: String(raceNo),
+      });
+      if (useDemo) qs.set("demoExhibition", "1");
+      const res = await fetch(`/api/race?${qs.toString()}`, { signal: ac.signal });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "取得失敗");
+      startTransition(() => setData(json));
+    } catch (e) {
+      const msg =
+        e instanceof DOMException && e.name === "AbortError"
+          ? "取得がタイムアウトしました。もう一度押してください。"
+          : e instanceof Error
+            ? e.message
+            : "取得失敗";
+      setError(msg);
+    } finally {
+      window.clearTimeout(timer);
+      setLoading(false);
+    }
   }
-
-  useEffect(() => {
-    if (stadiums.length) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stadiums]);
 
   // 展示待ちなら自動再取得（朝1Rから監視）
   useEffect(() => {
     if (!data?.tripleSystem?.ticketsLocked) return;
-    const t = setInterval(() => load(), 45000);
+    const t = setInterval(() => {
+      void load();
+    }, 45000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.tripleSystem?.ticketsLocked, place, race]);
@@ -300,6 +368,9 @@ export default function Home() {
   const triple = data?.tripleSystem;
   const activeBand = triple?.active?.[0];
   const liveUrls = triple?.liveUrls;
+  const boardDate = board?.active_date || board?.date || "";
+  const boardPicks = board?.picks || [];
+  const buyablePicks = boardPicks.filter((p) => p.status !== "skipped");
 
   return (
     <main className="shell">
@@ -309,24 +380,32 @@ export default function Home() {
           本命だけ。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。1日だいたい1レース前後。
         </p>
         <div className="cta-row">
-          <button className="btn" onClick={() => load()} disabled={pending}>
-            {pending ? "読み込み中…" : "今日のレースを読む"}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => void load()}
+            disabled={loading}
+          >
+            {loading ? "読み込み中…" : "今日のレースを読む"}
           </button>
           <button
+            type="button"
             className="btn ghost"
             onClick={() => {
               setDemoExhibition(true);
-              load({ demo: true });
+              void load({ demo: true });
             }}
-            disabled={pending}
+            disabled={loading}
           >
             展示デモで確認
           </button>
           <button
+            type="button"
             className="btn ghost"
             onClick={() => {
               setDiscordMsg("");
-              startTransition(async () => {
+              setDiscordBusy(true);
+              void (async () => {
                 try {
                   const res = await fetch("/api/discord/notify", { method: "POST" });
                   const json = await res.json();
@@ -337,15 +416,53 @@ export default function Home() {
                   setDiscordMsg("Discordへ送信しました");
                 } catch {
                   setDiscordMsg("Discord送信に失敗しました");
+                } finally {
+                  setDiscordBusy(false);
                 }
-              });
+              })();
             }}
-            disabled={pending}
+            disabled={discordBusy}
           >
-            Discordに送る
+            {discordBusy ? "送信中…" : "Discordに送る"}
           </button>
         </div>
         {discordMsg ? <p className="note">{discordMsg}</p> : null}
+      </section>
+
+      <section className="panel" style={{ marginBottom: "1rem" }}>
+        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>今日の買い目</h2>
+        <p className="note">
+          {boardDate || dateLabel || "本日"} / {board?.mode || "honmei_fix_race_filter"} — カードを押すとそのレースを開きます。
+        </p>
+        {buyablePicks.length ? (
+          <div className="cta-row" style={{ marginTop: "0.75rem" }}>
+            {buyablePicks.map((p) => {
+              const sid = Number(p.stadium || 0);
+              const rid = Number(p.race || 0);
+              const active = place === sid && race === rid;
+              return (
+                <button
+                  key={`${sid}-${rid}`}
+                  type="button"
+                  className={`btn ${active ? "" : "ghost"}`}
+                  onClick={() => void load({ placeNo: sid, raceNo: rid })}
+                  disabled={loading || !sid || !rid}
+                >
+                  {(p.stadium_name || `場${sid}`) + ` ${rid}R ` + (p.tickets || ["1-2-3"]).join("/")}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="status" style={{ marginBottom: 0 }}>
+            本日の条件該当はありません（見送り）。
+          </p>
+        )}
+        {buyablePicks[0]?.why ? (
+          <p className="note" style={{ marginTop: "0.75rem" }}>
+            {buyablePicks[0].why}
+          </p>
+        ) : null}
       </section>
 
       <section className="panel">
@@ -384,8 +501,13 @@ export default function Home() {
               <option value="today">{dateLabel || "Asia/Tokyo 今日"}</option>
             </select>
           </div>
-          <button className="btn" onClick={() => load()} disabled={pending}>
-            予想する
+          <button
+            type="button"
+            className="btn"
+            onClick={() => void load()}
+            disabled={loading}
+          >
+            {loading ? "読み込み中…" : "予想する"}
           </button>
         </div>
 

@@ -1,0 +1,373 @@
+{
+  "date": "20261111",
+  "phase": "manual",
+  "generated_at": "2026-11-11T14:31:45.632589+09:00",
+  "picks": [
+    {
+      "date": "20261111",
+      "stadium": 19,
+      "stadium_name": "下関",
+      "race": 11,
+      "title": "スポーツ報知杯",
+      "grade": 5,
+      "status": "provisional",
+      "closed_at": "2026-11-11 20:07:00",
+      "skip_on": [
+        "entry_change",
+        "exhibition_fail",
+        "unexpected_event",
+        "race_closed",
+        "odds_overbet",
+        "odds_missing_near_close"
+      ],
+      "mode": "honmei_fix_race_filter",
+      "band": "honmei_s",
+      "label": "本命S",
+      "tickets": [
+        "1-2-3"
+      ],
+      "ticket": "trifecta_123",
+      "points": 1,
+      "stake_per_ticket": 100,
+      "stake_total": 100,
+      "score": 92.79461933203922,
+      "score_gap": 9.308,
+      "min_pick_score": 48.0,
+      "elite": true,
+      "validated_roi": null,
+      "innige": 0.5768254442287591,
+      "motor2": 46.28,
+      "odds": {
+        "source": "missing",
+        "missing": true,
+        "ok": null,
+        "favorite": null,
+        "fav_odds": null,
+        "top3_share": null,
+        "reason": "オッズ未取得（展示後に再判定）"
+      },
+      "entries": {
+        "1": {
+          "name": "田中 信一郎",
+          "regno": 3556,
+          "nat": 7.29,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 46.28
+        },
+        "2": {
+          "name": "清水 攻二",
+          "regno": 3684,
+          "nat": 5.47,
+          "st": 0.18,
+          "class": 2,
+          "motor2": 25.93
+        },
+        "3": {
+          "name": "大場 恒季",
+          "regno": 5139,
+          "nat": 6.8,
+          "st": 0.16,
+          "class": 1,
+          "motor2": 37.61
+        },
+        "4": {
+          "name": "松尾 充",
+          "regno": 4754,
+          "nat": 6.49,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 26.55
+        },
+        "5": {
+          "name": "吉田 俊彦",
+          "regno": 4055,
+          "nat": 6.5,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 38.79
+        },
+        "6": {
+          "name": "廣中 良一",
+          "regno": 3875,
+          "nat": 4.63,
+          "st": 0.18,
+          "class": 3,
+          "motor2": 31.15
+        }
+      },
+      "why": "下関はボリューム単点の本命形。1号の田中 信一郎が相対最強（A1・勝率7.29・ST0.14・モーター46.3%）のため、本命Sとして3連単1点（1-2-3）を採用。",
+      "reasons": [
+        "下関イン逃げ率 57.7%（本命向き）",
+        "1号 田中 信一郎 A1 / 勝率 7.29 / ST 0.14",
+        "モーター2連対 46.3% / 1号相対最強（差 9.31）",
+        "ボリューム単点 1-2-3（1点100円）"
+      ]
+    },
+    {
+      "date": "20261111",
+      "stadium": 9,
+      "stadium_name": "津",
+      "race": 10,
+      "title": "ルーキーシリーズ第22戦スカパー!・JLC杯争奪戦",
+      "grade": 5,
+      "status": "provisional",
+      "closed_at": "2026-11-11 15:00:00",
+      "skip_on": [
+        "entry_change",
+        "exhibition_fail",
+        "unexpected_event",
+        "race_closed",
+        "odds_overbet",
+        "odds_missing_near_close"
+      ],
+      "mode": "honmei_fix_race_filter",
+      "band": "honmei_s",
+      "label": "本命S",
+      "tickets": [
+        "1-2-3"
+      ],
+      "ticket": "trifecta_123",
+      "points": 1,
+      "stake_per_ticket": 100,
+      "stake_total": 100,
+      "score": 92.04216577283628,
+      "score_gap": 9.803,
+      "min_pick_score": 48.0,
+      "elite": true,
+      "validated_roi": null,
+      "innige": 0.5462720732504905,
+      "motor2": 43.39,
+      "odds": {
+        "source": "missing",
+        "missing": true,
+        "ok": null,
+        "favorite": null,
+        "fav_odds": null,
+        "top3_share": null,
+        "reason": "オッズ未取得（展示後に再判定）"
+      },
+      "entries": {
+        "1": {
+          "name": "山下 大輝",
+          "regno": 5126,
+          "nat": 7.21,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 43.39
+        },
+        "2": {
+          "name": "日高 龍之介",
+          "regno": 5395,
+          "nat": 3.44,
+          "st": 0.19,
+          "class": 3,
+          "motor2": 30.57
+        },
+        "3": {
+          "name": "笹木 香吾",
+          "regno": 5238,
+          "nat": 6.12,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 39.11
+        },
+        "4": {
+          "name": "藤本 元輝",
+          "regno": 5179,
+          "nat": 3.89,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 36.62
+        },
+        "5": {
+          "name": "中野 仁照",
+          "regno": 5197,
+          "nat": 5.68,
+          "st": 0.14,
+          "class": 4,
+          "motor2": 34.34
+        },
+        "6": {
+          "name": "松田 淳平",
+          "regno": 5275,
+          "nat": 5.87,
+          "st": 0.13,
+          "class": 1,
+          "motor2": 32.29
+        }
+      },
+      "why": "津はボリューム単点の本命形。1号の山下 大輝が相対最強（A1・勝率7.21・ST0.15・モーター43.4%）のため、本命Sとして3連単1点（1-2-3）を採用。",
+      "reasons": [
+        "津イン逃げ率 54.6%（本命向き）",
+        "1号 山下 大輝 A1 / 勝率 7.21 / ST 0.15",
+        "モーター2連対 43.4% / 1号相対最強（差 9.80）",
+        "ボリューム単点 1-2-3（1点100円）"
+      ]
+    },
+    {
+      "date": "20261111",
+      "stadium": 9,
+      "stadium_name": "津",
+      "race": 12,
+      "title": "ルーキーシリーズ第22戦スカパー!・JLC杯争奪戦",
+      "grade": 5,
+      "status": "provisional",
+      "closed_at": "2026-11-11 16:10:00",
+      "skip_on": [
+        "entry_change",
+        "exhibition_fail",
+        "unexpected_event",
+        "race_closed",
+        "odds_overbet",
+        "odds_missing_near_close"
+      ],
+      "mode": "honmei_fix_race_filter",
+      "band": "honmei_s",
+      "label": "本命S",
+      "tickets": [
+        "1-2-3"
+      ],
+      "ticket": "trifecta_123",
+      "points": 1,
+      "stake_per_ticket": 100,
+      "stake_total": 100,
+      "score": 88.5677991061696,
+      "score_gap": 8.19,
+      "min_pick_score": 48.0,
+      "elite": true,
+      "validated_roi": null,
+      "innige": 0.5462720732504905,
+      "motor2": 37.88,
+      "odds": {
+        "source": "missing",
+        "missing": true,
+        "ok": null,
+        "favorite": null,
+        "fav_odds": null,
+        "top3_share": null,
+        "reason": "オッズ未取得（展示後に再判定）"
+      },
+      "entries": {
+        "1": {
+          "name": "竹下 大樹",
+          "regno": 5018,
+          "nat": 6.93,
+          "st": 0.14,
+          "class": 1,
+          "motor2": 37.88
+        },
+        "2": {
+          "name": "大原 祥昌",
+          "regno": 5134,
+          "nat": 5.73,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 36.18
+        },
+        "3": {
+          "name": "塚越 海斗",
+          "regno": 5234,
+          "nat": 6.44,
+          "st": 0.15,
+          "class": 1,
+          "motor2": 31.38
+        },
+        "4": {
+          "name": "川辺 郭人",
+          "regno": 5312,
+          "nat": 3.18,
+          "st": 0.17,
+          "class": 3,
+          "motor2": 44.88
+        },
+        "5": {
+          "name": "島川 海輝",
+          "regno": 5145,
+          "nat": 6.25,
+          "st": 0.16,
+          "class": 2,
+          "motor2": 30.24
+        },
+        "6": {
+          "name": "小野 京平",
+          "regno": 5209,
+          "nat": 4.04,
+          "st": 0.21,
+          "class": 3,
+          "motor2": 39.09
+        }
+      },
+      "why": "津はボリューム単点の本命形。1号の竹下 大樹が相対最強（A1・勝率6.93・ST0.14・モーター37.9%）のため、本命Sとして3連単1点（1-2-3）を採用。",
+      "reasons": [
+        "津イン逃げ率 54.6%（本命向き）",
+        "1号 竹下 大樹 A1 / 勝率 6.93 / ST 0.14",
+        "モーター2連対 37.9% / 1号相対最強（差 8.19）",
+        "ボリューム単点 1-2-3（1点100円）"
+      ]
+    }
+  ],
+  "count": 3,
+  "status": "ok",
+  "mode": "honmei_fix_race_filter",
+  "selection": {
+    "mode": "threshold",
+    "min_score": 0,
+    "min_score_gap": 1.5,
+    "soft_max_per_day": 4,
+    "hard_max_per_day": 4,
+    "min_per_day": 0,
+    "fill_to_target": false
+  },
+  "disabled_systems": [
+    "oshi",
+    "ana",
+    "volume_fixed_12",
+    "tri_1axis_6",
+    "honmei_roi_6pt"
+  ],
+  "stadium_blacklist": [
+    21
+  ],
+  "pool_size": 3,
+  "elite_count": 3,
+  "standard_count": 0,
+  "points_per_race": 2,
+  "closed_skipped": 64,
+  "odds_blocked": 0,
+  "blacklisted_stadiums_seen": 1,
+  "stake_s": 100,
+  "stake_standard": 100,
+  "feasibility": {
+    "target_races_per_day": "1.0-1.2",
+    "points_per_race": 1,
+    "validated_raw_2021_2023": {
+      "2021": 100.6,
+      "2022": 108.3,
+      "2023": 117.3,
+      "avg": 1.1
+    },
+    "validated_raw_2024_2025": {
+      "2024": 109.9,
+      "2025": 100.2
+    },
+    "validated_raw_2026": {
+      "roi": 115.5,
+      "H1": 109.5,
+      "H2": 121.4
+    },
+    "validated_gated_2024_2025": {
+      "2024": 109.2,
+      "2025": 105.3,
+      "roi": 107.2
+    },
+    "validated_gated_2026": {
+      "roi": 113.6,
+      "H1": 110.8,
+      "H2": 116.3
+    },
+    "period": "2021-2026 + API展示ゲート",
+    "note": "前回の内枠率WLより、回収の悪い場を外し1R/9Rを切った方が年次が揃う。"
+  },
+  "note": "本命ボリューム単点。1日最大2R（平均約1.7）。A1/勝率6.5/ST0.15/モーター35。1-2-3のみ。芦屋除外。"
+}

@@ -137,9 +137,15 @@ select {
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.05);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
 }
 
 .btn.ghost {
