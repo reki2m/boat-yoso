@@ -8,9 +8,10 @@ function gateSecret(): string {
       .normalize("NFKC")
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .trim();
+  const unlock = strip(process.env.APP_UNLOCK_KEY);
   const admin = strip(process.env.CHAT_ADMIN_KEY);
   const op = strip(process.env.CHAT_OPERATOR_KEY);
-  return admin || op || (process.env.NODE_ENV === "production" ? "" : "shio-op");
+  return unlock || admin || op || (process.env.NODE_ENV === "production" ? "" : "shio-op");
 }
 
 async function expectedToken(secret: string): Promise<string> {

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       {
         ok: false,
         error: "管理人キーがサーバーに未設定です",
-        hint: "Cursor Apps の Secrets に CHAT_ADMIN_KEY（または CHAT_OPERATOR_KEY）を入れ、再公開してください",
+        hint: "Cursor Apps の Secrets に APP_UNLOCK_KEY（または CHAT_ADMIN_KEY）を入れ、再公開してください",
       },
       { status: 503 },
     );
@@ -86,9 +86,9 @@ export async function POST(req: NextRequest) {
       {
         ok: false,
         error: looksLikeInvite
-          ? "それは招待コードです。本体は CHAT_ADMIN_KEY または CHAT_OPERATOR_KEY で開けます"
+          ? "それは招待コードです。本体は APP_UNLOCK_KEY（または CHAT_ADMIN_KEY）で開けます"
           : "管理人キーが違います",
-        hint: "Cursor の Apps → Secrets で CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY の値そのものを入力してください（名前ではなく値、招待コード不可）",
+        hint: "Cursor の Apps → Secrets で APP_UNLOCK_KEY の値を入力してください（名前ではなく値、招待コード不可）",
       },
       { status: 401 },
     );

@@ -42,7 +42,7 @@ function LoginForm() {
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          placeholder="CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY"
+          placeholder="APP_UNLOCK_KEY（または CHAT_ADMIN_KEY）"
           autoComplete="off"
           className="chat-input"
           onKeyDown={(e) => {
@@ -74,8 +74,8 @@ function LoginForm() {
       </div>
       {error ? <p className="status">{error}</p> : null}
       <p className="note" style={{ marginTop: "0.85rem" }}>
-        ここに入れるのは招待コードではなく、Cursor Apps の Secrets にある CHAT_ADMIN_KEY（または
-        CHAT_OPERATOR_KEY）です。友達には /chat と招待コードだけ渡してください。
+        ここに入れるのは招待コードではなく、Cursor Apps の Secrets にある APP_UNLOCK_KEY（未設定なら
+        CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY）です。友達には /chat と招待コードだけ渡してください。
       </p>
     </section>
   );
