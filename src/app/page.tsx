@@ -567,6 +567,27 @@ export default function Home() {
             }}
           />
         </div>
+        <p className="note" style={{ marginTop: "0.55rem" }}>
+          アプリ本体はこのキーがないと開けません。友達には /chat と招待コードだけ送ってください。
+        </p>
+        <div className="cta-row" style={{ marginTop: "0.55rem" }}>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() => {
+              void (async () => {
+                await fetch("/api/app-auth", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ action: "logout" }),
+                });
+                window.location.href = "/login";
+              })();
+            }}
+          >
+            アプリをロック
+          </button>
+        </div>
         {chatMsg ? <p className="note">{chatMsg}</p> : null}
       </section>
 
