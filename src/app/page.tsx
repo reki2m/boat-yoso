@@ -422,7 +422,12 @@ export default function Home() {
   return (
     <main className="shell">
       <section className="hero">
+        <p className="brand-kicker">Night Circuit Telemetry</p>
         <h1 className="brand">潮読み</h1>
+        <p className="brand-sub">SHIOYOMI RACE SYSTEM</p>
+        <div className="gate-rail" aria-hidden>
+          <i /><i /><i /><i /><i /><i />
+        </div>
         <p className="lede">
           本命だけ。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。1日だいたい1レース前後。
         </p>
@@ -557,14 +562,7 @@ export default function Home() {
             onChange={(e) => setOperatorKey(e.target.value)}
             placeholder="CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY"
             autoComplete="off"
-            style={{
-              width: "100%",
-              padding: "0.75rem 1rem",
-              borderRadius: 12,
-              border: "1px solid var(--line)",
-              background: "rgba(8,28,38,0.55)",
-              color: "var(--foam)",
-            }}
+            className="chat-input"
           />
         </div>
         <p className="note" style={{ marginTop: "0.55rem" }}>

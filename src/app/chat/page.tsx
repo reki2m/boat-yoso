@@ -269,13 +269,18 @@ export default function ChatPage() {
 
   return (
     <main className="shell chat-shell">
-      <section className="hero" style={{ minHeight: "auto", paddingBottom: "1rem" }}>
-        <p className="note" style={{ margin: 0 }}>
-          <Link href="/">← 潮読みアプリ</Link>
-        </p>
-        <h1 className="brand" style={{ fontSize: "clamp(2rem, 6vw, 3.4rem)" }}>
-          専用チャット
+      <section className="hero compact">
+        <Link className="top-link" href="/">
+          ← 潮読みアプリ
+        </Link>
+        <p className="brand-kicker">Pit Radio Channel</p>
+        <h1 className="brand" style={{ fontSize: "clamp(2.2rem, 7vw, 4rem)" }}>
+          潮読み
         </h1>
+        <p className="brand-sub">MEMBER CHAT</p>
+        <div className="gate-rail" aria-hidden>
+          <i /><i /><i /><i /><i /><i />
+        </div>
         <p className="lede">
           「徳山1R」のように場名とレースを送ると予測が返ります。対象レースのライブも同じ画面で見れます。
         </p>
