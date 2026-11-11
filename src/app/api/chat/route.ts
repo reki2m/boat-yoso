@@ -3,6 +3,7 @@ import picksBoard from "@/data/picks_board.json";
 import { buildPicksMessage, toDiscordContent } from "@/lib/buildPicksMessage";
 import {
   appendChatMessage,
+  checkAdmin,
   checkInvite,
   checkOperator,
   clearChatMessages,
@@ -78,18 +79,23 @@ export async function POST(req: NextRequest) {
   const kind = body.kind || "picks";
 
   if (kind === "clear") {
-    if (!isOperator) {
+    // 破壊操作は管理人のみ（CHAT_ADMIN_KEY、未設定時は CHAT_OPERATOR_KEY）
+    if (!checkAdmin(key)) {
       return NextResponse.json(
-        { ok: false, error: "運営キーが違います", hint: "CHAT_OPERATOR_KEY を確認してください" },
-        { status: 401 },
+        {
+          ok: false,
+          error: "管理人権限が必要です",
+          hint: "CHAT_ADMIN_KEY（未設定なら CHAT_OPERATOR_KEY）を確認してください",
+        },
+        { status: 403 },
       );
     }
     const deleted = await clearChatMessages();
     const notice = await appendChatMessage({
       kind: "note",
       title: "チャット消去",
-      body: "運営がチャット履歴を消去しました。",
-      author_name: "運営",
+      body: "管理人がチャット履歴を消去しました。",
+      author_name: "管理人",
       author_role: "operator",
     });
     return NextResponse.json({ ok: true, deleted, message: notice });

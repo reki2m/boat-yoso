@@ -161,38 +161,6 @@ export default function ChatPage() {
     }
   }
 
-  async function clearChat() {
-    if (!asOperator || !operatorKey.trim()) {
-      setError("チャット消去には運営キーが必要です");
-      return;
-    }
-    if (!window.confirm("チャット履歴を全消去します。よろしいですか？")) return;
-    setSending(true);
-    setError("");
-    setStatus("");
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "clear",
-          operatorKey: operatorKey.trim(),
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error || "消去に失敗しました");
-        return;
-      }
-      setStatus(`チャットを消去しました（${json.deleted ?? 0}件）`);
-      await loadFeed(invite.trim(), { quiet: true, refresh: false });
-    } catch {
-      setError("消去に失敗しました");
-    } finally {
-      setSending(false);
-    }
-  }
-
   async function sendMessage() {
     const text = draft.trim();
     const code = invite.trim();
@@ -463,18 +431,6 @@ export default function ChatPage() {
               >
                 更新
               </button>
-              {asOperator ? (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={sending || !operatorKey.trim()}
-                  onClick={() => {
-                    void clearChat();
-                  }}
-                >
-                  チャット消去
-                </button>
-              ) : null}
               <button
                 type="button"
                 className="btn ghost"
@@ -488,6 +444,9 @@ export default function ChatPage() {
                 退出
               </button>
             </div>
+            <p className="note" style={{ marginTop: "0.55rem" }}>
+              チャット履歴の消去は管理人のみ（アプリ側の管理人操作）です。
+            </p>
             {status ? <p className="note">{status}</p> : null}
             {error ? <p className="status">{error}</p> : null}
           </div>

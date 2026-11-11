@@ -491,18 +491,64 @@ export default function Home() {
           <a className="btn ghost" href="/chat">
             専用チャットを開く
           </a>
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={chatBusy}
+            onClick={() => {
+              setChatMsg("");
+              const key = operatorKey.trim();
+              if (!key) {
+                setChatMsg("管理人キーを入力してから消去してください");
+                return;
+              }
+              if (!window.confirm("専用チャット履歴を全消去します。管理人のみの操作です。よろしいですか？")) {
+                return;
+              }
+              try {
+                window.localStorage.setItem("shioyomi_operator_key", key);
+              } catch {
+                // ignore
+              }
+              setChatBusy(true);
+              void (async () => {
+                try {
+                  const res = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      operatorKey: key,
+                      kind: "clear",
+                    }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) {
+                    setChatMsg(json.hint || json.error || "消去に失敗しました");
+                    return;
+                  }
+                  setChatMsg(`チャットを消去しました（${json.deleted ?? 0}件）`);
+                } catch {
+                  setChatMsg("消去に失敗しました");
+                } finally {
+                  setChatBusy(false);
+                }
+              })();
+            }}
+          >
+            チャット消去（管理人）
+          </button>
         </div>
         <p className="note" style={{ marginTop: "0.65rem" }}>
-          専用チャットは招待メンバーと会話できます。買い目アップも同じ部屋に流れます。
+          専用チャットは招待メンバーと会話できます。買い目アップも同じ部屋に流れます。履歴消去は管理人のみです。
         </p>
         <div className="field" style={{ marginTop: "0.85rem", maxWidth: 420 }}>
-          <label htmlFor="operatorKey">運営キー（あなただけ）</label>
+          <label htmlFor="operatorKey">管理人キー（あなただけ）</label>
           <input
             id="operatorKey"
             type="password"
             value={operatorKey}
             onChange={(e) => setOperatorKey(e.target.value)}
-            placeholder="CHAT_OPERATOR_KEY"
+            placeholder="CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY"
             autoComplete="off"
             style={{
               width: "100%",

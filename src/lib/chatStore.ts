@@ -160,6 +160,13 @@ export function operatorKey(): string {
   return "shio-op";
 }
 
+/** 管理人キー。未設定時は運営キーと同じ。チャット消去など破壊操作専用。 */
+export function adminKey(): string {
+  const fromEnv = process.env.CHAT_ADMIN_KEY?.trim();
+  if (fromEnv) return fromEnv;
+  return operatorKey();
+}
+
 export function checkInvite(code: string | null | undefined): boolean {
   const expected = inviteCode();
   return Boolean(expected && code && code.trim() === expected);
@@ -167,5 +174,10 @@ export function checkInvite(code: string | null | undefined): boolean {
 
 export function checkOperator(key: string | null | undefined): boolean {
   const expected = operatorKey();
+  return Boolean(expected && key && key.trim() === expected);
+}
+
+export function checkAdmin(key: string | null | undefined): boolean {
+  const expected = adminKey();
   return Boolean(expected && key && key.trim() === expected);
 }
