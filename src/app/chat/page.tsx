@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { STADIUMS } from "@/lib/stadiums";
 
 type ChatMessage = {
   id: string;
@@ -105,9 +106,6 @@ const LEGACY_ADMIN_KEY = "shioyomi_admin_key";
 const LEGACY_SESSION_KEY = "shioyomi_chat_session";
 
 const DEFAULT_RULES = [
-  "メッセージ欄は雑談用です。",
-  "メッセージの上で場とレースを選び「AI予想」を押すと、詳細が自分と管理人だけに出ます（友達同士では共有しません）。",
-  "他の友達がどのレースをAI予想したかは分かりません。",
   "チャット履歴は当日のレース終了から約1時間後に自動リセットされます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
@@ -233,16 +231,27 @@ export default function ChatPage() {
   }, [messages.length, unlocked]);
 
   async function loadSchedule() {
+    const allRaces = Array.from({ length: 12 }, (_, i) => i + 1);
+    const fallback: StadiumOpt[] = Object.entries(STADIUMS).map(([id, name]) => ({
+      id: Number(id),
+      name,
+    }));
     try {
       const res = await fetch("/api/schedule");
-      const json = await res.json();
-      const next: StadiumOpt[] = json.stadiums || [];
-      setStadiums(next);
-      setRaces(json.races || Array.from({ length: 12 }, (_, i) => i + 1));
-      if (next[0]?.id) setPickStadium(next[0].id);
+      const json = await res.json().catch(() => ({}));
+      const next: StadiumOpt[] = Array.isArray(json.stadiums) ? json.stadiums : [];
+      if (next.length) {
+        setStadiums(next);
+        setRaces(json.races || allRaces);
+        setPickStadium((prev) => prev || next[0]?.id || 0);
+        return;
+      }
     } catch {
-      // ignore
+      // fall through to full list
     }
+    setStadiums(fallback);
+    setRaces(allRaces);
+    setPickStadium((prev) => prev || fallback[0]?.id || 0);
   }
 
   async function enterAndLoad(code: string, name: string, quiet: boolean) {
@@ -516,9 +525,6 @@ export default function ChatPage() {
         <div className="gate-rail" aria-hidden>
           <i /><i /><i /><i /><i /><i />
         </div>
-        <p className="lede">
-          メッセージは雑談。場とレースを選んで「AI予想」を押すと、詳細が自分と管理人だけに出ます。
-        </p>
       </section>
 
       {!unlocked ? (
@@ -578,10 +584,6 @@ export default function ChatPage() {
             {isAdmin ? <span className="badge">管理人</span> : null}
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
-          <p className="chat-reset-note">
-            メッセージは雑談用。AI予想は上の場・レース選択から。結果は自分と管理人だけに出ます。
-          </p>
-
           <div className="presence-panel">
             <div className="presence-head">
               <strong>入室中</strong>
@@ -741,18 +743,15 @@ export default function ChatPage() {
               </button>
             </div>
             {targets.length > 0 ? (
-              <p className="note">
+              <p className="chat-honmei-targets">
                 本日の本命対象:{" "}
                 {targets
                   .slice(0, 6)
                   .map((t) => `${t.stadium_name}${t.race}R`)
                   .join(" / ")}
                 {targets.length > 6 ? " …" : ""}
-                （上で選んで AI予想）
               </p>
-            ) : (
-              <p className="note">場とレースを選んで「AI予想」を押してください。</p>
-            )}
+            ) : null}
           </div>
 
           <div className="chat-stream" ref={listRef}>
