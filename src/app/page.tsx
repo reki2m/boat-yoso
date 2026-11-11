@@ -137,12 +137,14 @@ type RaceResponse = {
     count: number;
     axis: number;
     partners: number[];
-    confidence: string;
+    confidence: number;
+    confidenceLabel?: string;
     commentary: string[];
     anaTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
     anaCount?: number;
     anaAxis?: number | null;
-    anaConfidence?: string;
+    anaConfidence?: number;
+    anaConfidenceLabel?: string;
     anaCommentary?: string[];
     method: string;
     racerViews?: Array<{
@@ -607,8 +609,27 @@ export default function Home() {
                   <span className="badge">
                     3連単 {data.deepPicks.count}点
                   </span>
-                  <span className="badge">信頼度 {data.deepPicks.confidence}</span>
+                  <span className="badge">
+                    信頼度 {data.deepPicks.confidence}/5
+                    {data.deepPicks.confidenceLabel
+                      ? `（${data.deepPicks.confidenceLabel.replace(/^\d\/5\s*/, "")}）`
+                      : ""}
+                  </span>
                   <span className="badge">軸 {data.deepPicks.axis}号</span>
+                </div>
+                <div
+                  className="cta-row"
+                  style={{ margin: "0.35rem 0 0.75rem", gap: "0.35rem" }}
+                  aria-label={`本線信頼度 ${data.deepPicks.confidence} of 5`}
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <span
+                      key={`main-conf-${n}`}
+                      className={`badge ${n <= data.deepPicks!.confidence ? "" : "warn"}`}
+                    >
+                      {n}
+                    </span>
+                  ))}
                 </div>
                 <div className="sanren" style={{ marginBottom: "0.75rem" }}>
                   {data.deepPicks.tickets.map((t) => t.combo).join(" / ")}
@@ -645,11 +666,33 @@ export default function Home() {
                         : "見送り"}
                     </span>
                     <span className="badge">
-                      信頼度 {data.deepPicks.anaConfidence || "見送り"}
+                      信頼度 {(data.deepPicks.anaConfidence ?? 0)}/5
+                      {data.deepPicks.anaConfidenceLabel
+                        ? `（${String(data.deepPicks.anaConfidenceLabel).replace(/^\d\/5\s*/, "")}）`
+                        : ""}
                     </span>
                     {data.deepPicks.anaAxis ? (
                       <span className="badge">軸 {data.deepPicks.anaAxis}号</span>
                     ) : null}
+                  </div>
+                  <div
+                    className="cta-row"
+                    style={{ margin: "0.35rem 0 0.75rem", gap: "0.35rem" }}
+                    aria-label={`穴目信頼度 ${data.deepPicks.anaConfidence ?? 0} of 5`}
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <span
+                        key={`ana-conf-${n}`}
+                        className={`badge ${
+                          (data.deepPicks!.anaConfidence ?? 0) > 0 &&
+                          n <= (data.deepPicks!.anaConfidence ?? 0)
+                            ? ""
+                            : "warn"
+                        }`}
+                      >
+                        {n}
+                      </span>
+                    ))}
                   </div>
                   {(data.deepPicks.anaTickets?.length ?? 0) > 0 ? (
                     <>
