@@ -5,12 +5,14 @@ import {
   appendChatMessage,
   checkInvite,
   checkOperator,
+  clearChatMessages,
   readChatFeed,
   sanitizeChatBody,
   sanitizeDisplayName,
   type ChatKind,
   type ChatRole,
 } from "@/lib/chatStore";
+import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
   let body: {
     invite?: string;
     operatorKey?: string;
-    kind?: ChatKind;
+    kind?: ChatKind | "clear";
     note?: string;
     text?: string;
     authorName?: string;
@@ -62,7 +64,25 @@ export async function POST(req: NextRequest) {
   const invite = body.invite || req.headers.get("x-chat-invite");
   const key = body.operatorKey || req.headers.get("x-chat-operator");
   const isOperator = checkOperator(key);
-  const kind: ChatKind = body.kind === "note" || body.kind === "chat" || body.kind === "picks" ? body.kind : "picks";
+  const kind = body.kind || "picks";
+
+  if (kind === "clear") {
+    if (!isOperator) {
+      return NextResponse.json(
+        { ok: false, error: "運営キーが違います", hint: "CHAT_OPERATOR_KEY を確認してください" },
+        { status: 401 },
+      );
+    }
+    const deleted = await clearChatMessages();
+    const notice = await appendChatMessage({
+      kind: "note",
+      title: "チャット消去",
+      body: "運営がチャット履歴を消去しました。",
+      author_name: "運営",
+      author_role: "operator",
+    });
+    return NextResponse.json({ ok: true, deleted, message: notice });
+  }
 
   // Member talk: invite code is enough.
   if (kind === "chat") {
@@ -100,21 +120,49 @@ export async function POST(req: NextRequest) {
 
   let title = "メモ";
   let text = sanitizeChatBody(body.note || body.text);
-  let meta: { date?: string; mode?: string; count?: number; discord?: boolean } = {};
+  let meta: {
+    date?: string;
+    mode?: string;
+    count?: number;
+    skipped?: number;
+    discord?: boolean;
+  } = {};
 
   if (kind === "picks") {
-    const built = buildPicksMessage(
-      picksBoard as {
-        active_date?: string;
-        date?: string;
-        mode?: string;
-        picks?: Array<Record<string, unknown>>;
-        note?: string;
-      },
+    const board = picksBoard as {
+      active_date?: string;
+      date?: string;
+      mode?: string;
+      picks?: Array<Record<string, unknown>>;
+      note?: string;
+    };
+    const livePicks = await refreshPicksStatus(
+      (board.picks || []).map((p) => ({
+        date: String(p.date || board.active_date || board.date || ""),
+        stadium: Number(p.stadium || 0),
+        stadium_name: typeof p.stadium_name === "string" ? p.stadium_name : undefined,
+        race: Number(p.race || 0),
+        tickets: Array.isArray(p.tickets) ? (p.tickets as string[]) : undefined,
+        status: typeof p.status === "string" ? p.status : undefined,
+        why: typeof p.why === "string" ? p.why : undefined,
+        skip_reason: typeof p.skip_reason === "string" ? p.skip_reason : null,
+      })),
     );
+    const built = buildPicksMessage({
+      active_date: board.active_date,
+      date: board.date,
+      mode: board.mode,
+      note: board.note,
+      picks: livePicks,
+    });
     title = built.title;
     text = built.body;
-    meta = { date: built.dateKey, mode: (picksBoard as { mode?: string }).mode, count: built.count };
+    meta = {
+      date: built.dateKey,
+      mode: board.mode,
+      count: built.count,
+      skipped: built.skippedCount,
+    };
   } else if (!text) {
     return NextResponse.json({ ok: false, error: "メモ本文が空です" }, { status: 400 });
   }
@@ -129,7 +177,7 @@ export async function POST(req: NextRequest) {
   meta.discord = discordOk;
 
   const message = await appendChatMessage({
-    kind,
+    kind: kind === "note" ? "note" : "picks",
     title,
     body: text,
     author_name: "運営",

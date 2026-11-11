@@ -108,6 +108,14 @@ export async function readChatFeed(): Promise<ChatFeed> {
   }
 }
 
+export async function clearChatMessages(): Promise<number> {
+  const before = await sql<{ count: string | number }>(
+    `select count(*)::int as count from chat_messages`,
+  ).catch(() => [{ count: 0 }]);
+  await sql(`delete from chat_messages`);
+  return Number(before[0]?.count ?? 0);
+}
+
 export async function appendChatMessage(
   message: Omit<ChatMessage, "id" | "created_at"> & { id?: string; created_at?: string },
 ): Promise<ChatMessage> {
