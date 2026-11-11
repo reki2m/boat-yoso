@@ -1,10 +1,30 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import picksBoard from "@/data/picks_board.json";
 import { buildPicksMessage, toDiscordContent } from "@/lib/buildPicksMessage";
+import { checkOperator } from "@/lib/chatStore";
 
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  let body: { operatorKey?: string } = {};
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+
+  const key = body.operatorKey || req.headers.get("x-chat-operator");
+  if (!checkOperator(key)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "運営キーが違います",
+        hint: "CHAT_OPERATOR_KEY を確認してください",
+      },
+      { status: 401 },
+    );
+  }
+
   const webhook = process.env.DISCORD_WEBHOOK_URL;
   if (!webhook) {
     return NextResponse.json(
