@@ -86,6 +86,50 @@ async function estimateRaceDayEndMs(dateKey: string): Promise<number> {
   return jstWallMs(dateKey, 21, 0);
 }
 
+async function countMessagesCreatedBefore(isoOrMs: string | number): Promise<number> {
+  const cutoff = typeof isoOrMs === "number" ? new Date(isoOrMs).toISOString() : isoOrMs;
+  try {
+    const rows = await sql<{ count: number | string }>(
+      `select count(*)::int as count from chat_messages where created_at < $1::timestamptz`,
+      [cutoff],
+    );
+    return Number(rows[0]?.count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+/** 日付タグ付きの前日以前の予想・結果メモを削除（通常会話は残す）。 */
+async function deleteDatedMessagesBefore(dateKey: string): Promise<number> {
+  try {
+    const rows = await sql<{ id: string }>(
+      `delete from chat_messages
+       where meta ? 'date'
+         and coalesce(meta->>'date', '') ~ '^[0-9]{8}$'
+         and (meta->>'date') < $1
+       returning id`,
+      [dateKey],
+    );
+    return rows.length;
+  } catch {
+    return 0;
+  }
+}
+
+async function performClear(dateKey: string): Promise<number> {
+  const deleted = await clearChatMessages();
+  await setMeta("auto_cleared_for", dateKey);
+  await appendChatMessage({
+    kind: "note",
+    title: "自動消去",
+    body: `${dateKey} のレース終了から1時間経過したため、チャット履歴を自動消去しました。`,
+    author_name: "システム",
+    author_role: "operator",
+    meta: { date: dateKey, mode: "auto_clear" },
+  });
+  return deleted;
+}
+
 /**
  * レース終了目安の1時間後に履歴を自動全削除。
  * GET/POST のたびに軽く確認する。
@@ -96,7 +140,8 @@ export async function maybeAutoClearChat(now = new Date()): Promise<{
   forDate: string | null;
 }> {
   const today = jstDateKey(now);
-  const candidates = [today, previousDateKey(today)];
+  // 前日を先に処理（早朝に「昨日の予想」が残るのを防ぐ）
+  const candidates = [previousDateKey(today), today];
 
   for (const dateKey of candidates) {
     const endMs = await estimateRaceDayEndMs(dateKey);
@@ -105,19 +150,38 @@ export async function maybeAutoClearChat(now = new Date()): Promise<{
     if (now.getTime() < clearAt) continue;
 
     const already = await getMeta("auto_cleared_for");
-    if (already === dateKey) continue;
+    if (already && already > dateKey) continue;
+    if (already === dateKey) {
+      // フラグだけ立って消去前のメッセージが残っている場合は再実行
+      const leftover = await countMessagesCreatedBefore(clearAt);
+      if (leftover === 0) continue;
+    }
 
-    const deleted = await clearChatMessages();
-    await setMeta("auto_cleared_for", dateKey);
-    await appendChatMessage({
-      kind: "note",
-      title: "自動消去",
-      body: `${dateKey} のレース終了から1時間経過したため、チャット履歴を自動消去しました。`,
-      author_name: "システム",
-      author_role: "operator",
-      meta: { date: dateKey, mode: "auto_clear" },
-    });
+    const deleted = await performClear(dateKey);
     return { cleared: true, deleted, forDate: dateKey };
+  }
+
+  // セーフティ: 前日クリア後も date タグ付きの古い予想が残っていれば除去
+  const yesterday = previousDateKey(today);
+  const yEnd = await estimateRaceDayEndMs(yesterday);
+  const yClearAt = yEnd + 60 * 60 * 1000;
+  if (now.getTime() >= yClearAt) {
+    const removed = await deleteDatedMessagesBefore(today);
+    if (removed > 0) {
+      await appendChatMessage({
+        kind: "note",
+        title: "自動消去",
+        body: `前日以前の予想メッセージを自動消去しました（${removed}件）。`,
+        author_name: "システム",
+        author_role: "operator",
+        meta: { date: today, mode: "auto_clear_stale" },
+      });
+      const already = await getMeta("auto_cleared_for");
+      if (!already || already < yesterday) {
+        await setMeta("auto_cleared_for", yesterday);
+      }
+      return { cleared: true, deleted: removed, forDate: yesterday };
+    }
   }
 
   return { cleared: false, deleted: 0, forDate: null };

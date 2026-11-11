@@ -1,6 +1,7 @@
 import picksBoard from "@/data/picks_board.json";
 import { liveBroadcastUrls } from "@/lib/liveBroadcast";
 import { refreshPicksStatus, skipReasonLabel, type LivePickRow } from "@/lib/refreshPicksStatus";
+import { jstDateKey } from "@/lib/stadiums";
 
 export type ChatLiveTarget = {
   date: string;
@@ -39,9 +40,12 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
   targets: ChatLiveTarget[];
 }> {
   const board = picksBoard as { active_date?: string; date?: string };
-  const dateKey = String(board.active_date || board.date || "");
-  let picks = boardPicks();
-  if (opts?.refresh) {
+  const boardDate = String(board.active_date || board.date || "");
+  const today = jstDateKey();
+  // 前日以前のボードはチャットの「対象レース」に出さない
+  const dateKey = boardDate === today ? boardDate : today;
+  let picks = boardPicks().filter((p) => String(p.date) === today);
+  if (opts?.refresh && picks.length) {
     picks = await refreshPicksStatus(picks);
   }
 
