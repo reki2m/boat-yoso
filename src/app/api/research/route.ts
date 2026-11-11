@@ -6,8 +6,20 @@ import lockedTriple from "@/data/locked_triple_rules.json";
 import backtest from "@/data/honmei_backtest.json";
 import equity from "@/data/equity_10k.json";
 import { TICKET_LABEL } from "@/lib/honmeiRule";
+import { existsSync, readFileSync } from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
+
+function readOptionalJson(relParts: string[]): Record<string, unknown> | null {
+  const file = path.join(process.cwd(), ...relParts);
+  try {
+    if (!existsSync(file)) return null;
+    return JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET() {
   const triple = lockedTriple as {
@@ -15,6 +27,18 @@ export async function GET() {
     oshi?: Record<string, unknown> | null;
     ana?: Record<string, unknown> | null;
   };
+  const updateState =
+    readOptionalJson(["src", "data", "update_state.json"]) ||
+    readOptionalJson(["data", "update_state.json"]) ||
+    {};
+  const learningState =
+    readOptionalJson(["src", "data", "learning_state.json"]) ||
+    readOptionalJson(["data", "reports", "learning_state.json"]) ||
+    {};
+  const opsLive =
+    readOptionalJson(["src", "data", "ops_live.json"]) ||
+    readOptionalJson(["data", "reports", "ops_live.json"]) ||
+    {};
 
   return NextResponse.json({
     sources: {
@@ -23,15 +47,28 @@ export async function GET() {
       openapi: "boatraceopenapi results/programs/odds 2021-2026",
     },
     update: {
-      cadence: "毎晩（最新データ取得→本命買い目→展示確認→的中再計算）",
-      script: "scripts/nightly_update.py",
+      cadence: "毎日自動（最新データ→本命買い目→展示確認→的中再計算→回収率学習）",
+      script: "scripts/nightly_update.py + scripts/learn_roi_daily.py",
+      last_success_at: updateState.last_success_at || null,
+      last_success_date: updateState.last_success_date || null,
+      last_confirm_at: updateState.last_confirm_at || null,
+      auto: true,
       policy: {
         mode: "honmei_fix_race_filter",
         day_before_picks: true,
         skip_on_entry_change: true,
         require_start_exhibition: true,
         no_oshi_ana: true,
+        auto_learn_roi: true,
       },
+    },
+    learning: {
+      ...(learningState || {}),
+      ops_status: opsLive.status || null,
+      rolling_roi:
+        opsLive.rolling_roi ??
+        (learningState.baseline as { roi?: number } | undefined)?.roi ??
+        null,
     },
     lockedHonmei: {
       ...locked,

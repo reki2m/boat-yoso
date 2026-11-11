@@ -307,7 +307,36 @@ def select_picks(cands: list[dict], rules: dict) -> list[dict]:
 
 def generate(date_key: str, phase: str) -> dict:
     rules = load_json(REPORTS / "honmei_rules.json", {}) or {}
+    locked = (
+        load_json(SRC_DATA / "locked_honmei_rule.json")
+        or load_json(REPORTS / "locked_honmei_rule.json")
+        or {}
+    )
     standard = rules.get("standard") or {}
+    # 学習済みロック規則を当日生成のソース・オブ・トゥルースにする
+    if locked:
+        for k in (
+            "min_c1_nat",
+            "max_c1_st",
+            "min_motor2",
+            "min_gap_c2",
+            "min_score_gap",
+            "max_c1_class",
+            "stadium_whitelist",
+            "race_blacklist",
+            "require_leading_score",
+            "min_stadium_innige",
+            "min_inn",
+            "soft_max_per_day",
+        ):
+            if k in locked and locked[k] is not None:
+                standard[k] = locked[k]
+        if locked.get("stadium_whitelist"):
+            rules["selection"] = {
+                **(rules.get("selection") or {}),
+                "stadium_whitelist": locked.get("stadium_whitelist"),
+                "race_blacklist": locked.get("race_blacklist") or [],
+            }
     elite = rules.get("elite") or {}
     odds_cfg = rules.get("odds") or {}
     skills = load_json(REPORTS / "course_skills.json", {}) or {}

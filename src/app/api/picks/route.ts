@@ -6,6 +6,40 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
+function readJsonFile<T>(filePath: string): T | null {
+  try {
+    if (!existsSync(filePath)) return null;
+    return JSON.parse(readFileSync(filePath, "utf8")) as T;
+  } catch {
+    return null;
+  }
+}
+
+/** 日次更新後のランタイム板を優先（バンドルより新しい src/data・reports） */
+function loadLiveBoard(): Record<string, unknown> {
+  const candidates = [
+    path.join(process.cwd(), "src", "data", "picks_board.json"),
+    path.join(process.cwd(), "data", "reports", "picks_board.json"),
+  ];
+  for (const file of candidates) {
+    const doc = readJsonFile<Record<string, unknown>>(file);
+    if (doc && Array.isArray(doc.picks)) return doc;
+  }
+  return picksBoard as Record<string, unknown>;
+}
+
+function loadLiveAccuracy(): Record<string, unknown> {
+  const candidates = [
+    path.join(process.cwd(), "src", "data", "accuracy_summary.json"),
+    path.join(process.cwd(), "data", "reports", "accuracy_summary.json"),
+  ];
+  for (const file of candidates) {
+    const doc = readJsonFile<Record<string, unknown>>(file);
+    if (doc) return doc;
+  }
+  return accuracy as Record<string, unknown>;
+}
+
 type PickRow = {
   date?: string;
   stadium?: number;
@@ -45,15 +79,16 @@ function loadRecentExplainedPicks(limit = 8): PickRow[] {
 }
 
 export async function GET() {
-  const board = picksBoard as {
+  const board = loadLiveBoard() as {
     picks?: PickRow[];
     [key: string]: unknown;
   };
+  const liveAccuracy = loadLiveAccuracy();
   const recent = loadRecentExplainedPicks(8);
   return NextResponse.json({
     board,
     recent,
-    accuracy,
+    accuracy: liveAccuracy,
     policy: {
       day_before: true,
       skip_on_entry_change: true,

@@ -1,0 +1,32 @@
+{
+  "learned_at": "2026-11-12T04:52:40.581953+09:00",
+  "rows": 65,
+  "days": 26,
+  "baseline": {
+    "n": 3,
+    "hits": 1,
+    "bets": 1800,
+    "pay": 1490,
+    "pnl": -310,
+    "hit_rate": 33.33333333333333,
+    "roi": 82.77777777777777
+  },
+  "best": {
+    "name": "baseline",
+    "n": 3,
+    "hits": 1,
+    "bets": 1800,
+    "pay": 1490,
+    "pnl": -310,
+    "hit_rate": 33.33333333333333,
+    "roi": 82.77777777777777
+  },
+  "applied": false,
+  "status": "live",
+  "note": "日次学習: サンプル不足のため監視のみ (n=3<20)",
+  "policy": {
+    "auto_apply_min_roi_gain_pp": 1.0,
+    "min_keep_sample_ratio": 0.55,
+    "no_reckless_loosening": true
+  }
+}
