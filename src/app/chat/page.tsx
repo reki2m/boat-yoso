@@ -118,7 +118,7 @@ const LEGACY_SESSION_KEY = "shioyomi_chat_session";
 
 const DEFAULT_RULES = [
   "雑談と本命予想は全員のチャット欄に表示されます。",
-  "場とレースを選ぶと、詳細のアプリ予想（穴目・理由など）が自分だけに追加表示されます。",
+  "「〇〇場 〇〇R」を押すと、詳細予想が自分のチャット欄と管理人のチャット欄に出ます（他の友達には共有されません）。",
   "他の友達がどのレースを詳しく見たかは分かりません。",
   "チャット履歴は当日のレース終了から約1時間後に自動リセットされます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
@@ -492,17 +492,21 @@ export default function ChatPage() {
     }
   }
 
-  async function requestPredict() {
+  async function requestPredict(opts?: { placeNo?: number; raceNo?: number }) {
     const code = invite.trim();
     const name = displayName.trim();
+    const placeNo = Number(opts?.placeNo || pickStadium || 0);
+    const raceNo = Number(opts?.raceNo || pickRace || 0);
     if (!code || !name) {
       setError("招待コードと表示名が必要です");
       return;
     }
-    if (!pickStadium || !pickRace) {
+    if (!placeNo || !raceNo) {
       setError("場とレースを選んでください");
       return;
     }
+    setPickStadium(placeNo);
+    setPickRace(raceNo);
     setPredicting(true);
     setError("");
     setStatus("");
@@ -517,8 +521,8 @@ export default function ChatPage() {
         body: JSON.stringify({
           invite: code,
           kind: "predict",
-          placeNo: pickStadium,
-          raceNo: pickRace,
+          placeNo,
+          raceNo,
           authorName: name,
         }),
       });
@@ -527,7 +531,9 @@ export default function ChatPage() {
         setError(json.error || "予想の取得に失敗しました");
         return;
       }
-      setStatus("詳細のアプリ予想を表示しました（自分のみ／本命予想は全員のチャット欄）");
+      setStatus(
+        "詳細予想を自分のチャット欄に出しました（管理人にも通知／他の友達には見えません）",
+      );
       await loadFeed(code, {
         quiet: true,
         refresh: false,
@@ -555,7 +561,7 @@ export default function ChatPage() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          雑談と本命予想はチャット欄で全員共有。場とレースの詳細予想だけ自分用に追加できます。
+          雑談と本命は全員共有。「〇〇場 〇〇R」を押すと詳細予想が自分と管理人のチャットに出ます（友達同士では共有しません）。
         </p>
       </section>
 
@@ -617,7 +623,7 @@ export default function ChatPage() {
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
           <p className="chat-reset-note">
-            雑談と本命予想は全員のチャット欄に出ます。朝は展示待ち、展示確定後は「展示後予想」の「〇〇場 〇〇R」UIで更新されます。詳細のアプリ予想だけ押した本人向けです。
+            「〇〇場 〇〇R」は押せます。押した詳細予想は自分のチャット欄と管理人だけに出ます。他の友達には共有されません。本命・展示後の配信自体は全員に見えます。
           </p>
 
           <div className="presence-panel">
@@ -648,7 +654,7 @@ export default function ChatPage() {
           <div className="chat-predict-panel">
             <div className="chat-live-head">
               <strong>詳細予想</strong>
-              <span className="note">自分だけに表示</span>
+              <span className="note">自分＋管理人のみ</span>
             </div>
             <div className="chat-predict-row">
               <label className="field">
@@ -694,7 +700,7 @@ export default function ChatPage() {
               </button>
             </div>
             <p className="note">
-              穴目・理由など詳細は自分だけ。本日の本命予想そのものは毎朝チャット欄に全員向けで出ます。
+              「予想する」または下の「〇〇場 〇〇R」タップで、詳細が自分のチャット欄と管理人に出ます（他の友達には見えません）。
             </p>
           </div>
 
@@ -722,9 +728,9 @@ export default function ChatPage() {
                       key={`${t.stadium}-${t.race}`}
                       type="button"
                       className={`chat-race-chip ${phaseClass}`}
+                      disabled={predicting}
                       onClick={() => {
-                        setPickStadium(t.stadium);
-                        setPickRace(t.race);
+                        void requestPredict({ placeNo: t.stadium, raceNo: t.race });
                       }}
                     >
                       <span className="chat-race-chip-label">
@@ -850,15 +856,25 @@ export default function ChatPage() {
                                 key={key}
                                 type="button"
                                 className={`chat-race-chip ${selected ? "active" : ""} ${phaseClass}`}
+                                disabled={predicting && !isAdminLog && !isPrivate}
                                 onClick={() => {
                                   setPickStadium(chip.placeNo || pickStadium);
                                   setPickRace(chip.raceNo || pickRace);
                                   if (isAdminLog) {
                                     setSelectedAdminPickId((cur) => (cur === m.id ? "" : m.id));
                                     setExpandedRaceKey((cur) => (cur === key ? "" : key));
-                                  } else {
-                                    setExpandedRaceKey((cur) => (cur === key ? "" : key));
+                                    return;
                                   }
+                                  if (isPrivate) {
+                                    setExpandedRaceKey((cur) => (cur === key ? "" : key));
+                                    return;
+                                  }
+                                  // 友達が押した詳細予想 → 本人チャット＋管理人のみ（他友達には共有しない）
+                                  setExpandedRaceKey(key);
+                                  void requestPredict({
+                                    placeNo: chip.placeNo,
+                                    raceNo: chip.raceNo,
+                                  });
                                 }}
                               >
                                 <span className="chat-race-chip-label">{chip.label}</span>
@@ -913,12 +929,12 @@ export default function ChatPage() {
 
                         {isExhibitionAfter ? (
                           <p className="note chat-race-hint">
-                            展示確定後の再判定です。緑の「展示後」チップが確定買い目です。
+                            展示後の配信です。チップを押すと詳細予想が自分と管理人のチャット欄に出ます（他の友達には見えません）。
                           </p>
                         ) : null}
-                        {isHonmei && !isExhibitionAfter && !expandedRaceKey.startsWith(`${m.id}:`) ? (
+                        {isHonmei && !isExhibitionAfter ? (
                           <p className="note chat-race-hint">
-                            「〇〇場 〇〇R」をタップすると買い目を表示します。展示後は別メッセージで更新されます。
+                            「〇〇場 〇〇R」を押すと詳細予想が自分と管理人のチャット欄に出ます。他の友達同士では共有されません。
                           </p>
                         ) : null}
                       </div>
