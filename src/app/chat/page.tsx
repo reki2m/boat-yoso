@@ -44,10 +44,11 @@ type ChatLiveTarget = {
 };
 
 type PresenceMember = {
-  session_id: string;
+  id: string;
   display_name: string;
   role: "operator" | "member";
   last_seen: string;
+  me?: boolean;
 };
 
 type StadiumOpt = { id: number; name: string };
@@ -55,7 +56,6 @@ type StadiumOpt = { id: number; name: string };
 type PredictionRow = {
   message_id: string;
   created_at: string;
-  owner_session_id: string;
   owner_name: string;
   date: string;
   placeNo: number;
@@ -66,30 +66,18 @@ type PredictionRow = {
 
 const INVITE_KEY = "shioyomi_chat_invite";
 const NAME_KEY = "shioyomi_chat_name";
-const SESSION_KEY = "shioyomi_chat_session";
 const LEGACY_OP_KEY = "shioyomi_operator_key";
 const LEGACY_ADMIN_KEY = "shioyomi_admin_key";
+const LEGACY_SESSION_KEY = "shioyomi_chat_session";
 
 const DEFAULT_RULES = [
-  "雑談コメントは全員に見えます。",
-  "場とレースを選ぶと、アプリと同じ予想（買い目・穴目・理由）が自分だけに表示されます。",
-  "他の友達がどのレースを見たかは分かりません。",
+  "雑談と本命予想は全員のチャット欄に表示されます。",
+  "場とレースを選ぶと、詳細のアプリ予想（穴目・理由など）が自分だけに追加表示されます。",
+  "他の友達がどのレースを詳しく見たかは分かりません。",
   "チャット履歴は当日のレース終了から約1時間後に自動リセットされます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
 ];
-
-function ensureSessionId(): string {
-  try {
-    const existing = window.localStorage.getItem(SESSION_KEY) || "";
-    if (existing) return existing;
-    const next = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    window.localStorage.setItem(SESSION_KEY, next);
-    return next;
-  } catch {
-    return `s_${Date.now().toString(36)}`;
-  }
-}
 
 function formatJst(iso: string): string {
   try {
@@ -110,10 +98,12 @@ function kindLabel(m: ChatMessage): string {
     return "管理人ログ";
   }
   if (m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private") {
-    return "アプリ予想";
+    return "詳細予想（自分のみ）";
   }
   if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中🎯";
-  if (m.kind === "picks") return "本命配信";
+  if (m.kind === "picks" || m.meta?.mode === "morning_auto_honmei" || m.meta?.mode === "honmei_board") {
+    return "本命予想";
+  }
   if (m.kind === "note") return "メモ";
   return "雑談";
 }
@@ -133,7 +123,6 @@ export default function ChatPage() {
   const [targets, setTargets] = useState<ChatLiveTarget[]>([]);
   const [presence, setPresence] = useState<PresenceMember[]>([]);
   const [predictions, setPredictions] = useState<PredictionRow[]>([]);
-  const [sessionId, setSessionId] = useState("");
   const [liveDate, setLiveDate] = useState("");
   const [stadiums, setStadiums] = useState<StadiumOpt[]>([]);
   const [races, setRaces] = useState<number[]>(Array.from({ length: 12 }, (_, i) => i + 1));
@@ -146,11 +135,10 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const sid = ensureSessionId();
-    setSessionId(sid);
     try {
       window.localStorage.removeItem(LEGACY_OP_KEY);
       window.localStorage.removeItem(LEGACY_ADMIN_KEY);
+      window.localStorage.removeItem(LEGACY_SESSION_KEY);
     } catch {
       // ignore
     }
@@ -159,23 +147,17 @@ export default function ChatPage() {
     if (savedName) setDisplayName(savedName);
     if (savedInvite) {
       setInvite(savedInvite);
-      void loadFeed(savedInvite, {
-        quiet: false,
-        refresh: true,
-        session: sid,
-        name: savedName,
-      });
+      void enterAndLoad(savedInvite, savedName || "メンバー", false);
     }
     void loadSchedule();
   }, []);
 
   useEffect(() => {
-    if (!unlocked || !sessionId) return;
+    if (!unlocked) return;
     const onLeave = () => {
       const payload = JSON.stringify({
         kind: "leave",
         invite: invite.trim(),
-        sessionId,
       });
       if (navigator.sendBeacon) {
         navigator.sendBeacon(
@@ -186,7 +168,7 @@ export default function ChatPage() {
     };
     window.addEventListener("pagehide", onLeave);
     return () => window.removeEventListener("pagehide", onLeave);
-  }, [unlocked, sessionId, invite]);
+  }, [unlocked, invite]);
 
   useEffect(() => {
     if (!unlocked) return;
@@ -194,7 +176,6 @@ export default function ChatPage() {
       void loadFeed(invite.trim(), {
         quiet: true,
         refresh: false,
-        session: sessionId,
         name: displayName,
       });
     }, 10000);
@@ -202,7 +183,6 @@ export default function ChatPage() {
       void loadFeed(invite.trim(), {
         quiet: true,
         refresh: true,
-        session: sessionId,
         name: displayName,
       });
     }, 45000);
@@ -210,7 +190,7 @@ export default function ChatPage() {
       window.clearInterval(msgTimer);
       window.clearInterval(liveTimer);
     };
-  }, [unlocked, invite, sessionId, displayName, adminKey, isAdmin]);
+  }, [unlocked, invite, displayName, adminKey, isAdmin]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -229,26 +209,55 @@ export default function ChatPage() {
     }
   }
 
+  async function enterAndLoad(code: string, name: string, quiet: boolean) {
+    if (!quiet) setError("");
+    try {
+      window.localStorage.setItem(NAME_KEY, name);
+      const enterRes = await fetch("/api/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-invite": code,
+        },
+        body: JSON.stringify({
+          invite: code,
+          kind: "enter",
+          authorName: name,
+          ...(adminKey.trim()
+            ? { adminKey: adminKey.trim(), operatorKey: adminKey.trim() }
+            : {}),
+        }),
+      });
+      const enterJson = await enterRes.json();
+      if (!enterRes.ok) {
+        setUnlocked(false);
+        if (!quiet) {
+          setError(enterJson.error || "入場できません");
+          window.localStorage.removeItem(INVITE_KEY);
+        }
+        return;
+      }
+      await loadFeed(code, { quiet, refresh: true, name });
+    } catch {
+      if (!quiet) setError("入場に失敗しました");
+    }
+  }
+
   async function loadFeed(
     code: string,
     opts: {
       quiet: boolean;
       refresh: boolean;
-      session?: string;
       name?: string;
     },
   ) {
     if (!opts.quiet) setError("");
     try {
-      const sid = opts.session || sessionId || ensureSessionId();
       const name = (opts.name ?? displayName).trim();
       const q = new URLSearchParams();
       if (opts.refresh) q.set("refresh", "1");
-      if (sid && name) {
-        q.set("session", sid);
-        q.set("name", name);
-        q.set("role", "member");
-      }
+      if (name) q.set("name", name);
       const headers: Record<string, string> = {
         "x-chat-invite": code,
       };
@@ -256,7 +265,10 @@ export default function ChatPage() {
         headers["x-chat-admin"] = adminKey.trim();
         headers["x-chat-operator"] = adminKey.trim();
       }
-      const res = await fetch(`/api/chat?${q.toString()}`, { headers });
+      const res = await fetch(`/api/chat?${q.toString()}`, {
+        headers,
+        credentials: "include",
+      });
       const json = await res.json();
       if (!res.ok) {
         setUnlocked(false);
@@ -287,15 +299,15 @@ export default function ChatPage() {
 
   async function leaveRoom() {
     const code = invite.trim();
-    const sid = sessionId || ensureSessionId();
     try {
       await fetch("/api/chat", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "x-chat-invite": code,
         },
-        body: JSON.stringify({ kind: "leave", invite: code, sessionId: sid }),
+        body: JSON.stringify({ kind: "leave", invite: code }),
         keepalive: true,
       });
     } catch {
@@ -325,6 +337,7 @@ export default function ChatPage() {
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "x-chat-admin": key,
@@ -341,7 +354,6 @@ export default function ChatPage() {
       await loadFeed(invite.trim(), {
         quiet: true,
         refresh: false,
-        session: sessionId,
         name: displayName,
       });
     } catch {
@@ -367,6 +379,7 @@ export default function ChatPage() {
       window.localStorage.setItem(NAME_KEY, name);
       const res = await fetch("/api/chat", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "x-chat-invite": code,
@@ -376,7 +389,6 @@ export default function ChatPage() {
           kind: "chat",
           text,
           authorName: name,
-          sessionId: sessionId || ensureSessionId(),
         }),
       });
       const json = await res.json();
@@ -385,11 +397,10 @@ export default function ChatPage() {
         return;
       }
       setDraft("");
-      setStatus("雑談を送信しました");
+      setStatus("雑談を送信しました（全員に表示）");
       await loadFeed(code, {
         quiet: true,
         refresh: false,
-        session: sessionId,
         name,
       });
     } catch {
@@ -416,6 +427,7 @@ export default function ChatPage() {
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "x-chat-invite": code,
@@ -426,7 +438,6 @@ export default function ChatPage() {
           placeNo: pickStadium,
           raceNo: pickRace,
           authorName: name,
-          sessionId: sessionId || ensureSessionId(),
         }),
       });
       const json = await res.json();
@@ -434,11 +445,10 @@ export default function ChatPage() {
         setError(json.error || "予想の取得に失敗しました");
         return;
       }
-      setStatus("アプリ予想を表示しました（他の友達のチャットには出ません）");
+      setStatus("詳細のアプリ予想を表示しました（自分のみ／本命予想は全員のチャット欄）");
       await loadFeed(code, {
         quiet: true,
         refresh: false,
-        session: sessionId,
         name,
       });
     } catch {
@@ -463,7 +473,7 @@ export default function ChatPage() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          雑談はみんなで。本日の場とレースを選んで「予想する」と、アプリと同じ買い目・穴目・理由が自分だけに出ます。
+          雑談と本命予想はチャット欄で全員共有。場とレースの詳細予想だけ自分用に追加できます。
         </p>
       </section>
 
@@ -506,16 +516,8 @@ export default function ChatPage() {
               className="btn"
               disabled={pending || !invite.trim() || !displayName.trim()}
               onClick={() => {
-                window.localStorage.setItem(NAME_KEY, displayName.trim());
-                const sid = sessionId || ensureSessionId();
-                setSessionId(sid);
                 startTransition(() => {
-                  void loadFeed(invite.trim(), {
-                    quiet: false,
-                    refresh: true,
-                    session: sid,
-                    name: displayName.trim(),
-                  });
+                  void enterAndLoad(invite.trim(), displayName.trim(), false);
                 });
               }}
             >
@@ -533,7 +535,7 @@ export default function ChatPage() {
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
           <p className="chat-reset-note">
-            アプリ予想は押した本人だけに表示されます（共有チャットは汚れません）。雑談は全員に見えます。毎朝7時に本命配信、レース後に自動リセットします。
+            雑談と本命予想は全員のチャット欄に出ます。詳細のアプリ予想だけ押した本人向けです。毎朝7時に本命配信、レース後に自動リセットします。
           </p>
 
           <div className="presence-panel">
@@ -549,12 +551,12 @@ export default function ChatPage() {
               <ul className="presence-list">
                 {presence.map((p) => (
                   <li
-                    key={p.session_id}
-                    className={`presence-chip ${p.session_id === sessionId ? "me" : ""}`}
+                    key={p.id}
+                    className={`presence-chip ${p.me ? "me" : ""}`}
                   >
                     <i aria-hidden />
                     <span>{p.display_name}</span>
-                    {p.session_id === sessionId ? <em>自分</em> : null}
+                    {p.me ? <em>自分</em> : null}
                   </li>
                 ))}
               </ul>
@@ -563,7 +565,7 @@ export default function ChatPage() {
 
           <div className="chat-predict-panel">
             <div className="chat-live-head">
-              <strong>アプリ予想</strong>
+              <strong>詳細予想</strong>
               <span className="note">自分だけに表示</span>
             </div>
             <div className="chat-predict-row">
@@ -610,14 +612,14 @@ export default function ChatPage() {
               </button>
             </div>
             <p className="note">
-              本命・穴目・理由はアプリ本体と同じ内容です。他の友達の雑談欄には出ません。
+              穴目・理由など詳細は自分だけ。本日の本命予想そのものは毎朝チャット欄に全員向けで出ます。
             </p>
           </div>
 
           {targets.length > 0 ? (
             <div className="chat-live-panel">
               <div className="chat-live-head">
-                <strong>本日の本命対象（配信）</strong>
+                <strong>本日の本命対象（全員共有）</strong>
               </div>
               <div className="cta-row chat-live-targets">
                 {targets.map((t) => (
@@ -687,7 +689,7 @@ export default function ChatPage() {
 
           <div className="chat-stream" ref={listRef}>
             {messages.filter((m) => m.meta?.visibility !== "admin").length === 0 ? (
-              <p className="status">まだメッセージがありません。雑談かアプリ予想からどうぞ。</p>
+              <p className="status">まだメッセージがありません。雑談か本命予想の配信をお待ちください。</p>
             ) : (
               messages
                 .filter((m) => m.meta?.visibility !== "admin")
@@ -757,7 +759,6 @@ export default function ChatPage() {
                     void loadFeed(invite.trim(), {
                       quiet: false,
                       refresh: true,
-                      session: sessionId,
                       name: displayName,
                     });
                   });
@@ -803,12 +804,11 @@ export default function ChatPage() {
                       disabled={!adminKey.trim() || pending}
                       onClick={() => {
                         startTransition(() => {
-                          void loadFeed(invite.trim(), {
-                            quiet: false,
-                            refresh: true,
-                            session: sessionId,
-                            name: displayName,
-                          });
+                          void enterAndLoad(
+                            invite.trim(),
+                            displayName.trim() || "管理人",
+                            false,
+                          );
                         });
                       }}
                     >

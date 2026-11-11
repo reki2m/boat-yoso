@@ -23,10 +23,22 @@ import {
 import { leavePresence, listPresence, touchPresence } from "@/lib/chatPresence";
 import { getChatLiveTargets } from "@/lib/chatLiveTargets";
 import { CHAT_HOUSE_RULES } from "@/lib/chatRules";
+import {
+  CHAT_SESSION_COOKIE,
+  chatSessionCookieOptions,
+  mintChatSessionCookieValue,
+  newChatSessionId,
+  verifyChatSessionCookieValue,
+} from "@/lib/chatSession";
+import { allowAuthAttempt } from "@/lib/authRateLimit";
 import { STADIUMS } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 
 export const dynamic = "force-dynamic";
+
+function viewerSessionId(req: NextRequest): string | null {
+  return verifyChatSessionCookieValue(req.cookies.get(CHAT_SESSION_COOKIE)?.value);
+}
 
 async function mirrorDiscord(body: string): Promise<{ ok: boolean; detail?: string }> {
   const webhook = process.env.DISCORD_WEBHOOK_URL?.trim();
@@ -128,7 +140,7 @@ async function createAppRacePick(opts: {
 }
 
 export async function GET(req: NextRequest) {
-  const invite = req.headers.get("x-chat-invite") || req.nextUrl.searchParams.get("invite");
+  const invite = req.headers.get("x-chat-invite");
   if (!checkInvite(invite)) {
     return NextResponse.json(
       { ok: false, error: "招待コードが違います" },
@@ -136,14 +148,13 @@ export async function GET(req: NextRequest) {
     );
   }
   const refresh = req.nextUrl.searchParams.get("refresh") === "1";
-  const sessionId = req.nextUrl.searchParams.get("session") || "";
+  // 視聴者IDは署名付き httpOnly クッキーのみ（クエリの session は信用しない）
+  const sessionId = viewerSessionId(req) || "";
   const presenceName = req.nextUrl.searchParams.get("name") || "";
   const adminKeyHdr = req.headers.get("x-chat-admin") || req.headers.get("x-chat-operator") || "";
   const isAdmin = checkAdmin(adminKeyHdr);
-  const wantsOperator = req.nextUrl.searchParams.get("role") === "operator";
   const operatorKeyHdr = req.headers.get("x-chat-operator") || "";
-  const presenceRole =
-    wantsOperator && checkOperator(operatorKeyHdr) ? "operator" : "member";
+  const presenceRole = checkOperator(operatorKeyHdr) ? "operator" : "member";
   if (sessionId && presenceName) {
     await touchPresence({
       sessionId,
@@ -155,7 +166,7 @@ export async function GET(req: NextRequest) {
   const [feed, live, presence, predictions] = await Promise.all([
     readChatFeed({ sessionId, isAdmin }),
     getChatLiveTargets({ refresh }),
-    listPresence().catch(() => []),
+    listPresence(sessionId).catch(() => []),
     isAdmin ? listPrivatePredictionSummary() : Promise.resolve([]),
   ]);
   return NextResponse.json(
@@ -169,6 +180,7 @@ export async function GET(req: NextRequest) {
       presence,
       isAdmin,
       predictions: isAdmin ? predictions : undefined,
+      hasSession: Boolean(sessionId),
     },
     { headers: { "cache-control": "no-store" } },
   );
@@ -179,7 +191,7 @@ export async function POST(req: NextRequest) {
     invite?: string;
     operatorKey?: string;
     adminKey?: string;
-    kind?: ChatKind | "clear" | "leave" | "predict";
+    kind?: ChatKind | "clear" | "leave" | "predict" | "enter";
     note?: string;
     text?: string;
     authorName?: string;
@@ -203,13 +215,52 @@ export async function POST(req: NextRequest) {
   const isOperator = checkOperator(key);
   const isAdmin = checkAdmin(key);
   const kind = body.kind || "picks";
+  const cookieSession = viewerSessionId(req);
+
+  if (kind === "enter") {
+    const ip = req.headers.get("x-forwarded-for") || "local";
+    const gate = allowAuthAttempt(`chat-enter:${ip}`, { limit: 40, windowMs: 10 * 60 * 1000 });
+    if (!gate.ok) {
+      return NextResponse.json(
+        { ok: false, error: "試行回数が多すぎます。しばらくしてから再度お試しください。" },
+        {
+          status: 429,
+          headers: gate.retryAfterSec ? { "retry-after": String(gate.retryAfterSec) } : undefined,
+        },
+      );
+    }
+    if (!checkInvite(invite)) {
+      return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
+    }
+    const authorName = sanitizeDisplayName(body.authorName || "メンバー");
+    const sessionId = cookieSession || newChatSessionId();
+    await touchPresence({
+      sessionId,
+      displayName: authorName,
+      role: isOperator ? "operator" : "member",
+    }).catch(() => null);
+    const res = NextResponse.json({
+      ok: true,
+      entered: true,
+      displayName: authorName,
+    });
+    res.cookies.set(
+      CHAT_SESSION_COOKIE,
+      mintChatSessionCookieValue(sessionId),
+      chatSessionCookieOptions(),
+    );
+    return res;
+  }
 
   if (kind === "leave") {
     if (!checkInvite(invite) && !isOperator) {
       return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
     }
-    await leavePresence(body.sessionId).catch(() => null);
-    return NextResponse.json({ ok: true });
+    const sid = cookieSession || "";
+    if (sid) await leavePresence(sid).catch(() => null);
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set(CHAT_SESSION_COOKIE, "", { ...chatSessionCookieOptions(0), maxAge: 0 });
+    return res;
   }
 
   if (kind === "clear") {
@@ -236,14 +287,17 @@ export async function POST(req: NextRequest) {
 
   await maybeRunChatMaintenance().catch(() => null);
 
-  // アプリ予想: 招待者のみ。本文は本人だけ、管理人には「誰がどれ」ログのみ。
+  // レース詳細のアプリ予想: 本文は本人だけ。共有チャットの本命配信とは別。
   if (kind === "predict") {
     if (!checkInvite(invite) && !isOperator) {
       return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
     }
-    const sessionId = (body.sessionId || "").trim();
+    const sessionId = cookieSession || "";
     if (!sessionId) {
-      return NextResponse.json({ ok: false, error: "sessionId が必要です" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "先に入場してください" },
+        { status: 401 },
+      );
     }
     const ownerName = sanitizeDisplayName(body.authorName || "メンバー");
     const result = await createAppRacePick({
@@ -349,11 +403,12 @@ export async function POST(req: NextRequest) {
     text = built.body;
     meta = {
       date: built.dateKey,
-      mode: board.mode,
+      mode: "honmei_board",
       count: built.count,
       skipped: built.skippedCount,
       visibility: "public",
     };
+    title = built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`;
   } else if (!text) {
     return NextResponse.json({ ok: false, error: "メモ本文が空です" }, { status: 400 });
   }

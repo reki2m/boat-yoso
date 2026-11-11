@@ -101,7 +101,7 @@ export async function maybePostMorningHonmeiPicks(
 
     await appendChatMessage({
       kind: "picks",
-      title: built.title,
+      title: built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`,
       body: built.body,
       author_name: "律丸ボート部",
       author_role: "operator",
@@ -109,6 +109,7 @@ export async function maybePostMorningHonmeiPicks(
         date: dateKey,
         mode: "morning_auto_honmei",
         count: built.count,
+        visibility: "public",
       },
     });
 

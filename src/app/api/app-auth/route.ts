@@ -5,6 +5,7 @@ import {
   checkAppGateToken,
   checkAppUnlockKey,
 } from "@/lib/appGate";
+import { allowAuthAttempt } from "@/lib/authRateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,18 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ ok: true, unlocked: false });
     res.cookies.set(APP_GATE_COOKIE, "", { ...cookieOptions(), maxAge: 0 });
     return res;
+  }
+
+  const ip = req.headers.get("x-forwarded-for") || "local";
+  const gate = allowAuthAttempt(`app-auth:${ip}`, { limit: 30, windowMs: 10 * 60 * 1000 });
+  if (!gate.ok) {
+    return NextResponse.json(
+      { ok: false, error: "試行回数が多すぎます。しばらくしてから再度お試しください。" },
+      {
+        status: 429,
+        headers: gate.retryAfterSec ? { "retry-after": String(gate.retryAfterSec) } : undefined,
+      },
+    );
   }
 
   if (!checkAppUnlockKey(body.key)) {

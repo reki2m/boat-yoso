@@ -34,7 +34,6 @@ export type ChatMessage = {
 export type PredictionSummaryRow = {
   message_id: string;
   created_at: string;
-  owner_session_id: string;
   owner_name: string;
   date: string;
   placeNo: number;
@@ -146,15 +145,23 @@ async function loadMappedMessages(limit = MAX_MESSAGES): Promise<ChatMessage[]> 
   return rows.map(mapRow);
 }
 
+function scrubMessageForClient(m: ChatMessage): ChatMessage {
+  if (!m.meta?.owner_session_id) return m;
+  const { owner_session_id: _omit, ...meta } = m.meta;
+  return { ...m, meta };
+}
+
 export async function readChatFeed(viewer?: {
   sessionId?: string;
   isAdmin?: boolean;
 }): Promise<ChatFeed> {
   try {
     const mapped = await loadMappedMessages();
-    const messages = viewer
-      ? mapped.filter((m) => canViewMessage(m, viewer))
-      : mapped.filter((m) => messageVisibility(m) === "public");
+    const messages = (
+      viewer
+        ? mapped.filter((m) => canViewMessage(m, viewer))
+        : mapped.filter((m) => messageVisibility(m) === "public")
+    ).map(scrubMessageForClient);
     return {
       updated_at: messages[messages.length - 1]?.created_at ?? null,
       messages,
@@ -192,7 +199,6 @@ export async function listPrivatePredictionSummary(): Promise<PredictionSummaryR
         {
           message_id: m.id,
           created_at: m.created_at,
-          owner_session_id: m.meta?.owner_session_id || "",
           owner_name: m.meta?.owner_name || m.author_name || "名無し",
           date: String(m.meta?.date || ""),
           placeNo,
