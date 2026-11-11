@@ -215,7 +215,9 @@ export default function ChatPage() {
         <h1 className="brand" style={{ fontSize: "clamp(2rem, 6vw, 3.4rem)" }}>
           専用チャット
         </h1>
-        <p className="lede">会話しながら、対象レースの公式ライブも同じ画面で見れます。</p>
+        <p className="lede">
+          「徳山1R」のように場名とレースを送ると予測が返ります。対象レースのライブも同じ画面で見れます。
+        </p>
       </section>
 
       {!unlocked ? (
@@ -374,7 +376,7 @@ export default function ChatPage() {
                 id="draft"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="メンバーへ一言…"
+                placeholder="例: 徳山1R （場名+レースで予測）"
                 rows={3}
                 maxLength={1000}
                 className="chat-input chat-textarea"

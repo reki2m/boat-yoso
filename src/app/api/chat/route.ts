@@ -13,7 +13,9 @@ import {
   type ChatKind,
   type ChatRole,
 } from "@/lib/chatStore";
+import { buildChatRaceReply } from "@/lib/buildChatRaceReply";
 import { getChatLiveTargets } from "@/lib/chatLiveTargets";
+import { parseRaceChatQuery } from "@/lib/parseRaceChatQuery";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 
 export const dynamic = "force-dynamic";
@@ -124,7 +126,36 @@ export async function POST(req: NextRequest) {
       author_name: authorName,
       author_role: role,
     });
-    return NextResponse.json({ ok: true, message });
+
+    let reply = null;
+    const raceQuery = parseRaceChatQuery(text);
+    if (raceQuery) {
+      try {
+        const bodyText = await buildChatRaceReply(raceQuery);
+        reply = await appendChatMessage({
+          kind: "note",
+          title: `${raceQuery.placeName}${raceQuery.raceNo}R 予測`,
+          body: bodyText,
+          author_name: "潮読み",
+          author_role: "operator",
+          meta: {
+            date: undefined,
+            mode: "chat_race_reply",
+            count: 1,
+          },
+        });
+      } catch {
+        reply = await appendChatMessage({
+          kind: "note",
+          title: `${raceQuery.placeName}${raceQuery.raceNo}R 予測`,
+          body: `${raceQuery.placeName}${raceQuery.raceNo}R の予測取得に失敗しました。少し待って再送してください。`,
+          author_name: "潮読み",
+          author_role: "operator",
+        });
+      }
+    }
+
+    return NextResponse.json({ ok: true, message, reply });
   }
 
   // Picks / note: operator only.
