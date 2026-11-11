@@ -5,7 +5,7 @@ import {
   checkAppGateToken,
   checkAppUnlockKey,
 } from "@/lib/appGate";
-import { allowAuthAttempt } from "@/lib/authRateLimit";
+import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -42,8 +42,11 @@ export async function POST(req: NextRequest) {
     return res;
   }
 
-  const ip = req.headers.get("x-forwarded-for") || "local";
-  const gate = allowAuthAttempt(`app-auth:${ip}`, { limit: 30, windowMs: 10 * 60 * 1000 });
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const gate = await allowAuthAttemptShared(`app-auth:${ip}`, {
+    limit: 30,
+    windowMs: 10 * 60 * 1000,
+  });
   if (!gate.ok) {
     return NextResponse.json(
       { ok: false, error: "試行回数が多すぎます。しばらくしてから再度お試しください。" },

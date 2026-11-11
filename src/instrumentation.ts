@@ -1,8 +1,11 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { startMorningHonmeiScheduler } = await import("@/lib/chatMorningPicks");
-  const { startMainAppDailyScheduler } = await import("@/lib/mainAppDaily");
   startMorningHonmeiScheduler();
-  // 本体アプリ: 毎日の最新データ更新＋回収率自動学習＋日中の展示確定
-  startMainAppDailyScheduler();
+  // 重い Python 日次ジョブはプロセス内スケジューラで回さず、
+  // CRON_SECRET 付き /api/cron/main-daily からのみ起動する（公開環境の負荷・追跡肥大を避ける）
+  if (process.env.ENABLE_MAIN_DAILY_SCHEDULER === "1") {
+    const { startMainAppDailyScheduler } = await import("@/lib/mainAppDaily");
+    startMainAppDailyScheduler();
+  }
 }

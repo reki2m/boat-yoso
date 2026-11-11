@@ -2,9 +2,13 @@ import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
+const DATA_DIR = path.join(process.cwd(), "data");
+const SRC_DATA_DIR = path.join(process.cwd(), "src", "data");
+const SCRIPTS_DIR = path.join(process.cwd(), "scripts");
+
 const STATE_FILES = [
-  path.join(process.cwd(), "data", "update_state.json"),
-  path.join(process.cwd(), "src", "data", "update_state.json"),
+  path.join(DATA_DIR, "update_state.json"),
+  path.join(SRC_DATA_DIR, "update_state.json"),
 ];
 
 type RunKind = "nightly" | "confirm" | "learn";
@@ -56,9 +60,12 @@ async function writeState(patch: Record<string, unknown>): Promise<void> {
   }
 }
 
-function runPython(scriptRel: string, args: string[] = []): Promise<{ ok: boolean; code: number | null; log: string }> {
+function runPython(
+  scriptName: string,
+  args: string[] = [],
+): Promise<{ ok: boolean; code: number | null; log: string }> {
   return new Promise((resolve) => {
-    const script = path.join(process.cwd(), scriptRel);
+    const script = path.join(SCRIPTS_DIR, scriptName);
     const child = spawn("python3", [script, ...args], {
       cwd: process.cwd(),
       env: process.env,
@@ -81,22 +88,18 @@ function runPython(scriptRel: string, args: string[] = []): Promise<{ ok: boolea
 
 export async function runMainAppNightlyUpdate(): Promise<{
   ok: boolean;
-  kind: "nightly";
-  log: string;
+  skipped?: boolean;
+  log?: string;
 }> {
-  if (running) return { ok: false, kind: "nightly", log: `busy:${running}` };
+  if (running) return { ok: false, skipped: true, log: `busy:${running}` };
   running = "nightly";
   try {
-    const result = await runPython("scripts/nightly_update.py", ["--force"]);
+    const result = await runPython("nightly_update.py", ["--force"]);
     await writeState({
-      last_success_at: result.ok ? new Date().toISOString() : undefined,
-      last_success_date: result.ok ? jstParts().date : undefined,
-      last_nightly_ok: result.ok,
       last_nightly_at: new Date().toISOString(),
-      cadence: "nightly_daily_auto",
-      auto_learn_roi: true,
+      last_nightly_ok: result.ok,
     });
-    return { ok: result.ok, kind: "nightly", log: result.log };
+    return { ok: result.ok, log: result.log };
   } finally {
     running = null;
   }
@@ -104,18 +107,18 @@ export async function runMainAppNightlyUpdate(): Promise<{
 
 export async function runMainAppExhibitionConfirm(): Promise<{
   ok: boolean;
-  kind: "confirm";
-  log: string;
+  skipped?: boolean;
+  log?: string;
 }> {
-  if (running) return { ok: false, kind: "confirm", log: `busy:${running}` };
+  if (running) return { ok: false, skipped: true, log: `busy:${running}` };
   running = "confirm";
   try {
-    const result = await runPython("scripts/confirm_exhibition.py");
+    const result = await runPython("confirm_exhibition.py");
     await writeState({
-      last_confirm_ok: result.ok,
       last_confirm_at: new Date().toISOString(),
+      last_confirm_ok: result.ok,
     });
-    return { ok: result.ok, kind: "confirm", log: result.log };
+    return { ok: result.ok, log: result.log };
   } finally {
     running = null;
   }
@@ -123,21 +126,20 @@ export async function runMainAppExhibitionConfirm(): Promise<{
 
 export async function runMainAppRoiLearn(): Promise<{
   ok: boolean;
-  kind: "learn";
-  log: string;
+  skipped?: boolean;
+  log?: string;
 }> {
-  if (running) return { ok: false, kind: "learn", log: `busy:${running}` };
+  if (running) return { ok: false, skipped: true, log: `busy:${running}` };
   running = "learn";
   try {
-    const score = await runPython("scripts/score_picks.py", ["--days", "14"]);
-    const learn = await runPython("scripts/learn_roi_daily.py");
+    const score = await runPython("score_picks.py", ["--days", "14"]);
+    const learn = await runPython("learn_roi_daily.py");
     await writeState({
-      last_learn_ok: score.ok && learn.ok,
       last_learn_at: new Date().toISOString(),
+      last_learn_ok: score.ok && learn.ok,
     });
     return {
       ok: score.ok && learn.ok,
-      kind: "learn",
       log: `${score.log}\n${learn.log}`.slice(-8000),
     };
   } finally {
@@ -145,40 +147,42 @@ export async function runMainAppRoiLearn(): Promise<{
   }
 }
 
-/**
- * 本体アプリの日次更新スケジューラ。
- * - 02:15 JST 以降に1日1回 nightly（最新データ＋回収率学習）
- * - 競走時間帯は展示確認を定期実行
- */
+async function tick(): Promise<void> {
+  const { date, hour, minute } = jstParts();
+  const state = await readState();
+  const lastNightlyDate = String(state.last_nightly_date || "");
+  const lastLearnDate = String(state.last_learn_date || "");
+  const lastConfirmSlot = String(state.last_confirm_slot || "");
+
+  // 深夜〜早朝: 日次更新（1日1回）
+  if (hour === 2 && minute < 20 && lastNightlyDate !== date) {
+    const r = await runMainAppNightlyUpdate();
+    if (r.ok || !r.skipped) await writeState({ last_nightly_date: date });
+  }
+
+  // 学習は夜のあと（3時台）
+  if (hour === 3 && minute < 30 && lastLearnDate !== date) {
+    const r = await runMainAppRoiLearn();
+    if (r.ok || !r.skipped) await writeState({ last_learn_date: date });
+  }
+
+  // 日中: 展示確定を20分間隔
+  if (hour >= 8 && hour <= 20 && minute % 20 < 2) {
+    const slot = `${date}-${hour}-${Math.floor(minute / 20)}`;
+    if (lastConfirmSlot !== slot) {
+      const r = await runMainAppExhibitionConfirm();
+      if (r.ok || !r.skipped) await writeState({ last_confirm_slot: slot });
+    }
+  }
+}
+
+/** 明示オプトイン時のみ。通常は CRON 経由。 */
 export function startMainAppDailyScheduler(): void {
   if (schedulerStarted) return;
-  if (typeof setInterval !== "function") return;
+  if (process.env.NEXT_RUNTIME && process.env.NEXT_RUNTIME !== "nodejs") return;
   schedulerStarted = true;
-
-  const tick = async () => {
-    const { date, hour, minute } = jstParts();
-    const state = await readState();
-    const lastNightlyDate = String(state.last_success_date || "");
-
-    // 毎日 2:15 JST 以降に本体更新＋学習
-    if (hour > 2 || (hour === 2 && minute >= 15)) {
-      if (lastNightlyDate !== date && running == null) {
-        await runMainAppNightlyUpdate().catch(() => null);
-        return;
-      }
-    }
-
-    // 8〜21時は展示後の確定を定期反映
-    if (hour >= 8 && hour <= 21 && running == null) {
-      const lastConfirm = Date.parse(String(state.last_confirm_at || 0));
-      if (!Number.isFinite(lastConfirm) || Date.now() - lastConfirm > 20 * 60 * 1000) {
-        await runMainAppExhibitionConfirm().catch(() => null);
-      }
-    }
-  };
-
-  void tick();
+  void tick().catch(() => null);
   setInterval(() => {
-    void tick();
+    void tick().catch(() => null);
   }, 60_000);
 }
