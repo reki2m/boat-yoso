@@ -48,10 +48,11 @@ const OP_KEY = "shioyomi_operator_key";
 const ADMIN_KEY = "shioyomi_admin_key";
 
 const DEFAULT_RULES = [
-  "誹謗中傷・喧嘩・荒らし・個人攻撃は禁止です。",
+  "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
-  "舟券の購入・投票は自己責任です（未成年不可）。",
-  "当サービスは免責とします。公式情報は各場・BOAT RACE公式を優先してください。",
+  "舟券（賭け）の購入・投票は自己責任です（未成年不可）。",
+  "免責事項: 情報誤り・遅延・障害・損失等について当サービスは責任を負いません。",
+  "公式情報は各場・BOAT RACE公式を優先してください。",
 ];
 
 function formatJst(iso: string): string {
