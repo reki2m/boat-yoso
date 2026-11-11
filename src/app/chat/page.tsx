@@ -71,6 +71,7 @@ function ensureSessionId(): string {
 }
 
 const DEFAULT_RULES = [
+  "チャット履歴は当日のレース終了から約1時間後に自動リセット（全消去）されます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
   "舟券（賭け）の購入・投票は自己責任です（未成年不可）。",
@@ -460,6 +461,9 @@ export default function ChatPage() {
             <span className="badge">{messages.length}件</span>
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
+          <p className="chat-reset-note">
+            注意: チャット欄はレース終了後（当日最終レースから約1時間後）に自動リセットされます。
+          </p>
           <div className="presence-panel">
             <div className="presence-head">
               <strong>入室中</strong>
@@ -717,7 +721,7 @@ export default function ChatPage() {
               </button>
             </div>
             <p className="note" style={{ marginTop: "0.55rem" }}>
-              一括消去は管理人キー必須です。当日レース終了の約1時間後に自動消去も行います。
+              一括消去は管理人キー必須です。チャットはレース後に自動リセットされます。
             </p>
             {status ? <p className="note">{status}</p> : null}
             {error ? <p className="status">{error}</p> : null}

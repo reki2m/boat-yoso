@@ -911,6 +911,19 @@ th {
   margin-top: 0.35rem;
 }
 
+.chat-reset-note {
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(255, 176, 32, 0.4);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 176, 32, 0.12), transparent 60%),
+    rgba(2, 10, 18, 0.65);
+  color: var(--accent-2);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
 .presence-panel {
   margin: 0 0 0.85rem;
   padding: 0.8rem 0.95rem;
