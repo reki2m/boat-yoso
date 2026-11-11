@@ -323,7 +323,8 @@ export function buildTriplePrediction(input: {
   const anomaly = detectOddsAnomaly(input.trifectaOdds ?? {});
   const liveUrls = liveBroadcastUrls(input.placeNo, input.dateKey, input.raceNo);
   const entryChanged = Boolean(input.exhibition.entryChanged);
-  const ticketsLocked = !input.exhibition.ready || entryChanged;
+  // 展示未確定のみロック。進入変更はスキップ扱い（待ちではない）
+  const ticketsLocked = !input.exhibition.ready;
   // 進入変更時は再マップせずスルー（見送り）
   const racers = input.racers;
   const c1 = byCourse(racers, 1);

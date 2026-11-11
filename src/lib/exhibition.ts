@@ -101,6 +101,22 @@ export function remapRacersToExhibitionCourses(
     .sort((a, b) => a.course - b.course);
 }
 
+function exhibitionLap(v: unknown): number | null {
+  const n = numOrNull(v);
+  // 展示周りタイムは概ね 6.4〜7.5。1.54.1 のような周回時計は除外。
+  if (n == null) return null;
+  if (n >= 6.2 && n <= 8.5) return n;
+  return null;
+}
+
+function exhibitionSlit(v: unknown): number | null {
+  const n = numOrNull(v);
+  if (n == null) return null;
+  // OpenAPIはマイナスSTもあり得る。極端値は除外。
+  if (n < -0.2 || n > 1.2) return null;
+  return n;
+}
+
 export function parseKyoteiExhibitionRow(row: Record<string, unknown>, boat: number): {
   course: number | null;
   slit: number | null;
@@ -111,17 +127,17 @@ export function parseKyoteiExhibitionRow(row: Record<string, unknown>, boat: num
 } {
   const entry = boat;
   // shinnyuu: 当日進入。0や空は未確定扱い
-  const shinnyuu = numOrNull(row.shinnyuu ?? row.shinnyu_now ?? row.nami5_shinnyuu);
-  const courseFromField = numOrNull(row.course);
-  // 展示前は course が枠番のまま入っていることが多い。start/time が空なら未確定。
-  const slit = numOrNull(row.start ?? row.tenji_st ?? row.exhibition_st);
-  const lapTime = numOrNull(row.time ?? row.tenji_time ?? row.exhibition_time);
-  const readySignals = slit != null && lapTime != null;
-  let course: number | null = null;
-  if (readySignals) {
-    // 進入確定: shinnyuu があれば優先、なければ course 欄
-    course = shinnyuu && shinnyuu >= 1 && shinnyuu <= 6 ? shinnyuu : courseFromField;
-  }
+  const shinnyuuRaw = numOrNull(row.shinnyuu ?? row.shinnyu_now ?? row.nami5_shinnyuu);
+  const shinnyuu = shinnyuuRaw && shinnyuuRaw >= 1 && shinnyuuRaw <= 6 ? shinnyuuRaw : null;
+  // 展示ST: start。展示タイムは display（time は別用途の時計文字列が多い）
+  const slit = exhibitionSlit(row.start ?? row.tenji_st ?? row.exhibition_st);
+  const lapTime =
+    exhibitionLap(row.display) ??
+    exhibitionLap(row.tenji_time) ??
+    exhibitionLap(row.exhibition_time) ??
+    exhibitionLap(row.time);
+  // 実進入は shinnyuu のみ。枠番 course を進入確定扱いにしない（OpenAPI側と合成する）。
+  const course = shinnyuu;
   const entryChanged = Boolean(course && course !== entry);
   return {
     course,
@@ -133,10 +149,34 @@ export function parseKyoteiExhibitionRow(row: Record<string, unknown>, boat: num
   };
 }
 
+/** OpenAPI preview の展示を、日和側の欠けに合成する */
+export function mergeExhibitionBoats(
+  primary: ExhibitionBoat[],
+  fallback: ExhibitionBoat[],
+): ExhibitionBoat[] {
+  const byEntry = new Map(fallback.map((b) => [b.entry, b]));
+  return primary.map((b) => {
+    const fb = byEntry.get(b.entry);
+    if (!fb) return b;
+    // 日和に実進入が無いときは OpenAPI の course を採用
+    const course = b.course ?? fb.course;
+    const slit = b.slit ?? fb.slit;
+    const lapTime = b.lapTime ?? fb.lapTime;
+    const entryChanged = Boolean(course && course !== b.entry);
+    return {
+      ...b,
+      course,
+      slit,
+      lapTime,
+      entryChanged,
+    };
+  });
+}
+
 export function parseOpenApiPreviewRacer(r: Record<string, unknown>, entry: number) {
   const course = numOrNull(r.course_number);
-  const slit = numOrNull(r.start_timing);
-  const lapTime = numOrNull(r.exhibition_time);
+  const slit = exhibitionSlit(r.start_timing);
+  const lapTime = exhibitionLap(r.exhibition_time);
   return {
     course: course && course >= 1 && course <= 6 ? course : null,
     slit,

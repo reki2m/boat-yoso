@@ -3,6 +3,7 @@ import { SAMPLE_RACE } from "./sample";
 import type { RacePayload, RacerRow } from "./types";
 import {
   evaluateExhibition,
+  mergeExhibitionBoats,
   parseKyoteiExhibitionRow,
   parseOpenApiPreviewRacer,
   type ExhibitionBoat,
@@ -13,7 +14,7 @@ export type { RacePayload, RacerRow };
 
 type CacheEntry = { at: number; payload: RacePayload; exhibition: ExhibitionStatus };
 const cache = new Map<string, CacheEntry>();
-const CACHE_MS = 30 * 1000;
+const CACHE_MS = 15 * 1000;
 
 const CLASS_NAME: Record<number, string> = {
   1: "A1",
@@ -290,6 +291,28 @@ export async function fetchKyoteiRaceBundle(
       .sort((a, b) => a.course - b.course);
 
     let exhibition = evaluateExhibition(boats, { windSpeed, wave });
+    // 日和側の start/shinnyuu が遅れて空でも、OpenAPI preview に展示が出ていれば合成
+    if (!exhibition.ready) {
+      const openapi = await fetchOpenApiRace(placeNo, raceNo, date);
+      if (openapi?.exhibition?.boats?.length) {
+        const mergedBoats = mergeExhibitionBoats(boats, openapi.exhibition.boats);
+        exhibition = evaluateExhibition(mergedBoats, {
+          windSpeed: windSpeed ?? openapi.exhibition.windSpeed,
+          wave: wave ?? openapi.exhibition.wave,
+        });
+        if (exhibition.ready) {
+          for (const r of racers) {
+            const hit = exhibition.boats.find((b) => b.entry === (r.entry ?? r.course));
+            if (!hit) continue;
+            r.exhibitionCourse = hit.course;
+            r.exhibitionSlit = hit.slit;
+            r.exhibitionLap = hit.lapTime;
+          }
+        }
+        windSpeed = windSpeed ?? openapi.exhibition.windSpeed;
+        wave = wave ?? openapi.exhibition.wave;
+      }
+    }
     if (opts?.forceSampleExhibition && !exhibition.ready) {
       exhibition = demoExhibitionFromRacers(racers, windSpeed ?? 5, wave ?? 3);
     }
@@ -306,6 +329,9 @@ export async function fetchKyoteiRaceBundle(
       fetchedAt: new Date().toISOString(),
       windSpeed,
       wave,
+      note: exhibition.ready
+        ? undefined
+        : "展示の一部が未着です。OpenAPI/日和の両方を確認しても揃わない場合は待ちます。",
     };
     cache.set(key, { at: Date.now(), payload, exhibition });
     return { payload, exhibition };
