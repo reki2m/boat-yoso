@@ -542,11 +542,11 @@ export default function Home() {
               })();
             }}
           >
-            チャット消去（管理人）
+            一括消去（管理人）
           </button>
         </div>
         <p className="note" style={{ marginTop: "0.65rem" }}>
-          専用チャットは招待メンバーと会話できます。買い目アップも同じ部屋に流れます。履歴消去は管理人のみです。
+          専用チャットは招待メンバーと会話できます。一括消去は管理人のみ。レース終了約1時間後に自動消去もあります。
         </p>
         <div className="field" style={{ marginTop: "0.85rem", maxWidth: 420 }}>
           <label htmlFor="operatorKey">管理人キー（あなただけ）</label>

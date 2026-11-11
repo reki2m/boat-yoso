@@ -45,6 +45,14 @@ type ChatLiveTarget = {
 const INVITE_KEY = "shioyomi_chat_invite";
 const NAME_KEY = "shioyomi_chat_name";
 const OP_KEY = "shioyomi_operator_key";
+const ADMIN_KEY = "shioyomi_admin_key";
+
+const DEFAULT_RULES = [
+  "誹謗中傷・喧嘩・荒らし・個人攻撃は禁止です。",
+  "予想・買い目は参考情報であり、的中や利益を保証しません。",
+  "舟券の購入・投票は自己責任です（未成年不可）。",
+  "当サービスは免責とします。公式情報は各場・BOAT RACE公式を優先してください。",
+];
 
 function formatJst(iso: string): string {
   try {
@@ -77,7 +85,10 @@ export default function ChatPage() {
   const [invite, setInvite] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [operatorKey, setOperatorKey] = useState("");
+  const [adminKey, setAdminKey] = useState("");
   const [asOperator, setAsOperator] = useState(false);
+  const [asAdmin, setAsAdmin] = useState(false);
+  const [rules, setRules] = useState<string[]>(DEFAULT_RULES);
   const [unlocked, setUnlocked] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
@@ -95,10 +106,15 @@ export default function ChatPage() {
     const savedInvite = window.localStorage.getItem(INVITE_KEY) || "";
     const savedName = window.localStorage.getItem(NAME_KEY) || "";
     const savedOp = window.localStorage.getItem(OP_KEY) || "";
+    const savedAdmin = window.localStorage.getItem(ADMIN_KEY) || "";
     if (savedName) setDisplayName(savedName);
     if (savedOp) {
       setOperatorKey(savedOp);
       setAsOperator(true);
+    }
+    if (savedAdmin) {
+      setAdminKey(savedAdmin);
+      setAsAdmin(true);
     }
     if (savedInvite) {
       setInvite(savedInvite);
@@ -159,8 +175,45 @@ export default function ChatPage() {
       setMessages(json.messages || []);
       setTargets(json.targets || []);
       setLiveDate(json.liveDate || "");
+      if (Array.isArray(json.rules) && json.rules.length) setRules(json.rules);
     } catch {
       if (!opts.quiet) setError("読み込みに失敗しました");
+    }
+  }
+
+  async function clearChatBulk() {
+    const key = adminKey.trim() || operatorKey.trim();
+    if (!key) {
+      setError("一括消去には管理人キー（CHAT_ADMIN_KEY）が必要です");
+      return;
+    }
+    if (!window.confirm("チャット履歴を一括消去します。管理人のみの操作です。よろしいですか？")) {
+      return;
+    }
+    setSending(true);
+    setError("");
+    setStatus("");
+    try {
+      window.localStorage.setItem(ADMIN_KEY, key);
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "clear",
+          operatorKey: key,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.hint || json.error || "消去に失敗しました");
+        return;
+      }
+      setStatus(`一括消去しました（${json.deleted ?? 0}件）`);
+      await loadFeed(invite.trim(), { quiet: true, refresh: false });
+    } catch {
+      setError("消去に失敗しました");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -248,6 +301,14 @@ export default function ChatPage() {
               maxLength={20}
             />
           </div>
+          <div className="chat-rules">
+            <strong>ご利用上の注意</strong>
+            <ul>
+              {rules.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </div>
           <div className="cta-row" style={{ marginTop: "0.85rem" }}>
             <button
               type="button"
@@ -272,6 +333,14 @@ export default function ChatPage() {
             <span className="badge">{displayName || "名無し"}</span>
             <span className="badge">{messages.length}件</span>
             {liveDate ? <span className="badge">{liveDate}</span> : null}
+          </div>
+          <div className="chat-rules compact">
+            <strong>注意 / 免責</strong>
+            <ul>
+              {rules.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
           </div>
 
           <div className="chat-live-panel">
@@ -418,6 +487,28 @@ export default function ChatPage() {
                 />
               </div>
             ) : null}
+            <label className="chat-op-toggle">
+              <input
+                type="checkbox"
+                checked={asAdmin}
+                onChange={(e) => setAsAdmin(e.target.checked)}
+              />
+              管理人メニュー（一括消去）
+            </label>
+            {asAdmin ? (
+              <div className="field" style={{ marginTop: "0.55rem" }}>
+                <label htmlFor="chatAdminKey">管理人キー</label>
+                <input
+                  id="chatAdminKey"
+                  type="password"
+                  value={adminKey}
+                  onChange={(e) => setAdminKey(e.target.value)}
+                  placeholder="CHAT_ADMIN_KEY"
+                  autoComplete="off"
+                  className="chat-input"
+                />
+              </div>
+            ) : null}
             <div className="cta-row" style={{ marginTop: "0.75rem" }}>
               <button
                 type="button"
@@ -441,6 +532,18 @@ export default function ChatPage() {
               >
                 更新
               </button>
+              {asAdmin ? (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={sending || !(adminKey.trim() || operatorKey.trim())}
+                  onClick={() => {
+                    void clearChatBulk();
+                  }}
+                >
+                  一括消去
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn ghost"
@@ -455,7 +558,7 @@ export default function ChatPage() {
               </button>
             </div>
             <p className="note" style={{ marginTop: "0.55rem" }}>
-              チャット履歴の消去は管理人のみ（アプリ側の管理人操作）です。
+              一括消去は管理人キー必須です。当日レース終了の約1時間後に自動消去も行います。
             </p>
             {status ? <p className="note">{status}</p> : null}
             {error ? <p className="status">{error}</p> : null}

@@ -13,8 +13,10 @@ import {
   type ChatKind,
   type ChatRole,
 } from "@/lib/chatStore";
+import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { buildChatRaceReply } from "@/lib/buildChatRaceReply";
 import { getChatLiveTargets } from "@/lib/chatLiveTargets";
+import { CHAT_HOUSE_RULES } from "@/lib/chatRules";
 import { parseRaceChatQuery } from "@/lib/parseRaceChatQuery";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 
@@ -43,6 +45,7 @@ export async function GET(req: NextRequest) {
     );
   }
   const refresh = req.nextUrl.searchParams.get("refresh") === "1";
+  await maybeAutoClearChat().catch(() => null);
   const [feed, live] = await Promise.all([
     readChatFeed(),
     getChatLiveTargets({ refresh }),
@@ -54,6 +57,7 @@ export async function GET(req: NextRequest) {
       messages: feed.messages,
       liveDate: live.date,
       targets: live.targets,
+      rules: CHAT_HOUSE_RULES,
     },
     { headers: { "cache-control": "no-store" } },
   );
@@ -95,13 +99,16 @@ export async function POST(req: NextRequest) {
     const deleted = await clearChatMessages();
     const notice = await appendChatMessage({
       kind: "note",
-      title: "チャット消去",
-      body: "管理人がチャット履歴を消去しました。",
+      title: "一括消去",
+      body: "管理人がチャット履歴を一括消去しました。",
       author_name: "管理人",
       author_role: "operator",
     });
     return NextResponse.json({ ok: true, deleted, message: notice });
   }
+
+  // 投稿前にも自動消去チェック
+  await maybeAutoClearChat().catch(() => null);
 
   // Member talk: invite code is enough.
   if (kind === "chat") {
