@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       { status: 401, headers: { "cache-control": "no-store" } },
     );
   }
-  const feed = readChatFeed();
+  const feed = await readChatFeed();
   return NextResponse.json(
     { ok: true, updated_at: feed.updated_at, messages: feed.messages },
     { headers: { "cache-control": "no-store" } },
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
   }
   meta.discord = discordOk;
 
-  const message = appendChatMessage({
+  const message = await appendChatMessage({
     kind,
     title,
     body: text,
