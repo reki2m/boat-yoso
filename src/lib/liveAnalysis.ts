@@ -1,3 +1,5 @@
+import { liveBroadcastUrls } from "./liveBroadcast";
+
 export type LiveAnalysisInput = {
   streamUrl?: string;
   exhibition?: Array<{
@@ -82,6 +84,6 @@ export function analyzeLive(input: LiveAnalysisInput): LiveAnalysisResult {
 }
 
 export function officialLiveUrl(placeNo: number, dateKey: string): string {
-  // 公式ライブの入口（場・日付指定の導線）。映像そのものの解析は analyzeLive のフックへ。
-  return `https://www.boatrace.jp/owpc/pc/site/race/raceresult?hd=${dateKey}&jcd=${String(placeNo).padStart(2, "0")}`;
+  // 場公式HP / 場ライブのみ（boatrace.jp 不使用）
+  return liveBroadcastUrls(placeNo, dateKey, 1).mediaTop;
 }

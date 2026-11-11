@@ -130,10 +130,9 @@ export async function buildChatRaceReply(
 
   lines.push(
     "",
-    `公式サイト: ${live.officialSite}`,
-    `直前情報: ${live.beforeInfo}`,
-    `出走表: ${live.raceList}`,
-    `公式ライブ（場単位）: ${live.mediaTop}`,
+    `場公式HP: ${live.officialSite}`,
+    `レース情報: ${live.beforeInfo}`,
+    `場ライブ: ${live.mediaTop}`,
     live.liveNote,
     "※アプリ内の考察と同じロジックです。参考情報であり的中を保証しません。",
   );

@@ -400,21 +400,18 @@ export default function ChatPage() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        公式サイト
+                        場公式HP
                       </a>
                       <a className="btn ghost" href={active.live.beforeInfo} target="_blank" rel="noreferrer">
-                        直前情報
-                      </a>
-                      <a className="btn ghost" href={active.live.raceList} target="_blank" rel="noreferrer">
-                        出走表
+                        レース情報
                       </a>
                       <a className="btn ghost" href={active.live.mediaTop} target="_blank" rel="noreferrer">
-                        公式ライブ
+                        場ライブ
                       </a>
                     </div>
                     <p className="note" style={{ marginTop: "0.55rem" }}>
                       {active.live.liveNote ||
-                        "公式ライブは場単位です。開催時間外は配信なし表示になります。別タブで開いてください。"}
+                        "各場の公式ホームページ／場ライブへ開きます（boatrace.jp は使いません）。"}
                     </p>
                   </div>
                 ) : null}

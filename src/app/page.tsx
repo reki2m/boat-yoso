@@ -955,7 +955,7 @@ export default function Home() {
               <div className="live-box purchased">
                 <strong>購入済み → 公式リンク</strong>
                 <p className="note" style={{ marginTop: "0.35rem" }}>
-                  {liveUrls.placeName} の公式サイト・直前情報・出走表・ライブ（場単位）を別タブで開きます。
+                  {liveUrls.placeName} の場公式ホームページ／レース情報／場ライブを別タブで開きます。
                 </p>
                 <div className="cta-row">
                   <a
@@ -964,21 +964,18 @@ export default function Home() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    公式サイト
+                    場公式HP
                   </a>
                   <a className="btn ghost" href={liveUrls.beforeInfo} target="_blank" rel="noreferrer">
-                    直前情報
-                  </a>
-                  <a className="btn ghost" href={liveUrls.raceList} target="_blank" rel="noreferrer">
-                    出走表
+                    レース情報
                   </a>
                   <a className="btn ghost" href={liveUrls.mediaTop} target="_blank" rel="noreferrer">
-                    公式ライブ
+                    場ライブ
                   </a>
                 </div>
                 <p className="note" style={{ marginTop: "0.55rem" }}>
                   {liveUrls.liveNote ||
-                    "公式ライブは場単位です。開催時間外は配信なしになります。埋め込み再生は公式が禁止しています。"}
+                    "各場の公式ホームページへ開きます（boatrace.jp は使いません）。"}
                 </p>
               </div>
             ) : null}
@@ -1042,9 +1039,9 @@ export default function Home() {
       </section>
 
       <section className="panel" style={{ marginTop: "1rem" }}>
-        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>全場ライブ / 公式サイト</h2>
+        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>全場・場公式HP / ライブ</h2>
         <p className="note">
-          {liveDate || "本日"} — 場を押すと公式サイト・直前情報・ライブ入口を開けます。ライブは場単位で、開催時間外は配信なしです。
+          {liveDate || "本日"} — 場を押すと各場の公式ホームページ／レース情報／場ライブを開けます（boatrace.jp 不使用）。
         </p>
         <div className="stadium-live-grid">
           {liveStadiums.map((s) => (
@@ -1066,7 +1063,7 @@ export default function Home() {
         </div>
         {activeLive ? (
           <div className="live-box purchased">
-            <strong>{activeLive.name} 公式リンク</strong>
+            <strong>{activeLive.name} 場公式リンク</strong>
             <div className="cta-row" style={{ marginTop: "0.65rem" }}>
               <a
                 className="btn"
@@ -1074,26 +1071,18 @@ export default function Home() {
                 target="_blank"
                 rel="noreferrer"
               >
-                公式サイト
+                場公式HP
               </a>
               <a className="btn ghost" href={activeLive.beforeInfo} target="_blank" rel="noreferrer">
-                直前情報
-              </a>
-              <a
-                className="btn ghost"
-                href={activeLive.raceList || activeLive.raceIndex}
-                target="_blank"
-                rel="noreferrer"
-              >
-                出走表 / 一覧
+                レース情報
               </a>
               <a className="btn ghost" href={activeLive.liveUrl} target="_blank" rel="noreferrer">
-                公式ライブ
+                場ライブ
               </a>
             </div>
             <p className="note" style={{ marginTop: "0.55rem" }}>
               {activeLive.liveNote ||
-                "公式ライブは場単位です。開催時間外は配信なし表示になります。埋め込み再生は公式が禁止しています。"}
+                "各場の公式ホームページへ開きます（boatrace.jp は使いません）。"}
             </p>
           </div>
         ) : null}

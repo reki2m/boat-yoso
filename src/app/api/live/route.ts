@@ -31,6 +31,6 @@ export async function GET() {
     stadiums,
     openCount: openIds.length,
     note:
-      "各場の公式サイト・直前情報・出走表・ライブ入口を開けます。ライブは場単位で、開催時間外は配信なしになります。",
+      "各場の公式ホームページ／レース情報／場ライブを開けます（boatrace.jp 不使用）。開催時間外は配信なし表示になります。",
   });
 }
