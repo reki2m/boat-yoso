@@ -364,9 +364,9 @@ textarea {
   padding: 1.25rem;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(46, 230, 255, 0.14), transparent 55%),
+    linear-gradient(135deg, rgba(255, 176, 32, 0.18), transparent 55%),
     var(--panel-strong);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 176, 32, 0.42);
 }
 
 .pick-main h2 {
@@ -374,6 +374,11 @@ textarea {
   font-size: clamp(1.8rem, 4vw, 2.6rem);
   margin: 0.2rem 0 0.5rem;
   letter-spacing: 0.04em;
+  color: var(--accent-2);
+}
+
+.pick-main > p {
+  color: #ffe7b0;
 }
 
 .sanren {
@@ -381,9 +386,14 @@ textarea {
   font-size: clamp(2rem, 5vw, 3.1rem);
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: var(--accent-2);
-  text-shadow: 0 0 24px rgba(255, 176, 32, 0.35);
+  color: #ffd27a;
+  text-shadow: 0 0 24px rgba(255, 176, 32, 0.45);
   animation: pulse 2.8s ease-in-out infinite;
+}
+
+.board-pick-tickets {
+  color: var(--accent-2);
+  font-weight: 700;
 }
 
 .side-picks {
