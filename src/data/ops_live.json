@@ -43,10 +43,13 @@
     "場の安易な追加"
   ],
   "monitoring": {
-    "unit": "quarter",
+    "unit": "daily",
     "pause_if_roi_below": 90.0,
     "review_if_roi_below": 100.0,
-    "keep_thresholds_fixed_until_pause": true,
+    "keep_thresholds_fixed_until_pause": false,
     "note": "四半期ROIが90%未満なら一時停止。100%割れは見直し検討。閾値の継ぎ足し最適化はしない。"
-  }
+  },
+  "last_learned_at_jst": "2026-11-12T04:52:40.584995+09:00",
+  "rolling_roi": 82.77777777777777,
+  "last_learn_applied": false
 }

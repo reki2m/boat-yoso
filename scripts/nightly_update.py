@@ -130,27 +130,44 @@ def main() -> None:
     # 的中再計算
     run(["python3", str(ROOT / "scripts" / "score_picks.py"), "--days", "14"])
 
-    STATE.write_text(
-        json.dumps(
-            {
-                "last_success_date": jst_now().date().isoformat(),
-                "last_success_at": jst_now().isoformat(),
-                "openapi_stats": stats,
-                "cadence": "nightly_daily",
-                "sources": [
-                    "boatraceopenapi results/programs/api",
-                    "boatrace-db.jp",
-                    "course_skills / hot_racers / day_picks / accuracy",
-                ],
-                "policy": {
-                    "day_before_picks": True,
-                    "skip_on_entry_change": True,
-                    "require_start_exhibition": True,
-                },
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
+    # 回収率モニタ＋閾値の自動学習（改善時のみ適用）
+    learning = {"ok": False}
+    try:
+        run(["python3", str(ROOT / "scripts" / "learn_roi_daily.py")])
+        learning = {"ok": True}
+    except subprocess.CalledProcessError as e:
+        print("roi learning deferred", e)
+        learning = {"ok": False, "error": str(e)}
+
+    # 学習で閾値が変わった場合に当日ボードを再生成
+    if learning.get("ok"):
+        try:
+            run(["python3", str(ROOT / "scripts" / "generate_day_picks.py")])
+            run(["python3", str(ROOT / "scripts" / "confirm_exhibition.py")])
+        except subprocess.CalledProcessError as e:
+            print("post-learn regenerate deferred", e)
+
+    state = {
+        "last_success_date": jst_now().date().isoformat(),
+        "last_success_at": jst_now().isoformat(),
+        "openapi_stats": stats,
+        "cadence": "nightly_daily",
+        "learning": learning,
+        "sources": [
+            "boatraceopenapi results/programs/api",
+            "boatrace-db.jp",
+            "course_skills / hot_racers / day_picks / accuracy / roi_learning",
+        ],
+        "policy": {
+            "day_before_picks": True,
+            "skip_on_entry_change": True,
+            "require_start_exhibition": True,
+            "auto_learn_roi": True,
+        },
+    }
+    STATE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    (ROOT / "src" / "data" / "update_state.json").write_text(
+        json.dumps(state, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     print("nightly update complete")

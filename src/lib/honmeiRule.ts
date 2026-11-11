@@ -1,5 +1,7 @@
 import locked from "@/data/locked_honmei_rule.json";
 import stadiumRates from "@/data/stadium_innige_rates.json";
+import { existsSync, readFileSync } from "fs";
+import path from "path";
 
 export type HonmeiRule = {
   ticket: string;
@@ -32,7 +34,35 @@ export type HonmeiRule = {
   };
 };
 
-export const HONMEI_RULE = locked as HonmeiRule;
+function loadLiveHonmeiRule(): HonmeiRule {
+  const candidates = [
+    path.join(process.cwd(), "src", "data", "locked_honmei_rule.json"),
+    path.join(process.cwd(), "data", "reports", "locked_honmei_rule.json"),
+  ];
+  for (const file of candidates) {
+    try {
+      if (!existsSync(file)) continue;
+      return JSON.parse(readFileSync(file, "utf8")) as HonmeiRule;
+    } catch {
+      // continue
+    }
+  }
+  return locked as HonmeiRule;
+}
+
+/** 日次学習後のランタイム規則を都度読む（プロセス長寿でも学習結果を反映） */
+export function getHonmeiRule(): HonmeiRule {
+  return loadLiveHonmeiRule();
+}
+
+export const HONMEI_RULE: HonmeiRule = new Proxy({} as HonmeiRule, {
+  get(_target, prop, _receiver) {
+    const live = loadLiveHonmeiRule() as Record<string | symbol, unknown>;
+    const value = live[prop];
+    return typeof value === "function" ? value.bind(live) : value;
+  },
+});
+
 export const STADIUM_INNIGE = stadiumRates as Record<
   string,
   { rate: number; stadium: number }
