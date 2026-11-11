@@ -21,7 +21,7 @@ function LoginForm() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "解錠できません");
+        setError(json.hint ? `${json.error}（${json.hint}）` : json.error || "解錠できません");
         return;
       }
       const next = params.get("next") || "/";
@@ -73,7 +73,8 @@ function LoginForm() {
       </div>
       {error ? <p className="status">{error}</p> : null}
       <p className="note" style={{ marginTop: "0.85rem" }}>
-        友達にはチャットURL（/chat）と招待コードだけ共有してください。管理人キーは渡さないでください。
+        ここに入れるのは招待コードではなく、Cursor Apps の Secrets にある CHAT_ADMIN_KEY（または
+        CHAT_OPERATOR_KEY）です。友達には /chat と招待コードだけ渡してください。
       </p>
     </section>
   );

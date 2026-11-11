@@ -1,13 +1,14 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { checkAdmin, checkOperator } from "@/lib/chatStore";
+import { normalizeSecret } from "@/lib/chatSecurity";
 
 export const APP_GATE_COOKIE = "shioyomi_app_gate";
 
 function gateSecret(): string {
   // middleware と同じシード順
   return (
-    process.env.CHAT_ADMIN_KEY?.trim() ||
-    process.env.CHAT_OPERATOR_KEY?.trim() ||
+    normalizeSecret(process.env.CHAT_ADMIN_KEY) ||
+    normalizeSecret(process.env.CHAT_OPERATOR_KEY) ||
     (process.env.NODE_ENV === "production" ? "" : "shio-op")
   );
 }

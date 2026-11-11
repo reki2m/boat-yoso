@@ -1,5 +1,5 @@
 import { sql } from "@/lib/db";
-import { safeEqualText } from "@/lib/chatSecurity";
+import { normalizeSecret, safeEqualText } from "@/lib/chatSecurity";
 import { STADIUMS } from "@/lib/stadiums";
 
 export type ChatKind = "picks" | "note" | "chat";
@@ -268,14 +268,14 @@ export async function appendChatMessage(
 }
 
 export function inviteCode(): string {
-  const fromEnv = process.env.CHAT_INVITE_CODE?.trim();
+  const fromEnv = normalizeSecret(process.env.CHAT_INVITE_CODE);
   if (fromEnv) return fromEnv;
   if (process.env.NODE_ENV === "production") return "";
   return "shio-invite";
 }
 
 export function operatorKey(): string {
-  const fromEnv = process.env.CHAT_OPERATOR_KEY?.trim();
+  const fromEnv = normalizeSecret(process.env.CHAT_OPERATOR_KEY);
   if (fromEnv) return fromEnv;
   if (process.env.NODE_ENV === "production") return "";
   return "shio-op";
@@ -283,25 +283,25 @@ export function operatorKey(): string {
 
 /** 管理人キー。未設定時は運営キーと同じ。チャット消去など破壊操作専用。 */
 export function adminKey(): string {
-  const fromEnv = process.env.CHAT_ADMIN_KEY?.trim();
+  const fromEnv = normalizeSecret(process.env.CHAT_ADMIN_KEY);
   if (fromEnv) return fromEnv;
   return operatorKey();
 }
 
 export function checkInvite(code: string | null | undefined): boolean {
   const expected = inviteCode();
-  const got = (code || "").trim();
+  const got = normalizeSecret(code);
   return Boolean(expected && got && safeEqualText(got, expected));
 }
 
 export function checkOperator(key: string | null | undefined): boolean {
   const expected = operatorKey();
-  const got = (key || "").trim();
+  const got = normalizeSecret(key);
   return Boolean(expected && got && safeEqualText(got, expected));
 }
 
 export function checkAdmin(key: string | null | undefined): boolean {
   const expected = adminKey();
-  const got = (key || "").trim();
+  const got = normalizeSecret(key);
   return Boolean(expected && got && safeEqualText(got, expected));
 }
