@@ -276,15 +276,24 @@ export default function Home() {
   const [research, setResearch] = useState<Research | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [discordBusy, setDiscordBusy] = useState(false);
   const [, startTransition] = useTransition();
   const [purchased, setPurchased] = useState(false);
   const [demoExhibition, setDemoExhibition] = useState(false);
   const [liveStadiums, setLiveStadiums] = useState<LiveStadium[]>([]);
   const [liveDate, setLiveDate] = useState("");
   const [activeLive, setActiveLive] = useState<LiveStadium | null>(null);
-  const [discordMsg, setDiscordMsg] = useState("");
   const [board, setBoard] = useState<PicksBoard | null>(null);
+  const [operatorKey, setOperatorKey] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatMsg, setChatMsg] = useState("");
+
+  useEffect(() => {
+    try {
+      setOperatorKey(window.localStorage.getItem("shioyomi_operator_key") || "");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -431,32 +440,77 @@ export default function Home() {
           </button>
           <button
             type="button"
-            className="btn ghost"
+            className="btn"
             onClick={() => {
-              setDiscordMsg("");
-              setDiscordBusy(true);
+              setChatMsg("");
+              const key = operatorKey.trim();
+              if (!key) {
+                setChatMsg("運営キーを入力してからアップしてください");
+                return;
+              }
+              try {
+                window.localStorage.setItem("shioyomi_operator_key", key);
+              } catch {
+                // ignore
+              }
+              setChatBusy(true);
               void (async () => {
                 try {
-                  const res = await fetch("/api/discord/notify", { method: "POST" });
+                  const res = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      operatorKey: key,
+                      kind: "picks",
+                      mirrorDiscord: true,
+                    }),
+                  });
                   const json = await res.json();
                   if (!res.ok) {
-                    setDiscordMsg(json.hint || json.error || "Discord送信に失敗しました");
+                    setChatMsg(json.hint || json.error || "アップに失敗しました");
                     return;
                   }
-                  setDiscordMsg("Discordへ送信しました");
+                  const discordNote = json.discord?.ok
+                    ? " / Discordにも反映"
+                    : json.discord?.detail
+                      ? ` / Discord未反映（${json.discord.detail}）`
+                      : "";
+                  setChatMsg(`専用チャットにアップしました${discordNote}`);
                 } catch {
-                  setDiscordMsg("Discord送信に失敗しました");
+                  setChatMsg("アップに失敗しました");
                 } finally {
-                  setDiscordBusy(false);
+                  setChatBusy(false);
                 }
               })();
             }}
-            disabled={discordBusy}
+            disabled={chatBusy}
           >
-            {discordBusy ? "送信中…" : "Discordに送る"}
+            {chatBusy ? "アップ中…" : "専用チャットにアップ"}
           </button>
+          <a className="btn ghost" href="/chat">
+            専用チャットを開く
+          </a>
         </div>
-        {discordMsg ? <p className="note">{discordMsg}</p> : null}
+        <div className="field" style={{ marginTop: "0.85rem", maxWidth: 420 }}>
+          <label htmlFor="operatorKey">運営キー（あなただけ）</label>
+          <input
+            id="operatorKey"
+            type="password"
+            value={operatorKey}
+            onChange={(e) => setOperatorKey(e.target.value)}
+            placeholder="CHAT_OPERATOR_KEY"
+            autoComplete="off"
+            style={{
+              width: "100%",
+              padding: "0.75rem 1rem",
+              borderRadius: 12,
+              border: "1px solid var(--line)",
+              background: "rgba(8,28,38,0.55)",
+              color: "var(--foam)",
+            }}
+          />
+        </div>
+        {chatMsg ? <p className="note">{chatMsg}</p> : null}
       </section>
 
       <section className="panel" style={{ marginBottom: "1rem" }}>

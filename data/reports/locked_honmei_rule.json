@@ -30,6 +30,8 @@
   "validated_period": "2020-2026",
   "validated_all_min_year_roi": 98.6,
   "validated_all_roi": 104.2,
+  "validated_test_roi": 104.2,
+  "validated_train_roi": 104.2,
   "validated_avg_per_day": 1.43,
   "validated_note": "2020含む全期間で年次ROI下限を最大化。全年度100%は探索上0件。最良minY=98.6%(2023)。穴はOOS崩れのため運用ロックなし。",
   "band": "honmei",
