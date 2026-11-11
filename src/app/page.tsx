@@ -297,7 +297,9 @@ export default function Home() {
 
   useEffect(() => {
     try {
-      setOperatorKey(window.localStorage.getItem("shioyomi_operator_key") || "");
+      // 旧版で保存した運営キーを破棄（ブラウザ保存しない）
+      window.localStorage.removeItem("shioyomi_operator_key");
+      window.localStorage.removeItem("shioyomi_admin_key");
     } catch {
       // ignore
     }
@@ -461,11 +463,6 @@ export default function Home() {
                 setChatMsg("運営キーを入力してからアップしてください");
                 return;
               }
-              try {
-                window.localStorage.setItem("shioyomi_operator_key", key);
-              } catch {
-                // ignore
-              }
               setChatBusy(true);
               void (async () => {
                 try {
@@ -516,11 +513,6 @@ export default function Home() {
               }
               if (!window.confirm("専用チャット履歴を全消去します。管理人のみの操作です。よろしいですか？")) {
                 return;
-              }
-              try {
-                window.localStorage.setItem("shioyomi_operator_key", key);
-              } catch {
-                // ignore
               }
               setChatBusy(true);
               void (async () => {

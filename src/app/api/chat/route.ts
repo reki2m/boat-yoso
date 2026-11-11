@@ -13,10 +13,12 @@ import {
   type ChatKind,
   type ChatRole,
 } from "@/lib/chatStore";
-import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { buildChatRaceReply } from "@/lib/buildChatRaceReply";
-import { settleChatPredictionHits } from "@/lib/chatHitSettle";
-import { maybePostMorningHonmeiPicks } from "@/lib/chatMorningPicks";
+import {
+  allowRaceReply,
+  hashBucket,
+  maybeRunChatMaintenance,
+} from "@/lib/chatSecurity";
 import { leavePresence, listPresence, touchPresence } from "@/lib/chatPresence";
 import { getChatLiveTargets } from "@/lib/chatLiveTargets";
 import { CHAT_HOUSE_RULES } from "@/lib/chatRules";
@@ -50,17 +52,20 @@ export async function GET(req: NextRequest) {
   const refresh = req.nextUrl.searchParams.get("refresh") === "1";
   const sessionId = req.nextUrl.searchParams.get("session") || "";
   const presenceName = req.nextUrl.searchParams.get("name") || "";
-  const presenceRole = req.nextUrl.searchParams.get("role") || "member";
+  const wantsOperator = req.nextUrl.searchParams.get("role") === "operator";
+  // 運営キーはヘッダのみ（クエリに載せるとアクセスログへ残る）
+  const operatorKeyHdr = req.headers.get("x-chat-operator") || "";
+  // role=operator だけでは昇格させない。運営キー検証必須。
+  const presenceRole =
+    wantsOperator && checkOperator(operatorKeyHdr) ? "operator" : "member";
   if (sessionId && presenceName) {
     await touchPresence({
       sessionId,
       displayName: presenceName,
-      role: presenceRole === "operator" ? "operator" : "member",
+      role: presenceRole,
     }).catch(() => null);
   }
-  await maybeAutoClearChat().catch(() => null);
-  await maybePostMorningHonmeiPicks().catch(() => null);
-  await settleChatPredictionHits().catch(() => null);
+  await maybeRunChatMaintenance().catch(() => null);
   const [feed, live, presence] = await Promise.all([
     readChatFeed(),
     getChatLiveTargets({ refresh }),
@@ -133,9 +138,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, deleted, message: notice });
   }
 
-  // 投稿前にも自動消去・朝の本命投稿チェック
-  await maybeAutoClearChat().catch(() => null);
-  await maybePostMorningHonmeiPicks().catch(() => null);
+  // 投稿前にもメンテ（自動消去・朝投稿など）を軽く確認
+  await maybeRunChatMaintenance().catch(() => null);
 
   // Member talk: invite code is enough.
   if (kind === "chat") {
@@ -164,6 +168,32 @@ export async function POST(req: NextRequest) {
     let reply = null;
     const raceQuery = parseRaceChatQuery(text);
     if (raceQuery) {
+      const bucket = hashBucket(
+        `${body.sessionId || ""}:${invite || ""}:${req.headers.get("x-forwarded-for") || ""}`,
+      );
+      const gate = allowRaceReply(bucket);
+      if (!gate.ok) {
+        reply = await appendChatMessage({
+          kind: "note",
+          title: "利用制限",
+          body: gate.error || "予測の連続利用は制限されています。",
+          author_name: "システム",
+          author_role: "operator",
+          meta: { mode: "rate_limit" },
+        });
+        return NextResponse.json(
+          {
+            ok: true,
+            message,
+            reply,
+            rateLimited: true,
+            retryAfterSec: gate.retryAfterSec,
+          },
+          gate.retryAfterSec
+            ? { headers: { "retry-after": String(gate.retryAfterSec) } }
+            : undefined,
+        );
+      }
       try {
         const built = await buildChatRaceReply(raceQuery);
         reply = await appendChatMessage({

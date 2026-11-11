@@ -47,9 +47,10 @@ type ChatLiveTarget = {
 
 const INVITE_KEY = "shioyomi_chat_invite";
 const NAME_KEY = "shioyomi_chat_name";
-const OP_KEY = "shioyomi_operator_key";
-const ADMIN_KEY = "shioyomi_admin_key";
 const SESSION_KEY = "shioyomi_chat_session";
+// 運営／管理人キーは localStorage に残さない（XSS・端末共有での漏洩防止）
+const LEGACY_OP_KEY = "shioyomi_operator_key";
+const LEGACY_ADMIN_KEY = "shioyomi_admin_key";
 
 type PresenceMember = {
   session_id: string;
@@ -133,19 +134,15 @@ export default function ChatPage() {
   useEffect(() => {
     const sid = ensureSessionId();
     setSessionId(sid);
+    try {
+      window.localStorage.removeItem(LEGACY_OP_KEY);
+      window.localStorage.removeItem(LEGACY_ADMIN_KEY);
+    } catch {
+      // ignore
+    }
     const savedInvite = window.localStorage.getItem(INVITE_KEY) || "";
     const savedName = window.localStorage.getItem(NAME_KEY) || "";
-    const savedOp = window.localStorage.getItem(OP_KEY) || "";
-    const savedAdmin = window.localStorage.getItem(ADMIN_KEY) || "";
     if (savedName) setDisplayName(savedName);
-    if (savedOp) {
-      setOperatorKey(savedOp);
-      setAsOperator(true);
-    }
-    if (savedAdmin) {
-      setAdminKey(savedAdmin);
-      setAsAdmin(true);
-    }
     if (savedInvite) {
       setInvite(savedInvite);
       void loadFeed(savedInvite, {
@@ -153,7 +150,7 @@ export default function ChatPage() {
         refresh: true,
         session: sid,
         name: savedName,
-        asOp: Boolean(savedOp),
+        asOp: false,
       });
     }
   }, []);
@@ -187,7 +184,7 @@ export default function ChatPage() {
         name: displayName,
         asOp: asOperator,
       });
-    }, 5000);
+    }, 10000);
     const liveTimer = window.setInterval(() => {
       void loadFeed(invite.trim(), {
         quiet: true,
@@ -196,12 +193,12 @@ export default function ChatPage() {
         name: displayName,
         asOp: asOperator,
       });
-    }, 30000);
+    }, 45000);
     return () => {
       window.clearInterval(msgTimer);
       window.clearInterval(liveTimer);
     };
-  }, [unlocked, invite, sessionId, displayName, asOperator]);
+  }, [unlocked, invite, sessionId, displayName, asOperator, operatorKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -231,14 +228,19 @@ export default function ChatPage() {
     try {
       const sid = opts.session || sessionId || ensureSessionId();
       const name = (opts.name ?? displayName).trim();
+      const asOp = opts.asOp ?? asOperator;
       const q = new URLSearchParams({ invite: code });
       if (opts.refresh) q.set("refresh", "1");
       if (sid && name) {
         q.set("session", sid);
         q.set("name", name);
-        q.set("role", (opts.asOp ?? asOperator) ? "operator" : "member");
+        q.set("role", asOp ? "operator" : "member");
       }
-      const res = await fetch(`/api/chat?${q.toString()}`);
+      const headers: Record<string, string> = {};
+      if (asOp && operatorKey.trim()) {
+        headers["x-chat-operator"] = operatorKey.trim();
+      }
+      const res = await fetch(`/api/chat?${q.toString()}`, { headers });
       const json = await res.json();
       if (!res.ok) {
         setUnlocked(false);
@@ -296,10 +298,12 @@ export default function ChatPage() {
     setError("");
     setStatus("");
     try {
-      window.localStorage.setItem(ADMIN_KEY, key);
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-operator": key,
+        },
         body: JSON.stringify({
           kind: "clear",
           operatorKey: key,
@@ -339,17 +343,19 @@ export default function ChatPage() {
     setStatus("");
     try {
       window.localStorage.setItem(NAME_KEY, name);
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (asOperator && operatorKey.trim()) {
-        window.localStorage.setItem(OP_KEY, operatorKey.trim());
+        headers["x-chat-operator"] = operatorKey.trim();
       }
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           invite: code,
           kind: "chat",
           text,
           authorName: name,
+          sessionId: sessionId || ensureSessionId(),
           operatorKey: asOperator ? operatorKey.trim() : undefined,
         }),
       });

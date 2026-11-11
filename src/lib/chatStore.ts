@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { safeEqualText } from "@/lib/chatSecurity";
 
 export type ChatKind = "picks" | "note" | "chat";
 export type ChatRole = "operator" | "member";
@@ -172,15 +173,18 @@ export function adminKey(): string {
 
 export function checkInvite(code: string | null | undefined): boolean {
   const expected = inviteCode();
-  return Boolean(expected && code && code.trim() === expected);
+  const got = (code || "").trim();
+  return Boolean(expected && got && safeEqualText(got, expected));
 }
 
 export function checkOperator(key: string | null | undefined): boolean {
   const expected = operatorKey();
-  return Boolean(expected && key && key.trim() === expected);
+  const got = (key || "").trim();
+  return Boolean(expected && got && safeEqualText(got, expected));
 }
 
 export function checkAdmin(key: string | null | undefined): boolean {
   const expected = adminKey();
-  return Boolean(expected && key && key.trim() === expected);
+  const got = (key || "").trim();
+  return Boolean(expected && got && safeEqualText(got, expected));
 }

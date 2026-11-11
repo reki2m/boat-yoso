@@ -8,11 +8,8 @@ function authorized(req: NextRequest): boolean {
   const cron = process.env.CRON_SECRET?.trim();
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   if (cron && bearer && bearer === cron) return true;
-  const key =
-    req.headers.get("x-chat-operator") ||
-    req.headers.get("x-chat-admin") ||
-    req.nextUrl.searchParams.get("key") ||
-    "";
+  // クエリに鍵を載せない（アクセスログへの露出を避ける）
+  const key = req.headers.get("x-chat-operator") || req.headers.get("x-chat-admin") || "";
   return checkOperator(key) || checkAdmin(key);
 }
 
@@ -26,7 +23,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as { force?: boolean };
     force = Boolean(body.force);
   } catch {
-    force = req.nextUrl.searchParams.get("force") === "1";
+    force = false;
   }
   try {
     const result = await maybePostMorningHonmeiPicks(new Date(), { force });
@@ -40,8 +37,4 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-export async function GET(req: NextRequest) {
-  return POST(req);
 }
