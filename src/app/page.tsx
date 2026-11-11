@@ -211,6 +211,22 @@ type Research = {
     bands: Record<string, EquityBand>;
     portfolio: EquityBand & { rule?: string };
   };
+  update?: {
+    cadence?: string;
+    last_success_at?: string | null;
+    last_success_date?: string | null;
+    last_confirm_at?: string | null;
+    auto?: boolean;
+  };
+  learning?: {
+    applied?: boolean;
+    status?: string;
+    note?: string;
+    ops_status?: string | null;
+    rolling_roi?: number | null;
+    best?: { name?: string; roi?: number; n?: number };
+    baseline?: { roi?: number; n?: number };
+  };
 };
 
 type LiveStadium = {
@@ -431,8 +447,27 @@ export default function Home() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          本命だけ。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。1日だいたい1レース前後。
+          本命だけ。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。1日だいたい1レース前後。毎日自動で最新データ更新と回収率学習を回します。
         </p>
+        {research?.update || research?.learning ? (
+          <div className="meta" style={{ marginBottom: "0.85rem" }}>
+            <span className="badge">毎日自動更新</span>
+            {research.update?.last_success_date ? (
+              <span className="badge">更新 {research.update.last_success_date}</span>
+            ) : (
+              <span className="badge">更新待機</span>
+            )}
+            {research.learning?.rolling_roi != null ? (
+              <span className="badge">
+                学習ROI {Number(research.learning.rolling_roi).toFixed(1)}%
+              </span>
+            ) : null}
+            {research.learning?.applied ? <span className="badge">閾値学習適用</span> : null}
+            {research.learning?.ops_status ? (
+              <span className="badge">{String(research.learning.ops_status)}</span>
+            ) : null}
+          </div>
+        ) : null}
         <div className="cta-row">
           <button
             type="button"
