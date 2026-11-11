@@ -16,6 +16,9 @@ type ChatMessage = {
     mode?: string;
     count?: number;
     discord?: boolean;
+    placeNo?: number;
+    raceNo?: number;
+    tickets?: string[];
   };
 };
 
@@ -69,9 +72,10 @@ function formatJst(iso: string): string {
   }
 }
 
-function kindLabel(kind: ChatMessage["kind"]): string {
-  if (kind === "picks") return "買い目";
-  if (kind === "note") return "メモ";
+function kindLabel(m: ChatMessage): string {
+  if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中🎯";
+  if (m.kind === "picks") return "買い目";
+  if (m.kind === "note") return "メモ";
   return "会話";
 }
 
@@ -435,7 +439,7 @@ export default function ChatPage() {
                   >
                     <div className="chat-bubble-meta">
                       <strong>{m.author_name || m.title || (isOp ? "運営" : "メンバー")}</strong>
-                      <span>{kindLabel(m.kind)}</span>
+                      <span>{kindLabel(m)}</span>
                       <span>{formatJst(m.created_at)} JST</span>
                       {m.meta?.discord ? <span>Discord</span> : null}
                     </div>
