@@ -507,7 +507,7 @@ export default function Home() {
                     body: JSON.stringify({
                       operatorKey: key,
                       kind: "picks",
-                      mirrorDiscord: true,
+                      mirrorDiscord: false,
                     }),
                   });
                   const json = await res.json();

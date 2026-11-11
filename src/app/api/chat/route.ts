@@ -29,7 +29,7 @@ import {
   newChatSessionId,
   verifyChatSessionCookieValue,
 } from "@/lib/chatSession";
-import { allowAuthAttempt } from "@/lib/authRateLimit";
+import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 import { listAdminPredictionOversight } from "@/lib/chatAdminOversight";
 import { buildRaceChipsFromPicks, buildSingleRaceChip } from "@/lib/chatRaceUi";
 import { STADIUMS } from "@/lib/stadiums";
@@ -41,7 +41,31 @@ function viewerSessionId(req: NextRequest): string | null {
   return verifyChatSessionCookieValue(req.cookies.get(CHAT_SESSION_COOKIE)?.value);
 }
 
+function clientIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+}
+
+function rateLimited(
+  error: string,
+  retryAfterSec?: number,
+): NextResponse {
+  return NextResponse.json(
+    { ok: false, error, retryAfterSec },
+    {
+      status: 429,
+      headers: {
+        "cache-control": "no-store",
+        ...(retryAfterSec ? { "retry-after": String(retryAfterSec) } : {}),
+      },
+    },
+  );
+}
+
+/** Discord へ送るのは明示オプトイン時のみ（DISCORD_MIRROR_ENABLED=1 かつ mirrorDiscord=true）。 */
 async function mirrorDiscord(body: string): Promise<{ ok: boolean; detail?: string }> {
+  if (process.env.DISCORD_MIRROR_ENABLED?.trim() !== "1") {
+    return { ok: false, detail: "Discord連携は無効です（DISCORD_MIRROR_ENABLED）" };
+  }
   const webhook = process.env.DISCORD_WEBHOOK_URL?.trim();
   if (!webhook) return { ok: false, detail: "DISCORD_WEBHOOK_URL 未設定" };
   const res = await fetch(webhook, {
@@ -77,7 +101,7 @@ async function createAppRacePick(opts: {
   const bucket = hashBucket(
     `${opts.sessionId}:${opts.invite || ""}:${opts.forwardedFor || ""}`,
   );
-  const gate = allowRaceReply(bucket);
+  const gate = await allowRaceReply(bucket);
   if (!gate.ok) {
     return {
       ok: false,
@@ -159,8 +183,19 @@ async function createAppRacePick(opts: {
 }
 
 export async function GET(req: NextRequest) {
+  const ip = clientIp(req);
   const invite = req.headers.get("x-chat-invite");
   if (!checkInvite(invite)) {
+    const fail = await allowAuthAttemptShared(`chat-invite-fail:${ip}`, {
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!fail.ok) {
+      return rateLimited(
+        "試行回数が多すぎます。しばらくしてから再度お試しください。",
+        fail.retryAfterSec,
+      );
+    }
     return NextResponse.json(
       { ok: false, error: "招待コードが違います" },
       { status: 401, headers: { "cache-control": "no-store" } },
@@ -174,6 +209,30 @@ export async function GET(req: NextRequest) {
   const isAdmin = checkAdmin(adminKeyHdr);
   const operatorKeyHdr = req.headers.get("x-chat-operator") || "";
   const presenceRole = checkOperator(operatorKeyHdr) ? "operator" : "member";
+  if (adminKeyHdr && !isAdmin && !checkOperator(adminKeyHdr)) {
+    const fail = await allowAuthAttemptShared(`chat-admin-fail:${ip}`, {
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!fail.ok) {
+      return rateLimited(
+        "試行回数が多すぎます。しばらくしてから再度お試しください。",
+        fail.retryAfterSec,
+      );
+    }
+  }
+  if (refresh) {
+    const gate = await allowAuthAttemptShared(`chat-refresh:${sessionId || ip}`, {
+      limit: 12,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!gate.ok) {
+      return rateLimited(
+        "更新の連続利用は制限されています。しばらくしてから再度お試しください。",
+        gate.retryAfterSec,
+      );
+    }
+  }
   if (sessionId && presenceName) {
     await touchPresence({
       sessionId,
@@ -237,23 +296,45 @@ export async function POST(req: NextRequest) {
   const kind = body.kind || "picks";
   const cookieSession = viewerSessionId(req);
 
+  const ip = clientIp(req);
+
   if (kind === "enter") {
-    const ip = req.headers.get("x-forwarded-for") || "local";
-    const gate = allowAuthAttempt(`chat-enter:${ip}`, { limit: 40, windowMs: 10 * 60 * 1000 });
+    const gate = await allowAuthAttemptShared(`chat-enter:${ip}`, {
+      limit: 40,
+      windowMs: 10 * 60 * 1000,
+    });
     if (!gate.ok) {
-      return NextResponse.json(
-        { ok: false, error: "試行回数が多すぎます。しばらくしてから再度お試しください。" },
-        {
-          status: 429,
-          headers: gate.retryAfterSec ? { "retry-after": String(gate.retryAfterSec) } : undefined,
-        },
+      return rateLimited(
+        "試行回数が多すぎます。しばらくしてから再度お試しください。",
+        gate.retryAfterSec,
       );
     }
     if (!checkInvite(invite)) {
+      const fail = await allowAuthAttemptShared(`chat-invite-fail:${ip}`, {
+        limit: 20,
+        windowMs: 10 * 60 * 1000,
+      });
+      if (!fail.ok) {
+        return rateLimited(
+          "試行回数が多すぎます。しばらくしてから再度お試しください。",
+          fail.retryAfterSec,
+        );
+      }
       return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
     }
     const authorName = sanitizeDisplayName(body.authorName || "メンバー");
     const sessionId = cookieSession || newChatSessionId();
+    const cookieValue = mintChatSessionCookieValue(sessionId);
+    if (!cookieValue) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "セッション鍵が未設定です",
+          hint: "CHAT_SESSION_SECRET（または CHAT_ADMIN_KEY）を設定してください",
+        },
+        { status: 503 },
+      );
+    }
     await touchPresence({
       sessionId,
       displayName: authorName,
@@ -264,17 +345,27 @@ export async function POST(req: NextRequest) {
       entered: true,
       displayName: authorName,
     });
-    res.cookies.set(
-      CHAT_SESSION_COOKIE,
-      mintChatSessionCookieValue(sessionId),
-      chatSessionCookieOptions(),
-    );
+    res.cookies.set(CHAT_SESSION_COOKIE, cookieValue, chatSessionCookieOptions());
     return res;
+  }
+
+  async function rejectBadInvite(): Promise<NextResponse> {
+    const fail = await allowAuthAttemptShared(`chat-invite-fail:${ip}`, {
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!fail.ok) {
+      return rateLimited(
+        "試行回数が多すぎます。しばらくしてから再度お試しください。",
+        fail.retryAfterSec,
+      );
+    }
+    return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
   }
 
   if (kind === "leave") {
     if (!checkInvite(invite) && !isOperator) {
-      return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
+      return rejectBadInvite();
     }
     const sid = cookieSession || "";
     if (sid) await leavePresence(sid).catch(() => null);
@@ -310,13 +401,23 @@ export async function POST(req: NextRequest) {
   // レース詳細のアプリ予想: 本文は本人だけ。共有チャットの本命配信とは別。
   if (kind === "predict") {
     if (!checkInvite(invite) && !isOperator) {
-      return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
+      return rejectBadInvite();
     }
     const sessionId = cookieSession || "";
     if (!sessionId) {
       return NextResponse.json(
         { ok: false, error: "先に入場してください" },
         { status: 401 },
+      );
+    }
+    const predictGate = await allowAuthAttemptShared(`chat-predict:${sessionId}`, {
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!predictGate.ok) {
+      return rateLimited(
+        "予測の連続利用は制限されています。しばらくしてから再度お試しください。",
+        predictGate.retryAfterSec,
       );
     }
     const ownerName = sanitizeDisplayName(body.authorName || "メンバー");
@@ -349,10 +450,7 @@ export async function POST(req: NextRequest) {
   // 雑談: 公開。テキストからの自動予想はしない（予想は predict）。
   if (kind === "chat") {
     if (!checkInvite(invite) && !isOperator) {
-      return NextResponse.json(
-        { ok: false, error: "招待コードが違います" },
-        { status: 401 },
-      );
+      return rejectBadInvite();
     }
     const text = sanitizeChatBody(body.text || body.note);
     if (!text) {
@@ -375,6 +473,16 @@ export async function POST(req: NextRequest) {
 
   // Picks / note: operator only（公開のお知らせ）。
   if (!isOperator) {
+    const fail = await allowAuthAttemptShared(`chat-admin-fail:${ip}`, {
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!fail.ok) {
+      return rateLimited(
+        "試行回数が多すぎます。しばらくしてから再度お試しください。",
+        fail.retryAfterSec,
+      );
+    }
     return NextResponse.json(
       { ok: false, error: "運営キーが違います", hint: "CHAT_OPERATOR_KEY を確認してください" },
       { status: 401 },
@@ -436,7 +544,8 @@ export async function POST(req: NextRequest) {
 
   let discordOk = false;
   let discordDetail: string | undefined;
-  if (body.mirrorDiscord !== false) {
+  // 既定はオフ。明示的に mirrorDiscord=true のときだけ外部送信。
+  if (body.mirrorDiscord === true) {
     const mirrored = await mirrorDiscord(text);
     discordOk = mirrored.ok;
     discordDetail = mirrored.detail;

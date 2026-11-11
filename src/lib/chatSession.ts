@@ -3,16 +3,23 @@ import { inviteCode } from "@/lib/chatStore";
 
 export const CHAT_SESSION_COOKIE = "shioyomi_chat_sid";
 
+/**
+ * 招待コードは共有されるため署名鍵に使わない。
+ * CHAT_SESSION_SECRET（推奨）→ 管理人/運営キー → 開発用フォールバック。
+ */
 function sessionSecret(): string {
   return (
-    process.env.CHAT_INVITE_CODE?.trim() ||
+    process.env.CHAT_SESSION_SECRET?.trim() ||
+    process.env.CHAT_ADMIN_KEY?.trim() ||
     process.env.CHAT_OPERATOR_KEY?.trim() ||
-    (process.env.NODE_ENV === "production" ? "" : "shio-invite")
+    (process.env.NODE_ENV === "production" ? "" : "shio-session-dev")
   );
 }
 
 function sign(sessionId: string): string {
-  return createHmac("sha256", sessionSecret()).update(`chat-sid-v1:${sessionId}`).digest("hex");
+  const secret = sessionSecret();
+  if (!secret) return "";
+  return createHmac("sha256", secret).update(`chat-sid-v1:${sessionId}`).digest("hex");
 }
 
 export function newChatSessionId(): string {
@@ -21,12 +28,15 @@ export function newChatSessionId(): string {
 
 /** httpOnly クッキー用の署名付き値 */
 export function mintChatSessionCookieValue(sessionId: string): string {
-  return `${sessionId}.${sign(sessionId)}`;
+  const sig = sign(sessionId);
+  if (!sig) return "";
+  return `${sessionId}.${sig}`;
 }
 
 export function verifyChatSessionCookieValue(
   raw: string | null | undefined,
 ): string | null {
+  if (!sessionSecret()) return null;
   const text = (raw || "").trim();
   const i = text.lastIndexOf(".");
   if (i <= 0) return null;
@@ -34,6 +44,7 @@ export function verifyChatSessionCookieValue(
   const sig = text.slice(i + 1);
   if (!sessionId || !sig) return null;
   const expected = sign(sessionId);
+  if (!expected) return null;
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length) return null;
@@ -42,7 +53,7 @@ export function verifyChatSessionCookieValue(
   } catch {
     return null;
   }
-  // 招待コードが変わったら旧セッションを無効化
+  // 招待コードが無効なら入場自体を拒否（旧セッションも無効）
   if (!inviteCode()) return null;
   return sessionId;
 }

@@ -3,6 +3,7 @@ import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { settleChatPredictionHits } from "@/lib/chatHitSettle";
 import { maybePostExhibitionHonmeiUpdates } from "@/lib/chatExhibitionPicks";
 import { maybePostMorningHonmeiPicks } from "@/lib/chatMorningPicks";
+import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 import { sql } from "@/lib/db";
 
 const MAINT_META = "chat_maint_at_ms";
@@ -69,8 +70,8 @@ export async function maybeRunChatMaintenance(): Promise<{ ran: boolean }> {
   return { ran: true };
 }
 
-/** 場名+レース予測の連打を抑止。 */
-export function allowRaceReply(bucketKey: string): {
+/** 場名+レース予測の連打を抑止（プロセス内の最短間隔）。 */
+function allowRaceReplyLocal(bucketKey: string): {
   ok: boolean;
   error?: string;
   retryAfterSec?: number;
@@ -101,5 +102,27 @@ export function allowRaceReply(bucketKey: string): {
   bucket.count += 1;
   bucket.lastAt = now;
   raceBuckets.set(key, bucket);
+  return { ok: true };
+}
+
+/** 予測の連打抑止。DB 共有カウンタ＋プロセス内最短間隔。 */
+export async function allowRaceReply(bucketKey: string): Promise<{
+  ok: boolean;
+  error?: string;
+  retryAfterSec?: number;
+}> {
+  const local = allowRaceReplyLocal(bucketKey);
+  if (!local.ok) return local;
+  const shared = await allowAuthAttemptShared(`race-reply:${bucketKey || "anon"}`, {
+    limit: RACE_MAX_PER_HOUR,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!shared.ok) {
+    return {
+      ok: false,
+      retryAfterSec: shared.retryAfterSec,
+      error: "予測の利用上限に達しました。しばらくしてから再度お試しください。",
+    };
+  }
   return { ok: true };
 }
