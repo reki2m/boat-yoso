@@ -697,7 +697,6 @@ export default function ChatPage() {
           <div className="chat-predict-panel chat-ai-bar">
             <div className="chat-live-head">
               <strong>AI予想</strong>
-              <span className="note">自分＋管理人のみ</span>
             </div>
             <div className="chat-predict-row">
               <label className="field">
