@@ -16,6 +16,7 @@ import {
 import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { buildChatRaceReply } from "@/lib/buildChatRaceReply";
 import { settleChatPredictionHits } from "@/lib/chatHitSettle";
+import { maybePostMorningHonmeiPicks } from "@/lib/chatMorningPicks";
 import { leavePresence, listPresence, touchPresence } from "@/lib/chatPresence";
 import { getChatLiveTargets } from "@/lib/chatLiveTargets";
 import { CHAT_HOUSE_RULES } from "@/lib/chatRules";
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
     }).catch(() => null);
   }
   await maybeAutoClearChat().catch(() => null);
+  await maybePostMorningHonmeiPicks().catch(() => null);
   await settleChatPredictionHits().catch(() => null);
   const [feed, live, presence] = await Promise.all([
     readChatFeed(),
@@ -131,8 +133,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, deleted, message: notice });
   }
 
-  // 投稿前にも自動消去チェック
+  // 投稿前にも自動消去・朝の本命投稿チェック
   await maybeAutoClearChat().catch(() => null);
+  await maybePostMorningHonmeiPicks().catch(() => null);
 
   // Member talk: invite code is enough.
   if (kind === "chat") {

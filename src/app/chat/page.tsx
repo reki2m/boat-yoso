@@ -462,7 +462,7 @@ export default function ChatPage() {
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
           <p className="chat-reset-note">
-            注意: チャット欄はレース終了後（当日最終レースから約1時間後）に自動リセットされます。
+            注意: 毎朝7時（JST）に本日の本命買い目を自動投稿します。チャット欄はレース終了後（当日最終レースから約1時間後）に自動リセットされます。
           </p>
           <div className="presence-panel">
             <div className="presence-head">
