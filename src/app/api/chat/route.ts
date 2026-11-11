@@ -16,6 +16,7 @@ import {
 import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { buildChatRaceReply } from "@/lib/buildChatRaceReply";
 import { settleChatPredictionHits } from "@/lib/chatHitSettle";
+import { leavePresence, listPresence, touchPresence } from "@/lib/chatPresence";
 import { getChatLiveTargets } from "@/lib/chatLiveTargets";
 import { CHAT_HOUSE_RULES } from "@/lib/chatRules";
 import { parseRaceChatQuery } from "@/lib/parseRaceChatQuery";
@@ -46,11 +47,22 @@ export async function GET(req: NextRequest) {
     );
   }
   const refresh = req.nextUrl.searchParams.get("refresh") === "1";
+  const sessionId = req.nextUrl.searchParams.get("session") || "";
+  const presenceName = req.nextUrl.searchParams.get("name") || "";
+  const presenceRole = req.nextUrl.searchParams.get("role") || "member";
+  if (sessionId && presenceName) {
+    await touchPresence({
+      sessionId,
+      displayName: presenceName,
+      role: presenceRole === "operator" ? "operator" : "member",
+    }).catch(() => null);
+  }
   await maybeAutoClearChat().catch(() => null);
   await settleChatPredictionHits().catch(() => null);
-  const [feed, live] = await Promise.all([
+  const [feed, live, presence] = await Promise.all([
     readChatFeed(),
     getChatLiveTargets({ refresh }),
+    listPresence().catch(() => []),
   ]);
   return NextResponse.json(
     {
@@ -60,6 +72,7 @@ export async function GET(req: NextRequest) {
       liveDate: live.date,
       targets: live.targets,
       rules: CHAT_HOUSE_RULES,
+      presence,
     },
     { headers: { "cache-control": "no-store" } },
   );
@@ -69,10 +82,11 @@ export async function POST(req: NextRequest) {
   let body: {
     invite?: string;
     operatorKey?: string;
-    kind?: ChatKind | "clear";
+    kind?: ChatKind | "clear" | "leave";
     note?: string;
     text?: string;
     authorName?: string;
+    sessionId?: string;
     mirrorDiscord?: boolean;
   } = {};
   try {
@@ -85,6 +99,14 @@ export async function POST(req: NextRequest) {
   const key = body.operatorKey || req.headers.get("x-chat-operator");
   const isOperator = checkOperator(key);
   const kind = body.kind || "picks";
+
+  if (kind === "leave") {
+    if (!checkInvite(invite) && !isOperator) {
+      return NextResponse.json({ ok: false, error: "招待コードが違います" }, { status: 401 });
+    }
+    await leavePresence(body.sessionId).catch(() => null);
+    return NextResponse.json({ ok: true });
+  }
 
   if (kind === "clear") {
     // 破壊操作は管理人のみ（CHAT_ADMIN_KEY、未設定時は CHAT_OPERATOR_KEY）
