@@ -6,6 +6,10 @@ import {
   checkInvite,
   checkOperator,
   readChatFeed,
+  sanitizeChatBody,
+  sanitizeDisplayName,
+  type ChatKind,
+  type ChatRole,
 } from "@/lib/chatStore";
 
 export const dynamic = "force-dynamic";
@@ -41,9 +45,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   let body: {
+    invite?: string;
     operatorKey?: string;
-    kind?: "picks" | "note";
+    kind?: ChatKind;
     note?: string;
+    text?: string;
+    authorName?: string;
     mirrorDiscord?: boolean;
   } = {};
   try {
@@ -52,17 +59,47 @@ export async function POST(req: NextRequest) {
     body = {};
   }
 
+  const invite = body.invite || req.headers.get("x-chat-invite");
   const key = body.operatorKey || req.headers.get("x-chat-operator");
-  if (!checkOperator(key)) {
+  const isOperator = checkOperator(key);
+  const kind: ChatKind = body.kind === "note" || body.kind === "chat" || body.kind === "picks" ? body.kind : "picks";
+
+  // Member talk: invite code is enough.
+  if (kind === "chat") {
+    if (!checkInvite(invite) && !isOperator) {
+      return NextResponse.json(
+        { ok: false, error: "招待コードが違います" },
+        { status: 401 },
+      );
+    }
+    const text = sanitizeChatBody(body.text || body.note);
+    if (!text) {
+      return NextResponse.json({ ok: false, error: "メッセージが空です" }, { status: 400 });
+    }
+    const role: ChatRole = isOperator ? "operator" : "member";
+    const authorName = sanitizeDisplayName(
+      body.authorName || (isOperator ? "運営" : "メンバー"),
+    );
+    const message = await appendChatMessage({
+      kind: "chat",
+      title: role === "operator" ? "運営" : authorName,
+      body: text,
+      author_name: authorName,
+      author_role: role,
+    });
+    return NextResponse.json({ ok: true, message });
+  }
+
+  // Picks / note: operator only.
+  if (!isOperator) {
     return NextResponse.json(
       { ok: false, error: "運営キーが違います", hint: "CHAT_OPERATOR_KEY を確認してください" },
       { status: 401 },
     );
   }
 
-  const kind = body.kind === "note" ? "note" : "picks";
   let title = "メモ";
-  let text = (body.note || "").trim();
+  let text = sanitizeChatBody(body.note || body.text);
   let meta: { date?: string; mode?: string; count?: number; discord?: boolean } = {};
 
   if (kind === "picks") {
@@ -95,6 +132,8 @@ export async function POST(req: NextRequest) {
     kind,
     title,
     body: text,
+    author_name: "運営",
+    author_role: "operator",
     meta,
   });
 

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 
 type ChatMessage = {
   id: string;
   created_at: string;
-  kind: "picks" | "note";
+  kind: "picks" | "note" | "chat";
   title: string;
   body: string;
+  author_name?: string;
+  author_role?: "operator" | "member";
   meta?: {
     date?: string;
     mode?: string;
@@ -18,6 +20,8 @@ type ChatMessage = {
 };
 
 const INVITE_KEY = "shioyomi_chat_invite";
+const NAME_KEY = "shioyomi_chat_name";
+const OP_KEY = "shioyomi_operator_key";
 
 function formatJst(iso: string): string {
   try {
@@ -33,43 +37,121 @@ function formatJst(iso: string): string {
   }
 }
 
+function kindLabel(kind: ChatMessage["kind"]): string {
+  if (kind === "picks") return "買い目";
+  if (kind === "note") return "メモ";
+  return "会話";
+}
+
 export default function ChatPage() {
   const [invite, setInvite] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [operatorKey, setOperatorKey] = useState("");
+  const [asOperator, setAsOperator] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+  const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, startTransition] = useTransition();
+  const [sending, setSending] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(INVITE_KEY) || "";
-    if (saved) {
-      setInvite(saved);
-      void loadFeed(saved);
+    const savedInvite = window.localStorage.getItem(INVITE_KEY) || "";
+    const savedName = window.localStorage.getItem(NAME_KEY) || "";
+    const savedOp = window.localStorage.getItem(OP_KEY) || "";
+    if (savedName) setDisplayName(savedName);
+    if (savedOp) {
+      setOperatorKey(savedOp);
+      setAsOperator(true);
+    }
+    if (savedInvite) {
+      setInvite(savedInvite);
+      void loadFeed(savedInvite, false);
     }
   }, []);
 
-  async function loadFeed(code: string) {
-    setError("");
+  useEffect(() => {
+    if (!unlocked) return;
+    const timer = window.setInterval(() => {
+      void loadFeed(invite.trim(), true);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [unlocked, invite]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, unlocked]);
+
+  async function loadFeed(code: string, quiet: boolean) {
+    if (!quiet) setError("");
     try {
       const res = await fetch(`/api/chat?invite=${encodeURIComponent(code)}`);
       const json = await res.json();
       if (!res.ok) {
         setUnlocked(false);
         setMessages([]);
-        setError(json.error || "入場できません");
-        window.localStorage.removeItem(INVITE_KEY);
+        if (!quiet) {
+          setError(json.error || "入場できません");
+          window.localStorage.removeItem(INVITE_KEY);
+        }
         return;
       }
       window.localStorage.setItem(INVITE_KEY, code);
       setUnlocked(true);
       setMessages(json.messages || []);
     } catch {
-      setError("読み込みに失敗しました");
+      if (!quiet) setError("読み込みに失敗しました");
+    }
+  }
+
+  async function sendMessage() {
+    const text = draft.trim();
+    const code = invite.trim();
+    const name = displayName.trim();
+    if (!text || !code) return;
+    if (!name) {
+      setError("表示名を入れてください");
+      return;
+    }
+    setSending(true);
+    setError("");
+    setStatus("");
+    try {
+      window.localStorage.setItem(NAME_KEY, name);
+      if (asOperator && operatorKey.trim()) {
+        window.localStorage.setItem(OP_KEY, operatorKey.trim());
+      }
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invite: code,
+          kind: "chat",
+          text,
+          authorName: name,
+          operatorKey: asOperator ? operatorKey.trim() : undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "送信に失敗しました");
+        return;
+      }
+      setDraft("");
+      setStatus("送信しました");
+      await loadFeed(code, true);
+    } catch {
+      setError("送信に失敗しました");
+    } finally {
+      setSending(false);
     }
   }
 
   return (
-    <main className="shell">
+    <main className="shell chat-shell">
       <section className="hero" style={{ minHeight: "auto", paddingBottom: "1rem" }}>
         <p className="note" style={{ margin: 0 }}>
           <Link href="/">← 潮読みアプリ</Link>
@@ -77,9 +159,7 @@ export default function ChatPage() {
         <h1 className="brand" style={{ fontSize: "clamp(2rem, 6vw, 3.4rem)" }}>
           専用チャット
         </h1>
-        <p className="lede">
-          招待制。運営がアプリからアップした買い目だけが表示されます。
-        </p>
+        <p className="lede">招待メンバーと会話できます。運営の買い目もここに流れます。</p>
       </section>
 
       {!unlocked ? (
@@ -92,24 +172,30 @@ export default function ChatPage() {
               onChange={(e) => setInvite(e.target.value)}
               placeholder="招待コードを入力"
               autoComplete="off"
-              style={{
-                width: "100%",
-                padding: "0.85rem 1rem",
-                borderRadius: 12,
-                border: "1px solid var(--line)",
-                background: "rgba(8,28,38,0.55)",
-                color: "var(--foam)",
-              }}
+              className="chat-input"
+            />
+          </div>
+          <div className="field" style={{ marginTop: "0.85rem" }}>
+            <label htmlFor="displayName">表示名</label>
+            <input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="例: たかし"
+              autoComplete="nickname"
+              className="chat-input"
+              maxLength={20}
             />
           </div>
           <div className="cta-row" style={{ marginTop: "0.85rem" }}>
             <button
               type="button"
               className="btn"
-              disabled={pending || !invite.trim()}
+              disabled={pending || !invite.trim() || !displayName.trim()}
               onClick={() => {
+                window.localStorage.setItem(NAME_KEY, displayName.trim());
                 startTransition(() => {
-                  void loadFeed(invite.trim());
+                  void loadFeed(invite.trim(), false);
                 });
               }}
             >
@@ -119,65 +205,121 @@ export default function ChatPage() {
           {error ? <p className="status">{error}</p> : null}
         </section>
       ) : (
-        <section className="panel">
+        <section className="panel chat-room">
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
             <span className="badge">招待入場中</span>
+            <span className="badge">{displayName || "名無し"}</span>
             <span className="badge">{messages.length}件</span>
           </div>
-          <div className="cta-row" style={{ marginBottom: "1rem" }}>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={pending}
-              onClick={() => {
-                startTransition(() => {
-                  void loadFeed(invite.trim());
-                });
-              }}
-            >
-              更新
-            </button>
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => {
-                window.localStorage.removeItem(INVITE_KEY);
-                setUnlocked(false);
-                setMessages([]);
-              }}
-            >
-              退出
-            </button>
-          </div>
-          {messages.length === 0 ? (
-            <p className="status">まだ投稿がありません。運営のアップ待ちです。</p>
-          ) : (
-            <div style={{ display: "grid", gap: "0.85rem" }}>
-              {messages.map((m) => (
-                <article key={m.id} className="side-card on" style={{ padding: "0.9rem 1rem" }}>
-                  <div className="meta" style={{ marginBottom: "0.45rem" }}>
-                    <span className="badge">{m.kind === "picks" ? "買い目" : "メモ"}</span>
-                    <span className="badge">{formatJst(m.created_at)} JST</span>
-                    {m.meta?.discord ? <span className="badge">Discord反映</span> : null}
-                  </div>
-                  <strong style={{ display: "block", marginBottom: "0.35rem" }}>{m.title}</strong>
-                  <pre
-                    style={{
-                      margin: 0,
-                      whiteSpace: "pre-wrap",
-                      fontFamily: "var(--font-body)",
-                      color: "var(--foam)",
-                      lineHeight: 1.55,
-                      fontSize: "0.95rem",
-                    }}
+
+          <div className="chat-stream" ref={listRef}>
+            {messages.length === 0 ? (
+              <p className="status">まだメッセージがありません。最初の一言をどうぞ。</p>
+            ) : (
+              messages.map((m) => {
+                const isOp = m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
+                const isMine =
+                  m.kind === "chat" &&
+                  m.author_name === displayName.trim() &&
+                  ((asOperator && isOp) || (!asOperator && !isOp));
+                return (
+                  <article
+                    key={m.id}
+                    className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""}`}
                   >
-                    {m.body}
-                  </pre>
-                </article>
-              ))}
+                    <div className="chat-bubble-meta">
+                      <strong>{m.author_name || m.title || (isOp ? "運営" : "メンバー")}</strong>
+                      <span>{kindLabel(m.kind)}</span>
+                      <span>{formatJst(m.created_at)} JST</span>
+                      {m.meta?.discord ? <span>Discord</span> : null}
+                    </div>
+                    <pre className="chat-bubble-body">{m.body}</pre>
+                  </article>
+                );
+              })
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          <div className="chat-composer">
+            <div className="field">
+              <label htmlFor="draft">メッセージ</label>
+              <textarea
+                id="draft"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="メンバーへ一言…"
+                rows={3}
+                maxLength={1000}
+                className="chat-input chat-textarea"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void sendMessage();
+                  }
+                }}
+              />
             </div>
-          )}
-          {error ? <p className="status">{error}</p> : null}
+            <label className="chat-op-toggle">
+              <input
+                type="checkbox"
+                checked={asOperator}
+                onChange={(e) => setAsOperator(e.target.checked)}
+              />
+              運営として送る
+            </label>
+            {asOperator ? (
+              <div className="field" style={{ marginTop: "0.55rem" }}>
+                <label htmlFor="chatOperatorKey">運営キー</label>
+                <input
+                  id="chatOperatorKey"
+                  type="password"
+                  value={operatorKey}
+                  onChange={(e) => setOperatorKey(e.target.value)}
+                  placeholder="CHAT_OPERATOR_KEY"
+                  autoComplete="off"
+                  className="chat-input"
+                />
+              </div>
+            ) : null}
+            <div className="cta-row" style={{ marginTop: "0.75rem" }}>
+              <button
+                type="button"
+                className="btn"
+                disabled={sending || !draft.trim()}
+                onClick={() => {
+                  void sendMessage();
+                }}
+              >
+                {sending ? "送信中…" : "送信"}
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={pending}
+                onClick={() => {
+                  startTransition(() => {
+                    void loadFeed(invite.trim(), false);
+                  });
+                }}
+              >
+                更新
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => {
+                  window.localStorage.removeItem(INVITE_KEY);
+                  setUnlocked(false);
+                  setMessages([]);
+                }}
+              >
+                退出
+              </button>
+            </div>
+            {status ? <p className="note">{status}</p> : null}
+            {error ? <p className="status">{error}</p> : null}
+          </div>
         </section>
       )}
     </main>

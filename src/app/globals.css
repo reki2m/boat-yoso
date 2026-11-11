@@ -593,3 +593,90 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+.chat-shell .chat-room {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.chat-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(8, 28, 38, 0.55);
+  color: var(--foam);
+  font: inherit;
+}
+
+.chat-textarea {
+  resize: vertical;
+  min-height: 5.5rem;
+  line-height: 1.5;
+}
+
+.chat-stream {
+  display: grid;
+  gap: 0.7rem;
+  max-height: min(58vh, 560px);
+  overflow: auto;
+  padding: 0.35rem 0.15rem 0.55rem;
+  scroll-behavior: smooth;
+}
+
+.chat-bubble {
+  width: min(100%, 34rem);
+  padding: 0.8rem 0.95rem;
+  border-radius: 16px 16px 16px 6px;
+  border: 1px solid var(--line);
+  background: rgba(10, 36, 48, 0.78);
+  animation: rise 0.35s ease both;
+}
+
+.chat-bubble.op {
+  border-color: rgba(58, 208, 196, 0.35);
+  background: rgba(18, 54, 62, 0.88);
+}
+
+.chat-bubble.mine {
+  margin-left: auto;
+  border-radius: 16px 16px 6px 16px;
+  background: rgba(20, 62, 78, 0.92);
+}
+
+.chat-bubble-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+  margin-bottom: 0.4rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.chat-bubble-meta strong {
+  color: var(--foam);
+  font-size: 0.86rem;
+}
+
+.chat-bubble-body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+  color: var(--foam);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.chat-composer {
+  border-top: 1px solid var(--line);
+  padding-top: 0.85rem;
+}
+
+.chat-op-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}

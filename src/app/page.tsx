@@ -492,6 +492,9 @@ export default function Home() {
             専用チャットを開く
           </a>
         </div>
+        <p className="note" style={{ marginTop: "0.65rem" }}>
+          専用チャットは招待メンバーと会話できます。買い目アップも同じ部屋に流れます。
+        </p>
         <div className="field" style={{ marginTop: "0.85rem", maxWidth: 420 }}>
           <label htmlFor="operatorKey">運営キー（あなただけ）</label>
           <input

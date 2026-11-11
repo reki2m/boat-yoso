@@ -1,11 +1,16 @@
 import { sql } from "@/lib/db";
 
+export type ChatKind = "picks" | "note" | "chat";
+export type ChatRole = "operator" | "member";
+
 export type ChatMessage = {
   id: string;
   created_at: string;
-  kind: "picks" | "note";
+  kind: ChatKind;
   title: string;
   body: string;
+  author_name?: string;
+  author_role?: ChatRole;
   meta?: {
     date?: string;
     mode?: string;
@@ -19,7 +24,9 @@ type ChatFeed = {
   messages: ChatMessage[];
 };
 
-const MAX_MESSAGES = 200;
+const MAX_MESSAGES = 300;
+const MAX_BODY = 1000;
+const MAX_NAME = 20;
 
 type ChatRow = {
   id: string;
@@ -27,6 +34,8 @@ type ChatRow = {
   kind: string;
   title: string;
   body: string;
+  author_name?: string | null;
+  author_role?: string | null;
   meta: ChatMessage["meta"] | string | null;
 };
 
@@ -47,29 +56,51 @@ function parseMeta(meta: ChatRow["meta"]): ChatMessage["meta"] | undefined {
   return meta;
 }
 
+function asKind(kind: string): ChatKind {
+  if (kind === "note") return "note";
+  if (kind === "chat") return "chat";
+  return "picks";
+}
+
+function asRole(role: string | null | undefined): ChatRole | undefined {
+  if (role === "operator" || role === "member") return role;
+  return undefined;
+}
+
 function emptyFeed(): ChatFeed {
   return { updated_at: null, messages: [] };
+}
+
+export function sanitizeDisplayName(raw: string | null | undefined): string {
+  const name = (raw || "").replace(/\s+/g, " ").trim().slice(0, MAX_NAME);
+  return name || "名無し";
+}
+
+export function sanitizeChatBody(raw: string | null | undefined): string {
+  return (raw || "").trim().slice(0, MAX_BODY);
 }
 
 export async function readChatFeed(): Promise<ChatFeed> {
   try {
     const rows = await sql<ChatRow>(
-      `select id, created_at, kind, title, body, meta
+      `select id, created_at, kind, title, body, author_name, author_role, meta
        from chat_messages
-       order by created_at desc
+       order by created_at asc
        limit $1`,
       [MAX_MESSAGES],
     );
     const messages: ChatMessage[] = rows.map((row) => ({
       id: row.id,
       created_at: asIso(row.created_at),
-      kind: row.kind === "note" ? "note" : "picks",
+      kind: asKind(row.kind),
       title: row.title,
       body: row.body,
+      author_name: row.author_name || undefined,
+      author_role: asRole(row.author_role),
       meta: parseMeta(row.meta),
     }));
     return {
-      updated_at: messages[0]?.created_at ?? null,
+      updated_at: messages[messages.length - 1]?.created_at ?? null,
       messages,
     };
   } catch {
@@ -86,17 +117,21 @@ export async function appendChatMessage(
     kind: message.kind,
     title: message.title,
     body: message.body,
+    author_name: message.author_name,
+    author_role: message.author_role,
     meta: message.meta,
   };
   await sql(
-    `insert into chat_messages (id, created_at, kind, title, body, meta)
-     values ($1, $2::timestamptz, $3, $4, $5, $6::jsonb)`,
+    `insert into chat_messages (id, created_at, kind, title, body, author_name, author_role, meta)
+     values ($1, $2::timestamptz, $3, $4, $5, $6, $7, $8::jsonb)`,
     [
       row.id,
       row.created_at,
       row.kind,
       row.title,
       row.body,
+      row.author_name ?? null,
+      row.author_role ?? null,
       JSON.stringify(row.meta ?? null),
     ],
   );
@@ -106,7 +141,6 @@ export async function appendChatMessage(
 export function inviteCode(): string {
   const fromEnv = process.env.CHAT_INVITE_CODE?.trim();
   if (fromEnv) return fromEnv;
-  // Local sample only. Production must set CHAT_INVITE_CODE.
   if (process.env.NODE_ENV === "production") return "";
   return "shio-invite";
 }
@@ -114,7 +148,6 @@ export function inviteCode(): string {
 export function operatorKey(): string {
   const fromEnv = process.env.CHAT_OPERATOR_KEY?.trim();
   if (fromEnv) return fromEnv;
-  // Local sample only. Production must set CHAT_OPERATOR_KEY.
   if (process.env.NODE_ENV === "production") return "";
   return "shio-op";
 }
