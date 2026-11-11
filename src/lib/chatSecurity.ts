@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { settleChatPredictionHits } from "@/lib/chatHitSettle";
+import { maybePostExhibitionHonmeiUpdates } from "@/lib/chatExhibitionPicks";
 import { maybePostMorningHonmeiPicks } from "@/lib/chatMorningPicks";
 import { sql } from "@/lib/db";
 
@@ -63,6 +64,7 @@ export async function maybeRunChatMaintenance(): Promise<{ ran: boolean }> {
   await setMeta(MAINT_META, String(now));
   await maybeAutoClearChat().catch(() => null);
   await maybePostMorningHonmeiPicks().catch(() => null);
+  await maybePostExhibitionHonmeiUpdates().catch(() => null);
   await settleChatPredictionHits().catch(() => null);
   return { ran: true };
 }

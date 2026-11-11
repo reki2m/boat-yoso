@@ -5,6 +5,7 @@ import { sql } from "@/lib/db";
 import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
 import { loadPicksBoardForDate, type PicksBoardDoc } from "@/lib/loadPicksBoard";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
+import { maybePostExhibitionHonmeiUpdates } from "@/lib/chatExhibitionPicks";
 import { jstDateKey } from "@/lib/stadiums";
 
 const META_KEY = "morning_honmei_posted_for";
@@ -138,8 +139,9 @@ export function startMorningHonmeiScheduler(): void {
 
   const tick = () => {
     void maybePostMorningHonmeiPicks().catch(() => null);
+    void maybePostExhibitionHonmeiUpdates().catch(() => null);
   };
-  // 起動直後と以降1分ごと
+  // 起動直後と以降1分ごと（朝本命＋展示後確定）
   tick();
   setInterval(tick, 60_000);
 }

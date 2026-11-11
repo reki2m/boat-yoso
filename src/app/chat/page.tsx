@@ -147,6 +147,7 @@ function kindLabel(m: ChatMessage): string {
     return "詳細予想（自分のみ）";
   }
   if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中🎯";
+  if (m.meta?.mode === "exhibition_after_honmei") return "展示後予想";
   if (m.kind === "picks" || m.meta?.mode === "morning_auto_honmei" || m.meta?.mode === "honmei_board") {
     return "本命予想";
   }
@@ -616,7 +617,7 @@ export default function ChatPage() {
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
           <p className="chat-reset-note">
-            雑談と本命予想は全員のチャット欄に出ます。詳細のアプリ予想だけ押した本人向けです。毎朝7時に本命配信、レース後に自動リセットします。
+            雑談と本命予想は全員のチャット欄に出ます。朝は展示待ち、展示確定後は「展示後予想」の「〇〇場 〇〇R」UIで更新されます。詳細のアプリ予想だけ押した本人向けです。
           </p>
 
           <div className="presence-panel">
@@ -703,21 +704,36 @@ export default function ChatPage() {
                 <strong>本日の本命対象（全員共有）</strong>
               </div>
               <div className="chat-race-chips">
-                {targets.map((t) => (
-                  <button
-                    key={`${t.stadium}-${t.race}`}
-                    type="button"
-                    className="chat-race-chip"
-                    onClick={() => {
-                      setPickStadium(t.stadium);
-                      setPickRace(t.race);
-                    }}
-                  >
-                    <span className="chat-race-chip-label">
-                      {t.stadium_name} {t.race}R
-                    </span>
-                  </button>
-                ))}
+                {targets.map((t) => {
+                  const phaseClass =
+                    t.status === "skipped"
+                      ? "skipped"
+                      : t.status === "confirmed"
+                        ? "after"
+                        : "waiting";
+                  const st =
+                    t.status === "skipped"
+                      ? "見送り"
+                      : t.status === "confirmed"
+                        ? "展示後"
+                        : "展示待ち";
+                  return (
+                    <button
+                      key={`${t.stadium}-${t.race}`}
+                      type="button"
+                      className={`chat-race-chip ${phaseClass}`}
+                      onClick={() => {
+                        setPickStadium(t.stadium);
+                        setPickRace(t.race);
+                      }}
+                    >
+                      <span className="chat-race-chip-label">
+                        {t.stadium_name} {t.race}R
+                      </span>
+                      <em>{st}</em>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -785,7 +801,9 @@ export default function ChatPage() {
                 const isHonmei =
                   m.kind === "picks" ||
                   m.meta?.mode === "morning_auto_honmei" ||
-                  m.meta?.mode === "honmei_board";
+                  m.meta?.mode === "honmei_board" ||
+                  m.meta?.mode === "exhibition_after_honmei";
+                const isExhibitionAfter = m.meta?.mode === "exhibition_after_honmei";
                 const adminPick = isAdminLog
                   ? adminOversight?.picks.find((p) => p.message_id === m.id) || null
                   : null;
@@ -794,7 +812,9 @@ export default function ChatPage() {
                     key={m.id}
                     className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""} ${
                       isPrivate ? "private" : ""
-                    } ${isAdminLog ? "admin-log" : ""} ${hasRaceUi ? "has-race-ui" : ""}`}
+                    } ${isAdminLog ? "admin-log" : ""} ${hasRaceUi ? "has-race-ui" : ""} ${
+                      isExhibitionAfter ? "exhibition-after" : ""
+                    }`}
                   >
                     <div className="chat-bubble-meta">
                       <strong>
@@ -817,13 +837,19 @@ export default function ChatPage() {
                               expandedRaceKey === key ||
                               (isAdminLog && selectedAdminPickId === m.id && chips.length === 1);
                             const st = raceStatusLabel(chip);
+                            const phaseClass =
+                              chip.status === "skipped"
+                                ? "skipped"
+                                : chip.exhibition === "after" || chip.status === "confirmed"
+                                  ? "after"
+                                  : chip.exhibition === "waiting" || chip.status === "provisional"
+                                    ? "waiting"
+                                    : "";
                             return (
                               <button
                                 key={key}
                                 type="button"
-                                className={`chat-race-chip ${selected ? "active" : ""} ${
-                                  chip.status === "skipped" ? "skipped" : ""
-                                }`}
+                                className={`chat-race-chip ${selected ? "active" : ""} ${phaseClass}`}
                                 onClick={() => {
                                   setPickStadium(chip.placeNo || pickStadium);
                                   setPickRace(chip.raceNo || pickRace);
@@ -885,9 +911,14 @@ export default function ChatPage() {
                           <pre className="chat-bubble-body">{m.body}</pre>
                         ) : null}
 
-                        {isHonmei && !expandedRaceKey.startsWith(`${m.id}:`) ? (
+                        {isExhibitionAfter ? (
                           <p className="note chat-race-hint">
-                            「〇〇場 〇〇R」をタップすると買い目を表示します。
+                            展示確定後の再判定です。緑の「展示後」チップが確定買い目です。
+                          </p>
+                        ) : null}
+                        {isHonmei && !isExhibitionAfter && !expandedRaceKey.startsWith(`${m.id}:`) ? (
+                          <p className="note chat-race-hint">
+                            「〇〇場 〇〇R」をタップすると買い目を表示します。展示後は別メッセージで更新されます。
                           </p>
                         ) : null}
                       </div>

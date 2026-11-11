@@ -1,5 +1,7 @@
 import picksBoard from "@/data/picks_board.json";
 import { liveBroadcastUrls } from "@/lib/liveBroadcast";
+import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
+import { loadPicksBoardForDate } from "@/lib/loadPicksBoard";
 import { refreshPicksStatus, skipReasonLabel, type LivePickRow } from "@/lib/refreshPicksStatus";
 import { jstDateKey } from "@/lib/stadiums";
 
@@ -15,14 +17,11 @@ export type ChatLiveTarget = {
   live: ReturnType<typeof liveBroadcastUrls>;
 };
 
-function boardPicks(): LivePickRow[] {
-  const board = picksBoard as {
-    active_date?: string;
-    date?: string;
-    picks?: Array<Record<string, unknown>>;
-  };
-  const dateFallback = String(board.active_date || board.date || "");
-  return (board.picks || []).map((p) => ({
+function mapBoardPicks(
+  picks: Array<Record<string, unknown>>,
+  dateFallback: string,
+): LivePickRow[] {
+  return picks.map((p) => ({
     date: String(p.date || dateFallback),
     stadium: Number(p.stadium || 0),
     stadium_name: typeof p.stadium_name === "string" ? p.stadium_name : undefined,
@@ -35,16 +34,38 @@ function boardPicks(): LivePickRow[] {
   }));
 }
 
+async function resolveTodayPicks(dateKey: string): Promise<LivePickRow[]> {
+  const existing = await loadPicksBoardForDate(dateKey);
+  if (existing && Array.isArray(existing.picks) && existing.picks.length) {
+    return mapBoardPicks(existing.picks as Array<Record<string, unknown>>, dateKey).filter(
+      (p) => String(p.date) === dateKey,
+    );
+  }
+  try {
+    const generated = await generateHonmeiDayBoard(dateKey);
+    if (Array.isArray(generated.picks) && generated.picks.length) {
+      return mapBoardPicks(generated.picks as Array<Record<string, unknown>>, dateKey).filter(
+        (p) => String(p.date) === dateKey,
+      );
+    }
+  } catch {
+    // fall through to static board
+  }
+  const board = picksBoard as {
+    active_date?: string;
+    date?: string;
+    picks?: Array<Record<string, unknown>>;
+  };
+  const dateFallback = String(board.active_date || board.date || dateKey);
+  return mapBoardPicks(board.picks || [], dateFallback).filter((p) => String(p.date) === dateKey);
+}
+
 export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<{
   date: string;
   targets: ChatLiveTarget[];
 }> {
-  const board = picksBoard as { active_date?: string; date?: string };
-  const boardDate = String(board.active_date || board.date || "");
-  const today = jstDateKey();
-  // 前日以前のボードはチャットの「対象レース」に出さない
-  const dateKey = boardDate === today ? boardDate : today;
-  let picks = boardPicks().filter((p) => String(p.date) === today);
+  const dateKey = jstDateKey();
+  let picks = await resolveTodayPicks(dateKey);
   if (opts?.refresh && picks.length) {
     picks = await refreshPicksStatus(picks);
   }

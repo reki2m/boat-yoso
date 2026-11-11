@@ -94,13 +94,18 @@ async function createAppRacePick(opts: {
       raw: `${placeName}${opts.raceNo}R`,
     });
     const tickets = [...built.tickets, ...built.anaTickets];
+    const raceStatus = built.entryChanged
+      ? "skipped"
+      : built.exhibitionReady
+        ? "confirmed"
+        : "provisional";
     const raceChip = buildSingleRaceChip({
       placeNo: built.placeNo,
       placeName,
       raceNo: built.raceNo,
       tickets,
-      status: "provisional",
-      exhibition: "waiting",
+      status: raceStatus,
+      exhibition: built.exhibitionReady && !built.entryChanged ? "after" : "waiting",
     });
     // 依頼した友達本人だけにアプリ予想本文を見せる（共有チャットは汚さない）
     const reply = await appendChatMessage({

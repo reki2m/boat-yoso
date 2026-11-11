@@ -1022,6 +1022,31 @@ th {
   border-style: dashed;
 }
 
+.chat-race-chip.waiting {
+  border-color: rgba(255, 196, 80, 0.45);
+  background: rgba(60, 40, 8, 0.55);
+}
+
+.chat-race-chip.waiting em {
+  color: #ffd27a;
+  border-color: rgba(255, 196, 80, 0.35);
+}
+
+.chat-race-chip.after {
+  border-color: rgba(90, 220, 150, 0.55);
+  background: rgba(10, 48, 32, 0.72);
+}
+
+.chat-race-chip.after em {
+  color: #9dffc4;
+  border-color: rgba(90, 220, 150, 0.4);
+}
+
+.chat-bubble.exhibition-after {
+  border-color: rgba(90, 220, 150, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(90, 220, 150, 0.12);
+}
+
 .chat-race-chip-label {
   font-size: 0.95rem;
 }
