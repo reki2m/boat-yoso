@@ -35,6 +35,14 @@ async function setMeta(key: string, value: string): Promise<void> {
   );
 }
 
+/** 貼り付け時の不可視文字・全角などを除いて比較用に整える。 */
+export function normalizeSecret(raw: string | null | undefined): string {
+  return String(raw || "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .trim();
+}
+
 /** 長さ差でも比較時間を寄せる timing-safe 等価。 */
 export function safeEqualText(a: string, b: string): boolean {
   const left = Buffer.from(a);

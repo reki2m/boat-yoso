@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 const APP_GATE_COOKIE = "shioyomi_app_gate";
 
 function gateSecret(): string {
+  const admin = (process.env.CHAT_ADMIN_KEY || "").normalize("NFKC").trim();
+  const op = (process.env.CHAT_OPERATOR_KEY || "").normalize("NFKC").trim();
   return (
-    process.env.CHAT_ADMIN_KEY?.trim() ||
-    process.env.CHAT_OPERATOR_KEY?.trim() ||
+    admin ||
+    op ||
     (process.env.NODE_ENV === "production" ? "" : "shio-op")
   );
 }
