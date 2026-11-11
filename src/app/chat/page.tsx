@@ -25,6 +25,9 @@ type LiveUrls = {
   raceIndex: string;
   raceList: string;
   beforeInfo: string;
+  officialSite?: string;
+  stadiumPage?: string;
+  liveNote?: string;
 };
 
 type ChatLiveTarget = {
@@ -317,8 +320,13 @@ export default function ChatPage() {
                     </p>
                     {active.why ? <p className="note">{active.why}</p> : null}
                     <div className="cta-row">
-                      <a className="btn" href={active.live.mediaTop} target="_blank" rel="noreferrer">
-                        公式ライブを見る
+                      <a
+                        className="btn"
+                        href={active.live.officialSite || active.live.stadiumPage || active.live.mediaTop}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        公式サイト
                       </a>
                       <a className="btn ghost" href={active.live.beforeInfo} target="_blank" rel="noreferrer">
                         直前情報
@@ -326,14 +334,14 @@ export default function ChatPage() {
                       <a className="btn ghost" href={active.live.raceList} target="_blank" rel="noreferrer">
                         出走表
                       </a>
+                      <a className="btn ghost" href={active.live.mediaTop} target="_blank" rel="noreferrer">
+                        公式ライブ
+                      </a>
                     </div>
-                    <iframe
-                      title={`${active.stadium_name}-${active.race}-live`}
-                      className="live-frame"
-                      src={active.live.mediaTop}
-                      referrerPolicy="no-referrer"
-                      allow="autoplay; fullscreen"
-                    />
+                    <p className="note" style={{ marginTop: "0.55rem" }}>
+                      {active.live.liveNote ||
+                        "公式ライブは場単位です。開催時間外は配信なし表示になります。別タブで開いてください。"}
+                    </p>
                   </div>
                 ) : null}
               </>

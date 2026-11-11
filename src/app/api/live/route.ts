@@ -19,6 +19,10 @@ export async function GET() {
       liveUrl: urls.mediaTop,
       raceIndex: urls.raceIndex,
       beforeInfo: urls.beforeInfo,
+      raceList: urls.raceList,
+      officialSite: urls.officialSite,
+      stadiumPage: urls.stadiumPage,
+      liveNote: urls.liveNote,
     };
   });
 
@@ -26,6 +30,7 @@ export async function GET() {
     date,
     stadiums,
     openCount: openIds.length,
-    note: "押すとその場の公式ライブ入口が開きます。配信は公式サイト側の提供状況に依存します。",
+    note:
+      "各場の公式サイト・直前情報・出走表・ライブ入口を開けます。ライブは場単位で、開催時間外は配信なしになります。",
   });
 }

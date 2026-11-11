@@ -130,6 +130,9 @@ type RaceResponse = {
       raceList: string;
       beforeInfo: string;
       placeName: string;
+      officialSite?: string;
+      stadiumPage?: string;
+      liveNote?: string;
     };
   };
   deepPicks?: {
@@ -217,6 +220,10 @@ type LiveStadium = {
   liveUrl: string;
   raceIndex: string;
   beforeInfo: string;
+  raceList?: string;
+  officialSite?: string;
+  stadiumPage?: string;
+  liveNote?: string;
 };
 
 type BoardPick = {
@@ -946,13 +953,18 @@ export default function Home() {
 
             {purchased && liveUrls ? (
               <div className="live-box purchased">
-                <strong>購入済み → ライブ放送</strong>
+                <strong>購入済み → 公式リンク</strong>
                 <p className="note" style={{ marginTop: "0.35rem" }}>
-                  {liveUrls.placeName} の公式ライブ入口を開きます。
+                  {liveUrls.placeName} の公式サイト・直前情報・出走表・ライブ（場単位）を別タブで開きます。
                 </p>
                 <div className="cta-row">
-                  <a className="btn" href={liveUrls.mediaTop} target="_blank" rel="noreferrer">
-                    公式ライブを見る
+                  <a
+                    className="btn"
+                    href={liveUrls.officialSite || liveUrls.stadiumPage || liveUrls.mediaTop}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    公式サイト
                   </a>
                   <a className="btn ghost" href={liveUrls.beforeInfo} target="_blank" rel="noreferrer">
                     直前情報
@@ -960,15 +972,14 @@ export default function Home() {
                   <a className="btn ghost" href={liveUrls.raceList} target="_blank" rel="noreferrer">
                     出走表
                   </a>
+                  <a className="btn ghost" href={liveUrls.mediaTop} target="_blank" rel="noreferrer">
+                    公式ライブ
+                  </a>
                 </div>
-                {liveUrls.mediaTop ? (
-                  <iframe
-                    title="boatrace-live"
-                    className="live-frame"
-                    src={liveUrls.mediaTop}
-                    referrerPolicy="no-referrer"
-                  />
-                ) : null}
+                <p className="note" style={{ marginTop: "0.55rem" }}>
+                  {liveUrls.liveNote ||
+                    "公式ライブは場単位です。開催時間外は配信なしになります。埋め込み再生は公式が禁止しています。"}
+                </p>
               </div>
             ) : null}
 
@@ -1031,9 +1042,9 @@ export default function Home() {
       </section>
 
       <section className="panel" style={{ marginTop: "1rem" }}>
-        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>全場ライブ</h2>
+        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>全場ライブ / 公式サイト</h2>
         <p className="note">
-          {liveDate || "本日"} — 場を押すとその場の公式ライブ入口が開きます。開催中の場を優先表示。
+          {liveDate || "本日"} — 場を押すと公式サイト・直前情報・ライブ入口を開けます。ライブは場単位で、開催時間外は配信なしです。
         </p>
         <div className="stadium-live-grid">
           {liveStadiums.map((s) => (
@@ -1055,24 +1066,35 @@ export default function Home() {
         </div>
         {activeLive ? (
           <div className="live-box purchased">
-            <strong>{activeLive.name} ライブ</strong>
+            <strong>{activeLive.name} 公式リンク</strong>
             <div className="cta-row" style={{ marginTop: "0.65rem" }}>
-              <a className="btn" href={activeLive.liveUrl} target="_blank" rel="noreferrer">
-                公式ライブを開く
+              <a
+                className="btn"
+                href={activeLive.officialSite || activeLive.stadiumPage || activeLive.liveUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                公式サイト
               </a>
               <a className="btn ghost" href={activeLive.beforeInfo} target="_blank" rel="noreferrer">
                 直前情報
               </a>
-              <a className="btn ghost" href={activeLive.raceIndex} target="_blank" rel="noreferrer">
-                レース一覧
+              <a
+                className="btn ghost"
+                href={activeLive.raceList || activeLive.raceIndex}
+                target="_blank"
+                rel="noreferrer"
+              >
+                出走表 / 一覧
+              </a>
+              <a className="btn ghost" href={activeLive.liveUrl} target="_blank" rel="noreferrer">
+                公式ライブ
               </a>
             </div>
-            <iframe
-              title={`${activeLive.name}-live`}
-              className="live-frame"
-              src={activeLive.liveUrl}
-              referrerPolicy="no-referrer"
-            />
+            <p className="note" style={{ marginTop: "0.55rem" }}>
+              {activeLive.liveNote ||
+                "公式ライブは場単位です。開催時間外は配信なし表示になります。埋め込み再生は公式が禁止しています。"}
+            </p>
           </div>
         ) : null}
       </section>
