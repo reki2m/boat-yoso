@@ -15,6 +15,7 @@ import {
 } from "@/lib/chatStore";
 import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { buildChatRaceReply } from "@/lib/buildChatRaceReply";
+import { settleChatPredictionHits } from "@/lib/chatHitSettle";
 import { getChatLiveTargets } from "@/lib/chatLiveTargets";
 import { CHAT_HOUSE_RULES } from "@/lib/chatRules";
 import { parseRaceChatQuery } from "@/lib/parseRaceChatQuery";
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
   }
   const refresh = req.nextUrl.searchParams.get("refresh") === "1";
   await maybeAutoClearChat().catch(() => null);
+  await settleChatPredictionHits().catch(() => null);
   const [feed, live] = await Promise.all([
     readChatFeed(),
     getChatLiveTargets({ refresh }),
@@ -138,17 +140,20 @@ export async function POST(req: NextRequest) {
     const raceQuery = parseRaceChatQuery(text);
     if (raceQuery) {
       try {
-        const bodyText = await buildChatRaceReply(raceQuery);
+        const built = await buildChatRaceReply(raceQuery);
         reply = await appendChatMessage({
           kind: "note",
           title: `${raceQuery.placeName}${raceQuery.raceNo}R 予測`,
-          body: bodyText,
+          body: built.text,
           author_name: "潮読み",
           author_role: "operator",
           meta: {
-            date: undefined,
+            date: built.dateKey,
             mode: "chat_race_reply",
-            count: 1,
+            count: built.tickets.length,
+            placeNo: built.placeNo,
+            raceNo: built.raceNo,
+            tickets: [...built.tickets, ...built.anaTickets],
           },
         });
       } catch {

@@ -16,6 +16,9 @@ export type ChatMessage = {
     mode?: string;
     count?: number;
     discord?: boolean;
+    placeNo?: number;
+    raceNo?: number;
+    tickets?: string[];
   };
 };
 

@@ -16,10 +16,19 @@ function confidenceWord(score: number): string {
   return "弱い";
 }
 
+export type ChatRaceReplyPayload = {
+  text: string;
+  dateKey: string;
+  placeNo: number;
+  raceNo: number;
+  tickets: string[];
+  anaTickets: string[];
+};
+
 export async function buildChatRaceReply(
   query: RaceChatQuery,
   dateKey = jstDateKey(),
-): Promise<string> {
+): Promise<ChatRaceReplyPayload> {
   const [{ payload, exhibition }, seriesForms] = await Promise.all([
     fetchKyoteiRaceBundle(query.placeNo, query.raceNo, dateKey),
     fetchStadiumSeriesForms(query.placeNo, dateKey, query.raceNo),
@@ -129,5 +138,12 @@ export async function buildChatRaceReply(
     "※アプリ内の考察と同じロジックです。参考情報であり的中を保証しません。",
   );
 
-  return lines.filter((l) => l !== "").join("\n").slice(0, 3500);
+  return {
+    text: lines.filter((l) => l !== "").join("\n").slice(0, 3500),
+    dateKey,
+    placeNo: query.placeNo,
+    raceNo: query.raceNo,
+    tickets: deep.tickets.map((t) => t.combo),
+    anaTickets: deep.anaTickets.map((t) => t.combo),
+  };
 }
