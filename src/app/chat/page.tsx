@@ -106,9 +106,6 @@ const LEGACY_ADMIN_KEY = "shioyomi_admin_key";
 const LEGACY_SESSION_KEY = "shioyomi_chat_session";
 
 const DEFAULT_RULES = [
-  "メッセージ欄は雑談用です。",
-  "メッセージの上で場とレースを選び「AI予想」を押すと、詳細が自分と管理人だけに出ます（友達同士では共有しません）。",
-  "他の友達がどのレースをAI予想したかは分かりません。",
   "チャット履歴は当日のレース終了から約1時間後に自動リセットされます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
@@ -754,9 +751,7 @@ export default function ChatPage() {
                   .join(" / ")}
                 {targets.length > 6 ? " …" : ""}
               </p>
-            ) : (
-              <p className="note">場とレースを選んで「AI予想」を押してください。</p>
-            )}
+            ) : null}
           </div>
 
           <div className="chat-stream" ref={listRef}>
