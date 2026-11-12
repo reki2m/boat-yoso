@@ -158,6 +158,7 @@ export function buildRaceDeepPicks(input: {
   raceNo?: number;
   gradeNumber?: number | null;
   raceRank?: string | null;
+  raceName?: string | null;
 }): RaceDeepPicks {
   const seriesForms = input.seriesForms ?? new Map();
   const scoredByCourse = new Map(
@@ -168,6 +169,7 @@ export function buildRaceDeepPicks(input: {
     raceNo: input.raceNo,
     gradeNumber: input.gradeNumber,
     raceRank: input.raceRank,
+    raceName: input.raceName,
     racers: input.racers,
   });
 

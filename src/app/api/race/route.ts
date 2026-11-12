@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
     placeNo: place,
     raceNo: race,
     raceRank: payload.raceRank,
+    raceName: payload.raceName,
   });
 
   const liveExtra = await analyzeLiveWithStream({

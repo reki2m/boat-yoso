@@ -58,6 +58,7 @@ export async function buildChatRaceReply(
     placeNo: query.placeNo,
     raceNo: query.raceNo,
     raceRank: payload.raceRank,
+    raceName: payload.raceName,
   });
   const live = liveBroadcastUrls(query.placeNo, dateKey, query.raceNo);
 

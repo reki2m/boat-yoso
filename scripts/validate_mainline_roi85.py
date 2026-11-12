@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate locked mainline (考察本線) all-buy ROI >= 85% for 2021-2026."""
+"""Validate locked mainline (考察本線) all-buy ROI for 2021-2026."""
 
 from __future__ import annotations
 
@@ -63,10 +63,15 @@ def conf(gap: float, top: float) -> int:
     return max(1, min(5, s))
 
 
+def is_finals(sub: str) -> bool:
+    return ("優勝" in sub) or ("準優" in sub)
+
+
 def main() -> None:
     rule = json.loads(RULE_PATH.read_text())
     tickets = list(rule["tickets"])
     wl = set(rule.get("stadium_whitelist") or [])
+    bl = set(rule.get("stadium_blacklist") or [])
     rbl = set(rule.get("race_blacklist") or [])
     grades = set(rule.get("grades") or [4, 5])
 
@@ -103,11 +108,30 @@ def main() -> None:
             stadium = prog["stadium_number"]
             race_no = prog["number"]
             grade = int(prog.get("grade_number") or 5)
+            sub = prog.get("subtitle") or ""
+            if bl and stadium in bl:
+                continue
             if wl and stadium not in wl:
                 continue
             if race_no in rbl:
                 continue
             if grade not in grades:
+                continue
+            if rule.get("exclude_finals") and is_finals(sub):
+                continue
+
+            # entry-change skip (result-course proxy)
+            entry_changed = False
+            for b in res.get("boats") or []:
+                entry = b.get("racer_boat_number")
+                course = b.get("racer_course_number") or b.get("course_number")
+                try:
+                    if entry is not None and course is not None and int(entry) != int(course):
+                        entry_changed = True
+                        break
+                except Exception:
+                    pass
+            if entry_changed:
                 continue
 
             views = [score_boat(boats[c], c) for c in range(1, 7)]
@@ -115,6 +139,7 @@ def main() -> None:
             gap = ranked[0]["score"] - ranked[1]["score"]
             top = ranked[0]["score"]
             c1 = next(v for v in views if v["course"] == 1)
+            c2 = next(v for v in views if v["course"] == 2)
             if ranked[0]["course"] != 1:
                 continue
             if c1["class"] > rule["max_c1_class"]:
@@ -124,6 +149,8 @@ def main() -> None:
             if c1["st"] > rule["max_c1_st"]:
                 continue
             if c1["motor"] < rule["min_motor2"]:
+                continue
+            if (c1["nat"] - c2["nat"]) < float(rule.get("min_nat_gap_c2") or 0):
                 continue
             if gap < rule["min_score_gap"]:
                 continue

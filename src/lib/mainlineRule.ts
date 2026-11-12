@@ -9,11 +9,14 @@ export type MainlineRule = {
   min_c1_nat: number;
   max_c1_st: number;
   min_motor2: number;
+  min_nat_gap_c2: number;
   require_axis_1: boolean;
   min_score_gap: number;
   min_confidence: number;
+  exclude_finals: boolean;
   grades: number[];
   stadium_whitelist: number[] | null;
+  stadium_blacklist?: number[];
   race_blacklist: number[];
   validated_all_roi?: number;
   validated_all_min_year_roi?: number;
@@ -77,11 +80,17 @@ export function parseGradeNumber(raceRank?: string | null, gradeNumber?: number 
   return 5;
 }
 
+export function isFinalsRace(text?: string | null): boolean {
+  if (!text) return false;
+  return text.includes("優勝") || text.includes("準優");
+}
+
 export function evaluateMainlineEligibility(input: {
   placeNo?: number | null;
   raceNo?: number | null;
   gradeNumber?: number | null;
   raceRank?: string | null;
+  raceName?: string | null;
   racers: Array<{
     course: number;
     className: string;
@@ -114,9 +123,14 @@ export function evaluateMainlineEligibility(input: {
   const topScore = top?.score ?? 0;
   const gateConfidence = mainlineConfidenceFromGap(gap, topScore);
   const c1 = scored.find((r) => r.course === 1);
+  const c2 = scored.find((r) => r.course === 2);
   const grade = parseGradeNumber(input.raceRank, input.gradeNumber);
 
   if (rule.require_axis_1 && axis !== 1) reasons.push("軸が1号でない");
+  const bl = rule.stadium_blacklist || [];
+  if (input.placeNo != null && bl.includes(input.placeNo)) {
+    reasons.push("本線除外場（回収悪化）");
+  }
   const wl = rule.stadium_whitelist;
   if (Array.isArray(wl) && wl.length > 0) {
     if (input.placeNo == null || !wl.includes(input.placeNo)) {
@@ -128,6 +142,9 @@ export function evaluateMainlineEligibility(input: {
     reasons.push(`除外レース（${input.raceNo}R）`);
   }
   if (!rule.grades.includes(grade)) reasons.push(`グレード条件外（G${grade}）`);
+  if (rule.exclude_finals && isFinalsRace(input.raceName)) {
+    reasons.push("準優勝戦・優勝戦は除外");
+  }
   if (!c1) {
     reasons.push("1号艇データ不足");
   } else {
@@ -142,6 +159,12 @@ export function evaluateMainlineEligibility(input: {
     if (c1.motorTop2 < rule.min_motor2) {
       reasons.push(`1号モーター不足（${c1.motorTop2.toFixed(0)} < ${rule.min_motor2}）`);
     }
+    const natGap = c1.nationalWin - (c2?.nationalWin ?? 0);
+    if (natGap < rule.min_nat_gap_c2) {
+      reasons.push(
+        `1-2号勝率差不足（${natGap.toFixed(2)} < ${rule.min_nat_gap_c2}）`,
+      );
+    }
   }
   if (gap < rule.min_score_gap) {
     reasons.push(`スコア差不足（${gap.toFixed(1)} < ${rule.min_score_gap}）`);
@@ -151,13 +174,14 @@ export function evaluateMainlineEligibility(input: {
   }
 
   const ok = reasons.length === 0;
+  const natGapOk = c1 ? c1.nationalWin - (c2?.nationalWin ?? 0) : 0;
   return {
     ok,
     reasons: ok
       ? [
-          `対象場・除外R通過`,
-          `1号 ${c1?.className ?? "—"} / 勝率 ${c1?.nationalWin.toFixed(2) ?? "—"} / ST ${c1?.avgStart.toFixed(2) ?? "—"}`,
-          `ゲート差 ${gap.toFixed(1)} / 信頼度 ${gateConfidence}/5`,
+          `対象場・除外R・決勝除外通過`,
+          `1号 ${c1?.className ?? "—"} / 勝率 ${c1?.nationalWin.toFixed(2) ?? "—"} / ST ${c1?.avgStart.toFixed(2) ?? "—"} / モーター ${c1?.motorTop2.toFixed(0) ?? "—"}%`,
+          `勝率差 ${natGapOk.toFixed(2)} / ゲート差 ${gap.toFixed(1)} / 信頼度 ${gateConfidence}/5`,
           `検証回収率 約${rule.validated_all_roi ?? "—"}%（年次下限 約${rule.validated_all_min_year_roi ?? "—"}%）`,
         ]
       : reasons,
