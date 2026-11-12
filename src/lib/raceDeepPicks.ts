@@ -90,22 +90,25 @@ export function confidenceFromRankings(scored: ScoredRacer[]): ConfidenceScore {
   return mainConfidenceFromGap(top - second, top);
 }
 
-/** 穴目は「強い/5」ではなく、セット参考的中率%で出す（だいたい数%〜十数%） */
+/**
+ * 穴目は運用対象外の参考表示。
+ * 本命が強いレースほど穴は薄く見せる（旧UIの「厚め〜16%」固定感を避ける）。
+ */
 function anaHitPctFromUpside(upside: number, c1Strong: boolean, ticketCount: number): number {
-  // upside 38〜60 を 概ね 4%〜14% に写像（穴の体感に合わせる）
-  let pct = 4 + (upside - 38) * 0.4;
-  if (ticketCount >= 6) pct += 1.2;
-  else if (ticketCount <= 4) pct -= 0.4;
-  if (c1Strong) pct *= 0.72;
-  return Math.round(clamp(pct, 3, 16) * 10) / 10;
+  // upside 38〜60 を 概ね 3%〜9% に写像（穴の実体に寄せる）
+  let pct = 3.2 + (upside - 38) * 0.28;
+  if (ticketCount >= 6) pct += 0.6;
+  else if (ticketCount <= 4) pct -= 0.3;
+  if (c1Strong) pct *= 0.55; // 本命レースではさらに薄く
+  const hi = c1Strong ? 8 : 11;
+  return Math.round(clamp(pct, 2.5, hi) * 10) / 10;
 }
 
 function anaPctLabel(pct: number): string {
   if (pct <= 0) return "見送り";
-  if (pct < 6) return `参考的中率 ${pct}%（薄い）`;
-  if (pct < 10) return `参考的中率 ${pct}%（控えめ）`;
-  if (pct < 13) return `参考的中率 ${pct}%（標準的な穴）`;
-  return `参考的中率 ${pct}%（穴としては厚め）`;
+  if (pct < 5) return `参考的中率 ${pct}%（かなり薄い・参考のみ）`;
+  if (pct < 8) return `参考的中率 ${pct}%（薄い・参考のみ）`;
+  return `参考的中率 ${pct}%（穴としては普通〜やや薄め・参考のみ）`;
 }
 
 function clamp(n: number, min: number, max: number) {
@@ -471,11 +474,11 @@ export function buildRaceDeepPicks(input: {
       );
     }
     anaCommentary.push(
-      `【穴買い目】3連単 ${anaDeep.length}点（${anaDeep.map((t) => t.combo).join(" / ")}）。${anaPctLabel(anaHitPct)}。本線の「5/5」とは別物で、穴は数%帯が普通です。併売せず資金は小さめ。的中保証なし。`,
+      `【穴買い目】3連単 ${anaDeep.length}点（${anaDeep.map((t) => t.combo).join(" / ")}）。${anaPctLabel(anaHitPct)}。運用ロックなし・回収保証なし。本命が強い日は特に薄い想定。`,
     );
 
     commentary.push(
-      `【穴目】${ana.course}号軸で ${anaDeep.length}点も併記（参考的中率 ${anaHitPct}%）。`,
+      `【穴目】${ana.course}号軸 ${anaDeep.length}点は参考併記のみ（${anaHitPct}%）。運用本命は1-2-3単点側を優先。`,
     );
 
     return {
@@ -495,7 +498,7 @@ export function buildRaceDeepPicks(input: {
       anaCommentary,
       racerViews: ranked,
       method:
-        "本線信頼度は1〜5。穴目は参考的中率%（数%〜十数%）で表示。穴の運用ロックはなし。",
+        "本線信頼度は見た目の強さ(1-5)。信頼度だけでは回収は出ない。穴%は参考のみで運用ロックなし。",
     };
   }
 
@@ -521,6 +524,6 @@ export function buildRaceDeepPicks(input: {
     anaCommentary,
     racerViews: ranked,
     method:
-      "本線信頼度は1〜5。穴目は参考的中率%（数%〜十数%）で表示。穴の運用ロックはなし。",
+      "本線信頼度は見た目の強さ(1-5)。信頼度だけでは回収は出ない。穴%は参考のみで運用ロックなし。",
   };
 }
