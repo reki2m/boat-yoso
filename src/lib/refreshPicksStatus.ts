@@ -1,5 +1,6 @@
 import { fetchKyoteiRaceBundle } from "@/lib/kyotei";
 import { buildTriplePrediction } from "@/lib/tripleSystem";
+import { recordExhibitionIncidents } from "@/lib/exhibitionIncidents";
 
 export type LivePickRow = {
   date?: string;
@@ -11,6 +12,7 @@ export type LivePickRow = {
   why?: string;
   skip_reason?: string | null;
   skip_detail?: string | null;
+  exhibition_notes?: string[];
 };
 
 const SKIP_LABEL: Record<string, string> = {
@@ -47,6 +49,11 @@ export function pickStatusPhrase(input: {
   return status || "—";
 }
 
+/**
+ * 展示確認後の状態更新。
+ * 重要: tickets は絶対に書き換えない（展示前=展示後の買い目固定）。
+ * 変わるのは status（provisional→confirmed/skipped）と理由文のみ。
+ */
 export async function refreshPicksStatus(picks: LivePickRow[]): Promise<LivePickRow[]> {
   const out: LivePickRow[] = [];
   for (const pick of picks) {
@@ -72,6 +79,7 @@ export async function refreshPicksStatus(picks: LivePickRow[]): Promise<LivePick
       let skipReason: string | null = pick.skip_reason ?? null;
       let skipDetail: string | null = null;
       let why = pick.why;
+      const lockedTickets = pick.tickets?.length ? [...pick.tickets] : ["1-2-3"];
 
       if (triple.skipped || exhibition.entryChanged) {
         status = "skipped";
@@ -95,13 +103,30 @@ export async function refreshPicksStatus(picks: LivePickRow[]): Promise<LivePick
         why = triple.focus || pick.why;
       }
 
+      const notes = [
+        ...(exhibition.signals?.notes ?? []),
+        ...(triple.live.aiSummary ?? []).slice(0, 3),
+      ];
+
+      // 事故学習（進入変更・伸び・周回）
+      void recordExhibitionIncidents({
+        date,
+        stadium,
+        race,
+        exhibition,
+        streamNote: triple.live.stream?.message,
+      });
+
       out.push({
         ...pick,
+        // 買い目は固定
+        tickets: lockedTickets,
         status,
         skip_reason: skipReason,
         skip_detail: skipDetail,
         why,
         stadium_name: pick.stadium_name || payload.placeName,
+        exhibition_notes: [...new Set(notes)].slice(0, 6),
       });
     } catch {
       out.push(pick);

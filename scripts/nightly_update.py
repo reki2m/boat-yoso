@@ -139,6 +139,12 @@ def main() -> None:
         print("roi learning deferred", e)
         learning = {"ok": False, "error": str(e)}
 
+    # 展示事故（進入変更など）の学習集計
+    try:
+        run(["python3", str(ROOT / "scripts" / "learn_exhibition_incidents.py")])
+    except subprocess.CalledProcessError as e:
+        print("exhibition incident learning deferred", e)
+
     # 学習で閾値が変わった場合に当日ボードを再生成
     if learning.get("ok"):
         try:

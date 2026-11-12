@@ -226,14 +226,13 @@ export function buildRaceDeepPicks(input: {
         ? clamp(1 - (num(r.seriesDisplayAvg) - 6.55) / 0.35, 0, 1)
         : 0.5;
 
-    // スタート / 展示
+    // スタートは番組STのみ（展示スリットでスコアを動かさない＝展示前後の買い目固定）
     const st = clamp(1 - (r.avgStart - 0.1) / 0.2, 0, 1);
     const exLap = r.exhibitionLap;
     const exSlit = r.exhibitionSlit;
-    const lapScore =
-      exLap != null ? clamp(1 - (exLap - 6.55) / 0.35, 0, 1) : 0.5;
-    const slitScore =
-      exSlit != null ? clamp(1 - (exSlit - 0.1) / 0.2, 0, 1) : 0.5;
+    // 展示はコメント・シグナル用。本線スコアには中立値を入れ、券種が変わらないようにする
+    const lapScore = 0.5;
+    const slitScore = 0.5;
     const abilityScore =
       ability != null ? clamp(ability / 6500, 0, 1) : national;
 

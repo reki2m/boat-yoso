@@ -61,14 +61,18 @@ export async function buildChatRaceReply(
   });
   const live = liveBroadcastUrls(query.placeNo, dateKey, query.raceNo);
 
+  const signalLine = exhibition.signals?.notes?.length
+    ? `即時シグナル: ${exhibition.signals.notes.slice(0, 3).join(" / ")}`
+    : null;
   const lines: string[] = [
     `【予測】${query.placeName} ${query.raceNo}R（${dateKey}）`,
     exhibition.ready
       ? exhibition.entryChanged
-        ? `展示: 進入変更あり（${exhibition.changes.map((c) => `${c.boat}号${c.from}→${c.to}`).join(" / ")}）`
-        : "展示: 確定（進入・スリット・周回タイム反映）"
+        ? `展示: 進入変更あり（${exhibition.changes.map((c) => `${c.boat}号${c.from}→${c.to}`).join(" / ")}）→ 買い目スキップ（券種は変えず見送り）`
+        : "展示: 確定（進入・スリット・周回確認。買い目は朝の固定券種のまま）"
       : `展示: 待ち — ${exhibition.reason}`,
   ];
+  if (signalLine) lines.push(signalLine);
 
   if (triple.skipped) {
     lines.push(

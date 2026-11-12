@@ -77,6 +77,12 @@ type RaceResponse = {
     ready: boolean;
     reason: string;
     entryChanged: boolean;
+    signals?: {
+      source?: string;
+      notes?: string[];
+      stretchSlits?: Array<{ boat: number; slit: number }>;
+      fastLaps?: Array<{ boat: number; lapTime: number }>;
+    };
     changes: Array<{ boat: number; name: string; from: number; to: number }>;
     boats: Array<{
       boat: number;
@@ -116,6 +122,7 @@ type RaceResponse = {
       message: string;
       exhibitionNotes: Array<{ boat: number; name: string; score: number; notes: string[] }>;
       stream?: { url: string; status: string; message: string };
+      aiSummary?: string[];
     };
     portfolioTickets: string[];
     focus: string;
@@ -792,7 +799,7 @@ export default function Home() {
         <p className="note" style={{ marginTop: "0.65rem" }}>
           展示は自動監視します
           {exhibitionCheckedAt ? `（最終確認 ${exhibitionCheckedAt} JST）` : ""}。
-          展示が揃うまで買い目はロック、進入変更ならスルーです。
+          買い目は朝時点で固定し、展示後は確定かスルーのみ（券種は変えません）。進入・スリット伸び・周回は直前CSVでも即時確認します。
         </p>
 
         {error ? <p className="status">{error}</p> : null}
@@ -834,6 +841,21 @@ export default function Home() {
                   {(data.exhibition?.changes ?? [])
                     .map((c) => `${c.boat}号 ${c.from}→${c.to}`)
                     .join(" / ")}
+                </div>
+              ) : null}
+              {(data.exhibition?.signals?.notes?.length ||
+                triple?.live?.aiSummary?.length) ? (
+                <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                  即時シグナル:{" "}
+                  {(data.exhibition?.signals?.notes?.length
+                    ? data.exhibition.signals.notes
+                    : triple?.live?.aiSummary || []
+                  )
+                    .slice(0, 3)
+                    .join(" / ")}
+                  {data.exhibition?.signals?.source
+                    ? `（${data.exhibition.signals.source}）`
+                    : ""}
                 </div>
               ) : null}
               {data.exhibition?.boats?.length ? (

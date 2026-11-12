@@ -420,12 +420,17 @@ export function buildTriplePrediction(input: {
   }
   const live = analyzeLive({
     streamUrl: input.streamUrl ?? liveUrls.mediaTop,
+    signals: input.exhibition.signals,
+    placeNo: input.placeNo,
+    dateKey: input.dateKey,
+    raceNo: input.raceNo,
     exhibition: input.exhibition.boats.map((b) => ({
       boat: b.boat,
       name: b.name,
       st: b.slit,
       exhibit: b.lapTime,
       course: b.course ?? undefined,
+      entry: b.entry,
     })),
   });
 
@@ -443,7 +448,7 @@ export function buildTriplePrediction(input: {
     focus,
     why,
     disclaimer:
-      "本命のみ。1-2-3単点・対象8場・1R/9R除外・A1/勝率6.8/ST0.15/モーター32・展示とオッズ通過後のみ。必ず勝てる保証はない。",
+      "本命のみ。買い目は朝時点で固定し、展示後は確定かスキップのみ（券種変更なし）。進入変更はスルー。必ず勝てる保証はない。",
     exhibition: input.exhibition,
     ticketsLocked,
     liveUrls,

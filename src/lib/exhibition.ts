@@ -15,6 +15,16 @@ export type ExhibitionBoat = {
   entryChanged: boolean;
 };
 
+export type ExhibitionSignalSummary = {
+  source?: string;
+  fetchedAt?: string | null;
+  stretchSlits: Array<{ boat: number; slit: number }>;
+  fastLaps: Array<{ boat: number; lapTime: number; deltaVsMedian: number }>;
+  slowLaps: Array<{ boat: number; lapTime: number; deltaVsMedian: number }>;
+  fastOneLaps: Array<{ boat: number; oneLap: number }>;
+  notes: string[];
+};
+
 export type ExhibitionStatus = {
   ready: boolean;
   reason: string;
@@ -23,6 +33,8 @@ export type ExhibitionStatus = {
   boats: ExhibitionBoat[];
   windSpeed: number | null;
   wave: number | null;
+  /** 進入変更・スリット伸び・周回速い等の即時シグナル */
+  signals?: ExhibitionSignalSummary;
 };
 
 function numOrNull(v: unknown): number | null {
@@ -43,7 +55,11 @@ function numOrNull(v: unknown): number | null {
  */
 export function evaluateExhibition(
   boats: ExhibitionBoat[],
-  meta?: { windSpeed?: number | null; wave?: number | null },
+  meta?: {
+    windSpeed?: number | null;
+    wave?: number | null;
+    signals?: Partial<ExhibitionSignalSummary>;
+  },
 ): ExhibitionStatus {
   const withCourse = boats.filter((b) => b.course != null);
   const withSlit = boats.filter((b) => b.slit != null);
@@ -58,15 +74,19 @@ export function evaluateExhibition(
     withSlit.length >= 6 &&
     withLap.length >= 6;
 
-  let reason = "展示完了。進入・スリット・周回タイムを反映して買い目を算出します。";
+  const signals = buildExhibitionSignals(boats, meta?.signals);
+
+  let reason = "展示完了。進入・スリット・周回を確認。買い目は朝時点の固定券種のまま確定/見送りのみ。";
   if (!ready) {
     const missing: string[] = [];
     if (withCourse.length < 6) missing.push("進入状況");
     if (withSlit.length < 6) missing.push("スリット");
     if (withLap.length < 6) missing.push("周回タイム");
-    reason = `展示待ち: ${missing.join("・")} が出てから買い目を出します（朝1Rから監視開始）。`;
+    reason = `展示待ち: ${missing.join("・")} が出てから確定します（買い目そのものは変更しません）。`;
   } else if (changes.length) {
-    reason = `進入変更あり（${changes.map((c) => `${c.boat}号 ${c.from}→${c.to}`).join(" / ")}）。変更後コースで再計算。`;
+    reason = `進入変更あり（${changes.map((c) => `${c.boat}号 ${c.from}→${c.to}`).join(" / ")}）。買い目は出さずスキップ。`;
+  } else if (signals.notes.length) {
+    reason = `展示完了（${signals.notes.slice(0, 2).join(" / ")}）。固定買い目を確定判定。`;
   }
 
   return {
@@ -77,25 +97,78 @@ export function evaluateExhibition(
     boats,
     windSpeed: meta?.windSpeed ?? null,
     wave: meta?.wave ?? null,
+    signals,
   };
 }
 
-/** 進入変更後の実コースで racer.course を差し替える */
+export function buildExhibitionSignals(
+  boats: ExhibitionBoat[],
+  base?: Partial<ExhibitionSignalSummary>,
+): ExhibitionSignalSummary {
+  const laps = boats
+    .map((b) => b.lapTime)
+    .filter((v): v is number => typeof v === "number");
+  const median = laps.length
+    ? [...laps].sort((a, b) => a - b)[Math.floor(laps.length / 2)]
+    : null;
+  const stretchSlits = boats
+    .filter((b) => typeof b.slit === "number" && (b.slit as number) <= 0.1)
+    .map((b) => ({ boat: b.boat, slit: b.slit as number }));
+  const fastLaps: ExhibitionSignalSummary["fastLaps"] = [];
+  const slowLaps: ExhibitionSignalSummary["slowLaps"] = [];
+  if (median != null) {
+    for (const b of boats) {
+      if (b.lapTime == null) continue;
+      const delta = median - b.lapTime;
+      if (delta >= 0.04) fastLaps.push({ boat: b.boat, lapTime: b.lapTime, deltaVsMedian: delta });
+      if (delta <= -0.04) slowLaps.push({ boat: b.boat, lapTime: b.lapTime, deltaVsMedian: delta });
+    }
+  }
+  const notes = [...(base?.notes ?? [])];
+  if (!notes.length) {
+    if (stretchSlits.length) {
+      notes.push(
+        `スリット伸び ${stretchSlits.map((s) => `${s.boat}号ST${s.slit.toFixed(2)}`).join("/")}`,
+      );
+    }
+    if (fastLaps.length) {
+      notes.push(`周回速い ${fastLaps.map((f) => `${f.boat}号`).join("/")}`);
+    }
+  }
+  return {
+    source: base?.source,
+    fetchedAt: base?.fetchedAt ?? null,
+    stretchSlits: base?.stretchSlits?.length ? base.stretchSlits : stretchSlits,
+    fastLaps: base?.fastLaps?.length ? base.fastLaps : fastLaps,
+    slowLaps: base?.slowLaps?.length ? base.slowLaps : slowLaps,
+    fastOneLaps: base?.fastOneLaps ?? [],
+    notes,
+  };
+}
+
+/**
+ * 進入確定後の実コースへ差し替え（表示・参考用）。
+ * 買い目安定のため avgStart（番組ST）は上書きしない。スリットは exhibitionSlit に載せる。
+ */
 export function remapRacersToExhibitionCourses(
   racers: RacerRow[],
   exhibition: ExhibitionStatus,
 ): RacerRow[] {
   if (!exhibition.ready) return racers;
+  // 進入変更時は買い目スキップ方針のためコース差し替えもしない
+  if (exhibition.entryChanged) return racers;
   return racers
     .map((r) => {
-      // r.course は現状枠番。進入確定後は実コースへ差し替え。
       const boatNo = r.entry ?? r.course;
       const hit = exhibition.boats.find((b) => b.entry === boatNo || b.boat === boatNo);
       if (!hit?.course) return r;
       return {
         ...r,
         course: hit.course,
-        avgStart: hit.slit ?? r.avgStart,
+        exhibitionCourse: hit.course,
+        exhibitionSlit: hit.slit,
+        exhibitionLap: hit.lapTime,
+        // avgStart は番組値のまま（展示前後で本命条件がぶれない）
       };
     })
     .sort((a, b) => a.course - b.course);

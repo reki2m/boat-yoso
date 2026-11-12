@@ -1,0 +1,13 @@
+{
+  "learned_at": "2026-11-12T14:53:32.740263+09:00",
+  "incident_count": 0,
+  "by_kind": {},
+  "top_entry_change_stadiums": [],
+  "tallies": {},
+  "policy": {
+    "skip_on_entry_change": true,
+    "keep_morning_tickets": true,
+    "prefer_realtime_csv": true,
+    "note": "展示前後で買い目券種は変えない。進入変更はスキップし事故学習へ蓄積。"
+  }
+}
