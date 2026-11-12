@@ -1,6 +1,11 @@
-import picksBoard from "@/data/picks_board.json";
 import { liveBroadcastUrls } from "@/lib/liveBroadcast";
-import { refreshPicksStatus, skipReasonLabel, type LivePickRow } from "@/lib/refreshPicksStatus";
+import { resolvePicksBoardForToday } from "@/lib/picksBoardView";
+import {
+  pickStatusPhrase,
+  refreshPicksStatus,
+  skipReasonLabel,
+  type LivePickRow,
+} from "@/lib/refreshPicksStatus";
 
 export type ChatLiveTarget = {
   date: string;
@@ -15,11 +20,7 @@ export type ChatLiveTarget = {
 };
 
 function boardPicks(): LivePickRow[] {
-  const board = picksBoard as {
-    active_date?: string;
-    date?: string;
-    picks?: Array<Record<string, unknown>>;
-  };
+  const { board } = resolvePicksBoardForToday();
   const dateFallback = String(board.active_date || board.date || "");
   return (board.picks || []).map((p) => ({
     date: String(p.date || dateFallback),
@@ -38,9 +39,9 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
   date: string;
   targets: ChatLiveTarget[];
 }> {
-  const board = picksBoard as { active_date?: string; date?: string };
-  const dateKey = String(board.active_date || board.date || "");
-  let picks = boardPicks();
+  const { board, today } = resolvePicksBoardForToday();
+  const dateKey = String(board.active_date || board.date || today);
+  let picks = boardPicks().filter((p) => String(p.date) === dateKey);
   if (opts?.refresh) {
     picks = await refreshPicksStatus(picks);
   }
@@ -51,17 +52,25 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
       const date = String(p.date);
       const stadium = Number(p.stadium);
       const race = Number(p.race);
+      const status = p.status || "provisional";
+      const skip_detail =
+        status === "skipped"
+          ? p.skip_detail || skipReasonLabel(p.skip_reason)
+          : null;
+      const phrase = pickStatusPhrase({
+        status,
+        skip_reason: p.skip_reason,
+        skip_detail,
+      });
       return {
         date,
         stadium,
         stadium_name: p.stadium_name || `場${stadium}`,
         race,
         tickets: p.tickets?.length ? p.tickets : ["1-2-3"],
-        status: p.status || "provisional",
-        skip_detail:
-          p.skip_detail ||
-          (p.status === "skipped" ? skipReasonLabel(p.skip_reason) : null),
-        why: p.why || null,
+        status,
+        skip_detail,
+        why: status === "skipped" ? phrase : p.why || null,
         live: liveBroadcastUrls(stadium, date, race),
       };
     });

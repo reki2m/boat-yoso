@@ -71,7 +71,7 @@ function confidenceLabelOf(score: ConfidenceScore): string {
   return map[(score < 1 ? 1 : score > 5 ? 5 : score) as 1 | 2 | 3 | 4 | 5];
 }
 
-function mainConfidenceFromGap(gap: number, topScore: number): ConfidenceScore {
+export function mainConfidenceFromGap(gap: number, topScore: number): ConfidenceScore {
   // 軸の絶対評価 + 2位との差で 1-5
   let score = 1;
   if (topScore >= 70) score += 1;
@@ -80,6 +80,14 @@ function mainConfidenceFromGap(gap: number, topScore: number): ConfidenceScore {
   if (gap >= 8) score += 1;
   if (gap >= 14) score = Math.min(5, score + 1);
   return Math.max(1, Math.min(5, score)) as ConfidenceScore;
+}
+
+/** 出走スコア順位から本線信頼度 1-5 を算出 */
+export function confidenceFromRankings(scored: ScoredRacer[]): ConfidenceScore {
+  if (!scored.length) return 1;
+  const top = scored[0]?.score ?? 0;
+  const second = scored[1]?.score ?? top;
+  return mainConfidenceFromGap(top - second, top);
 }
 
 /** 穴目は「強い/5」ではなく、セット参考的中率%で出す（だいたい数%〜十数%） */

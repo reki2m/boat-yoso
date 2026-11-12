@@ -100,11 +100,11 @@ function kindLabel(m: ChatMessage): string {
   return "会話";
 }
 
-function statusLabel(status: string): string {
-  if (status === "confirmed") return "確定";
-  if (status === "skipped") return "スキップ";
-  if (status === "provisional") return "展示待ち";
-  return status || "—";
+function targetPhrase(t: { status: string; skip_detail: string | null }): string {
+  if (t.status === "skipped") return t.skip_detail || "条件外だからスルー";
+  if (t.status === "provisional") return "展示待ち";
+  if (t.status === "confirmed") return "買い目OK";
+  return t.status || "—";
 }
 
 export default function ChatPage() {
@@ -536,7 +536,7 @@ export default function ChatPage() {
                         className={`btn ${activeKey === key ? "" : "ghost"}`}
                         onClick={() => setActiveKey(key)}
                       >
-                        {t.stadium_name} {t.race}R · {statusLabel(t.status)}
+                        {t.stadium_name} {t.race}R · {targetPhrase(t)}
                       </button>
                     );
                   })}
@@ -547,10 +547,13 @@ export default function ChatPage() {
                       {active.stadium_name} {active.race}R
                     </strong>
                     <p className="note" style={{ marginTop: "0.35rem" }}>
-                      買い目 {active.tickets.join("/")} / {statusLabel(active.status)}
-                      {active.skip_detail ? ` — ${active.skip_detail}` : ""}
+                      {active.status === "skipped"
+                        ? targetPhrase(active)
+                        : `買い目 ${active.tickets.join("/")} / ${targetPhrase(active)}`}
                     </p>
-                    {active.why ? <p className="note">{active.why}</p> : null}
+                    {active.status !== "skipped" && active.why ? (
+                      <p className="note">{active.why}</p>
+                    ) : null}
                     <div className="cta-row">
                       <a
                         className="btn"

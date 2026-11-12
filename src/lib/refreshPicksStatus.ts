@@ -14,19 +14,37 @@ export type LivePickRow = {
 };
 
 const SKIP_LABEL: Record<string, string> = {
-  entry_change: "進入変更のためスキップ",
+  entry_change: "進入変更だからスルー",
   exhibition_pending: "展示待ち",
-  exhibition_fail: "展示ゲート不合格のためスキップ",
-  race_closed: "締切済みのためスキップ",
-  unexpected: "予期しない事態のためスキップ",
-  odds_overbet: "オッズ回避のためスキップ",
-  odds_missing_near_close: "締切間近・オッズ未取得のためスキップ",
+  exhibition_fail: "展示が揃わないからスルー",
+  race_closed: "締切済みだからスルー",
+  unexpected: "想定外の展開だからスルー",
+  odds_overbet: "買われすぎだからスルー",
+  odds_missing_near_close: "締切間近でオッズが取れないからスルー",
   odds_pending: "オッズ待ち",
 };
 
 export function skipReasonLabel(code: string | null | undefined): string {
-  if (!code) return "スキップ";
-  return SKIP_LABEL[code] || code;
+  if (!code) return "条件外だからスルー";
+  return SKIP_LABEL[code] || `${code}だからスルー`;
+}
+
+/** チャット表示用の短い状態文 */
+export function pickStatusPhrase(input: {
+  status?: string | null;
+  skip_reason?: string | null;
+  skip_detail?: string | null;
+}): string {
+  const status = input.status || "";
+  if (status === "skipped") {
+    if (input.skip_detail && !input.skip_detail.includes("確定")) {
+      return input.skip_detail;
+    }
+    return skipReasonLabel(input.skip_reason);
+  }
+  if (status === "provisional") return "展示待ち";
+  if (status === "confirmed") return "買い目OK";
+  return status || "—";
 }
 
 export async function refreshPicksStatus(picks: LivePickRow[]): Promise<LivePickRow[]> {

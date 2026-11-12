@@ -286,14 +286,16 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [, startTransition] = useTransition();
   const [purchased, setPurchased] = useState(false);
-  const [demoExhibition, setDemoExhibition] = useState(false);
   const [liveStadiums, setLiveStadiums] = useState<LiveStadium[]>([]);
   const [liveDate, setLiveDate] = useState("");
   const [activeLive, setActiveLive] = useState<LiveStadium | null>(null);
   const [board, setBoard] = useState<PicksBoard | null>(null);
+  const [boardStale, setBoardStale] = useState(false);
   const [operatorKey, setOperatorKey] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
   const [chatMsg, setChatMsg] = useState("");
+  const [raceConfidence, setRaceConfidence] = useState<Record<string, number>>({});
+  const [exhibitionCheckedAt, setExhibitionCheckedAt] = useState("");
 
   useEffect(() => {
     try {
@@ -323,6 +325,7 @@ export default function Home() {
 
         const nextBoard = (picksJson.board as PicksBoard) || null;
         setBoard(nextBoard);
+        setBoardStale(Boolean(picksJson.stale));
         const first = (nextBoard?.picks || []).find(
           (p) => p.status !== "skipped" && p.stadium && p.race,
         );
@@ -361,18 +364,19 @@ export default function Home() {
   }, []);
 
   async function load(opts?: {
-    demo?: boolean;
     placeNo?: number;
     raceNo?: number;
+    quiet?: boolean;
   }) {
     const placeNo = opts?.placeNo ?? place;
     const raceNo = opts?.raceNo ?? race;
     if (opts?.placeNo != null) setPlace(opts.placeNo);
     if (opts?.raceNo != null) setRace(opts.raceNo);
-    setError("");
-    setPurchased(false);
-    setLoading(true);
-    const useDemo = opts?.demo ?? demoExhibition;
+    if (!opts?.quiet) {
+      setError("");
+      setPurchased(false);
+      setLoading(true);
+    }
     const ac = new AbortController();
     const timer = window.setTimeout(() => ac.abort(), 20000);
     try {
@@ -380,12 +384,20 @@ export default function Home() {
         place: String(placeNo),
         race: String(raceNo),
       });
-      if (useDemo) qs.set("demoExhibition", "1");
       const res = await fetch(`/api/race?${qs.toString()}`, { signal: ac.signal });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "取得失敗");
       startTransition(() => setData(json));
+      setExhibitionCheckedAt(
+        new Intl.DateTimeFormat("ja-JP", {
+          timeZone: "Asia/Tokyo",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date()),
+      );
     } catch (e) {
+      if (opts?.quiet) return;
       const msg =
         e instanceof DOMException && e.name === "AbortError"
           ? "取得がタイムアウトしました。もう一度押してください。"
@@ -395,19 +407,41 @@ export default function Home() {
       setError(msg);
     } finally {
       window.clearTimeout(timer);
-      setLoading(false);
+      if (!opts?.quiet) setLoading(false);
     }
   }
 
-  // 展示待ちなら自動再取得（朝1Rから監視）
+  // 展示が出るまで自動監視。ロック中は20秒、それ以外も60秒で最新化
   useEffect(() => {
-    if (!data?.tripleSystem?.ticketsLocked) return;
+    if (!data) return;
+    const locked = Boolean(data.tripleSystem?.ticketsLocked);
+    const ms = locked ? 20000 : 60000;
     const t = setInterval(() => {
-      void load();
-    }, 45000);
+      void load({ quiet: true });
+    }, ms);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.tripleSystem?.ticketsLocked, place, race]);
+
+  // 場を変えたら各Rの信頼度を取得して色分け
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchConfidence() {
+      try {
+        const res = await fetch(`/api/confidence-map?place=${place}`);
+        const json = await res.json();
+        if (!cancelled && json?.confidences) {
+          setRaceConfidence(json.confidences as Record<string, number>);
+        }
+      } catch {
+        if (!cancelled) setRaceConfidence({});
+      }
+    }
+    void fetchConfidence();
+    return () => {
+      cancelled = true;
+    };
+  }, [place]);
 
   const maxScore = data
     ? Math.max(...data.prediction.rankings.map((r) => r.score ?? 0), 1)
@@ -439,17 +473,6 @@ export default function Home() {
             disabled={loading}
           >
             {loading ? "読み込み中…" : "今日のレースを読む"}
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() => {
-              setDemoExhibition(true);
-              void load({ demo: true });
-            }}
-            disabled={loading}
-          >
-            展示デモで確認
           </button>
           <button
             type="button"
@@ -593,7 +616,13 @@ export default function Home() {
         <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>今日の買い目</h2>
         <p className="note">
           {boardDate || dateLabel || "本日"} / {board?.mode || "honmei_fix_race_filter"} — カードを押すとそのレースを開きます。
+          {exhibitionCheckedAt ? ` / 展示更新 ${exhibitionCheckedAt} JST` : ""}
         </p>
+        {boardStale ? (
+          <p className="chat-reset-note" style={{ marginTop: "0.75rem" }}>
+            前日の買い目は朝の時点で非表示にしています。当日分の生成待ちです。
+          </p>
+        ) : null}
         {buyablePicks.length ? (
           <div className="cta-row" style={{ marginTop: "0.75rem" }}>
             {buyablePicks.map((p) => {
@@ -641,19 +670,31 @@ export default function Home() {
               ))}
             </select>
           </div>
-          <div className="field">
-            <label htmlFor="race">レース</label>
-            <select
-              id="race"
-              value={race}
-              onChange={(e) => setRace(Number(e.target.value))}
-            >
-              {(races.length ? races : Array.from({ length: 12 }, (_, i) => i + 1)).map((n) => (
-                <option key={n} value={n}>
-                  {n}R
-                </option>
-              ))}
-            </select>
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <label>レース（信頼度4=橙 / 5=赤）</label>
+            <div className="race-pick-grid">
+              {(races.length ? races : Array.from({ length: 12 }, (_, i) => i + 1)).map((n) => {
+                const conf = Number(raceConfidence[String(n)] || 0);
+                const tone =
+                  conf >= 5 ? "conf5" : conf >= 4 ? "conf4" : conf > 0 ? "conf-mid" : "";
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`race-pick-btn ${tone} ${race === n ? "active" : ""}`}
+                    onClick={() => {
+                      setRace(n);
+                      void load({ raceNo: n });
+                    }}
+                    disabled={loading}
+                    title={conf ? `信頼度 ${conf}/5` : "信頼度未算出"}
+                  >
+                    {n}R
+                    {conf >= 4 ? <em>{conf}</em> : null}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="field">
             <label>日付</label>
@@ -670,6 +711,11 @@ export default function Home() {
             {loading ? "読み込み中…" : "予想する"}
           </button>
         </div>
+        <p className="note" style={{ marginTop: "0.65rem" }}>
+          展示は自動監視します
+          {exhibitionCheckedAt ? `（最終確認 ${exhibitionCheckedAt} JST）` : ""}。
+          展示が揃うまで買い目はロック、進入変更ならスルーです。
+        </p>
 
         {error ? <p className="status">{error}</p> : null}
         {!data && !error ? <p className="status">出走表を準備しています…</p> : null}
@@ -682,8 +728,16 @@ export default function Home() {
               </span>
               <span className="badge">{data.raceName || "番組"}</span>
               <span className={`badge ${data.exhibition?.ready ? "" : "warn"}`}>
-                展示: {data.exhibition?.ready ? "確定" : "待ち"}
+                展示:{" "}
+                {triple?.skipped
+                  ? "スルー"
+                  : data.exhibition?.ready
+                    ? "完了"
+                    : "待ち（ロック）"}
               </span>
+              {exhibitionCheckedAt ? (
+                <span className="badge">更新 {exhibitionCheckedAt}</span>
+              ) : null}
               <span className={`badge ${triple?.anomaly.ok ? "" : "warn"}`}>
                 オッズ: {triple?.anomaly.ok ? "妥当" : "要注意"}
               </span>
@@ -1001,8 +1055,33 @@ export default function Home() {
 
             {triple ? (
               <div className={`anomaly ${triple.anomaly.ok ? "ok" : "bad"}`}>
-                <strong>異常オッズ監視</strong>
+                <strong>異常オッズ監視（稼働中）</strong>
                 <p>{triple.anomaly.advice}</p>
+                <div className="odds-row">
+                  <span className={`badge ${triple.anomaly.overbet ? "warn" : ""}`}>
+                    {triple.anomaly.overbet
+                      ? "買われすぎ（本命見送り）"
+                      : "買われすぎなし"}
+                  </span>
+                  <span className={`badge ${triple.anomaly.moneyConcentrate ? "warn" : ""}`}>
+                    {triple.anomaly.moneyConcentrate
+                      ? "大口集中（慎重）"
+                      : "大口集中なし"}
+                  </span>
+                  {triple.anomaly.favorite ? (
+                    <span className="badge">
+                      1番人気 {triple.anomaly.favorite}
+                      {triple.anomaly.favOdds != null
+                        ? ` @ ${triple.anomaly.favOdds.toFixed(1)}`
+                        : ""}
+                    </span>
+                  ) : (
+                    <span className="badge warn">オッズ未取得</span>
+                  )}
+                </div>
+                <p className="note" style={{ marginTop: "0.55rem" }}>
+                  狙い目: 買われすぎがない帯で、考察の穴目（長め）を参考に。異常時は運用本命を自動見送りします。
+                </p>
               </div>
             ) : null}
 
@@ -1143,11 +1222,13 @@ function StakeSimulationPanel({
   baseStake: number;
 }) {
   const [stake, setStake] = useState<(typeof STAKE_OPTIONS)[number]>(1000);
-  if (!band) {
+  if (!band || !band.curve?.length) {
     return (
       <section className="panel" style={{ marginTop: "1rem" }}>
         <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>資金別シミュレーション</h2>
-        <p className="status">検証データを読み込み中…</p>
+        <p className="chat-reset-note" style={{ marginTop: "0.75rem" }}>
+          資金シミュレーションは一旦リセット済みです。再計算後にここへ反映します。
+        </p>
       </section>
     );
   }

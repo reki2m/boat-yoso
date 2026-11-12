@@ -30,12 +30,11 @@ export function buildPicksMessage(board: {
   ];
 
   if (skipped.length) {
-    lines.push("【通知・スキップ】");
+    lines.push("【スルー】");
     for (const p of skipped.slice(0, 12)) {
       const name = p.stadium_name || `場${p.stadium}`;
       const detail = p.skip_detail || skipReasonLabel(p.skip_reason);
       lines.push(`・${name} ${p.race}R — ${detail}`);
-      if (p.why && p.why !== detail) lines.push(`  └ ${p.why.slice(0, 140)}`);
     }
     lines.push("");
   }
@@ -48,14 +47,18 @@ export function buildPicksMessage(board: {
       const name = p.stadium_name || `場${p.stadium}`;
       const tickets = (p.tickets || ["1-2-3"]).join("/");
       const status =
-        p.status === "confirmed" ? "確定" : p.status === "provisional" ? "展示待ち" : p.status || "";
+        p.status === "confirmed"
+          ? "買い目OK"
+          : p.status === "provisional"
+            ? "展示待ち"
+            : p.status || "";
       lines.push(`・${name} ${p.race}R  ${tickets}（${status}）`);
       if (p.why) lines.push(`  └ ${p.why.slice(0, 140)}`);
     }
   }
 
   if (waiting.length && !skipped.length) {
-    lines.push("", "【展示待ち】展示・進入確定後に再通知します。");
+    lines.push("", "【展示待ち】展示・進入が揃ってから再通知します。");
   }
 
   if (board.note) {

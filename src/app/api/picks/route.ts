@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import picksBoard from "@/data/picks_board.json";
 import accuracy from "@/data/accuracy_summary.json";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import path from "path";
+import { resolvePicksBoardForToday } from "@/lib/picksBoardView";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +45,12 @@ function loadRecentExplainedPicks(limit = 8): PickRow[] {
 }
 
 export async function GET() {
-  const board = picksBoard as {
-    picks?: PickRow[];
-    [key: string]: unknown;
-  };
+  const { board, today, stale } = resolvePicksBoardForToday();
   const recent = loadRecentExplainedPicks(8);
   return NextResponse.json({
     board,
+    today,
+    stale,
     recent,
     accuracy,
     policy: {

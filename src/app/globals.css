@@ -299,6 +299,71 @@ textarea {
   align-items: end;
 }
 
+.race-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.race-pick-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(4, 14, 24, 0.72);
+  color: var(--ink);
+  padding: 0.55rem 0.35rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.race-pick-btn em {
+  display: block;
+  margin-top: 0.15rem;
+  font-style: normal;
+  font-size: 0.68rem;
+  opacity: 0.9;
+}
+
+.race-pick-btn.conf4 {
+  border-color: rgba(255, 176, 32, 0.75);
+  background:
+    linear-gradient(160deg, rgba(255, 176, 32, 0.22), transparent 60%),
+    rgba(4, 14, 24, 0.85);
+  color: #ffd27a;
+}
+
+.race-pick-btn.conf5 {
+  border-color: rgba(255, 77, 109, 0.8);
+  background:
+    linear-gradient(160deg, rgba(255, 77, 109, 0.24), transparent 60%),
+    rgba(4, 14, 24, 0.88);
+  color: #ffb3c0;
+}
+
+.race-pick-btn.conf-mid {
+  border-color: rgba(46, 230, 255, 0.28);
+}
+
+.race-pick-btn.active {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(46, 230, 255, 0.35);
+}
+
+.race-pick-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+@media (max-width: 560px) {
+  .race-pick-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .field {
   display: grid;
   gap: 0.35rem;
