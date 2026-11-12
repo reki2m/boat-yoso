@@ -1,0 +1,88 @@
+{
+  "rule": {
+    "ticket": "trifecta_1_2_stream5",
+    "tickets": [
+      "1-2-3",
+      "1-2-4",
+      "1-2-5",
+      "1-2-6",
+      "1-3-2"
+    ],
+    "points": 5,
+    "stake_per_ticket": 100,
+    "max_c1_class": 1,
+    "min_c1_nat": 7.0,
+    "max_c1_st": 0.14,
+    "min_motor2": 32,
+    "require_axis_1": true,
+    "min_score_gap": 4,
+    "min_confidence": 4,
+    "grades": [
+      4,
+      5
+    ],
+    "stadium_whitelist": [
+      8,
+      9,
+      12,
+      13,
+      15,
+      17,
+      18,
+      19
+    ],
+    "race_blacklist": [
+      1,
+      9
+    ],
+    "validated_period": "2021-2026",
+    "validated_all_roi": 100.5,
+    "validated_all_min_year_roi": 85.61,
+    "validated_hit_rate": 44.42,
+    "validated_selected": 815,
+    "validated_note": "考察本線を全買いしたとき回収率85%以上になるよう、条件外は見送り。チケットは1-2流し5点固定。簡易ゲートスコアで軸1・差・信頼度を判定。",
+    "band": "mainline",
+    "meets_target": true,
+    "target_roi": 85
+  },
+  "period": "2021-2026",
+  "selected": 815,
+  "hit_rate": 44.42,
+  "roi": 100.5,
+  "min_year_roi": 85.61,
+  "pnl": 2050,
+  "tickets": [
+    "1-2-3",
+    "1-2-4",
+    "1-2-5",
+    "1-2-6",
+    "1-3-2"
+  ],
+  "meets_target_roi_85": true,
+  "yearly": {
+    "2021": {
+      "n": 170,
+      "roi": 95.62
+    },
+    "2022": {
+      "n": 127,
+      "roi": 88.76
+    },
+    "2023": {
+      "n": 138,
+      "roi": 85.61
+    },
+    "2024": {
+      "n": 118,
+      "roi": 148.92
+    },
+    "2025": {
+      "n": 144,
+      "roi": 100.22
+    },
+    "2026": {
+      "n": 118,
+      "roi": 89.53
+    }
+  }
+}

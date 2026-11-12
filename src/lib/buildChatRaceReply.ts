@@ -55,7 +55,9 @@ export async function buildChatRaceReply(
     exhibition,
     seriesForms,
     placeName: payload.placeName || query.placeName,
+    placeNo: query.placeNo,
     raceNo: query.raceNo,
+    raceRank: payload.raceRank,
   });
   const live = liveBroadcastUrls(query.placeNo, dateKey, query.raceNo);
 
@@ -76,13 +78,15 @@ export async function buildChatRaceReply(
     );
   }
 
-  // アプリ内「考察買い目」相当
+  // アプリ内「考察買い目」相当（本線は回収85%ゲート通過時のみ）
   lines.push(
     `■ 本命期待度（信頼度）: ${deep.confidence}/5（${confidenceWord(deep.confidence)}）`,
     deep.confidenceLabel ? `　${deep.confidenceLabel}` : "",
     `軸: ${deep.axis}号 / 相手: ${deep.partners.join("・") || "—"}`,
     "",
-    `■ 考察買い目（${deep.count}点）`,
+    deep.count
+      ? `■ 考察買い目（${deep.count}点）`
+      : "■ 考察買い目: 見送り（全買い回収85%未満になる条件のため）",
   );
   for (const t of deep.tickets.slice(0, 6)) {
     lines.push(`・${t.combo}（${t.role}）`);

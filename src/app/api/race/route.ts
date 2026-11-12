@@ -64,7 +64,9 @@ export async function GET(req: NextRequest) {
     exhibition,
     seriesForms,
     placeName: payload.placeName,
+    placeNo: place,
     raceNo: race,
+    raceRank: payload.raceRank,
   });
 
   return NextResponse.json({

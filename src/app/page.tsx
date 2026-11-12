@@ -869,7 +869,9 @@ export default function Home() {
                 <div className="meta" style={{ marginBottom: "0.65rem" }}>
                   <span className="badge">考察買い目</span>
                   <span className="badge">
-                    3連単 {data.deepPicks.count}点
+                    {data.deepPicks.count
+                      ? `3連単 ${data.deepPicks.count}点`
+                      : "本線見送り"}
                   </span>
                   <span className="badge">
                     信頼度 {data.deepPicks.confidence}/5
@@ -894,21 +896,25 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="sanren" style={{ marginBottom: "0.75rem" }}>
-                  {data.deepPicks.tickets.map((t) => t.combo).join(" / ")}
+                  {data.deepPicks.tickets.length
+                    ? data.deepPicks.tickets.map((t) => t.combo).join(" / ")
+                    : "見送り（全買い回収85%未満になる条件のため出さない）"}
                 </div>
-                <div className="band-grid">
-                  {data.deepPicks.tickets.map((t) => (
-                    <div key={t.combo} className="side-card on">
-                      <span>
-                        {t.rank}. {t.role}
-                      </span>
-                      <strong>{t.combo}</strong>
-                      <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                        {t.why}
+                {data.deepPicks.tickets.length ? (
+                  <div className="band-grid">
+                    {data.deepPicks.tickets.map((t) => (
+                      <div key={t.combo} className="side-card on">
+                        <span>
+                          {t.rank}. {t.role}
+                        </span>
+                        <strong>{t.combo}</strong>
+                        <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                          {t.why}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="why-box" style={{ marginTop: "0.85rem" }}>
                   <strong>考察コメント</strong>
                   {data.deepPicks.commentary.map((line) => (
