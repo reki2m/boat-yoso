@@ -1,11 +1,14 @@
 import { sql } from "@/lib/db";
+import { publicPresenceId } from "@/lib/chatSession";
 import { sanitizeDisplayName, type ChatRole } from "@/lib/chatStore";
 
 export type PresenceMember = {
-  session_id: string;
+  /** 公開用の匿名ID（生の session_id ではない） */
+  id: string;
   display_name: string;
   role: ChatRole;
   last_seen: string;
+  me?: boolean;
 };
 
 const PRESENCE_TTL_MS = 45_000;
@@ -42,7 +45,7 @@ export async function touchPresence(input: {
   displayName: string;
   role?: ChatRole | string | null;
 }): Promise<void> {
-  const sessionId = (input.sessionId || "").trim().slice(0, 64);
+  const sessionId = (input.sessionId || "").trim().slice(0, 80);
   if (!sessionId) return;
   const displayName = sanitizeDisplayName(input.displayName);
   const role = asRole(input.role);
@@ -59,13 +62,13 @@ export async function touchPresence(input: {
 }
 
 export async function leavePresence(sessionId: string | null | undefined): Promise<void> {
-  const id = (sessionId || "").trim().slice(0, 64);
+  const id = (sessionId || "").trim().slice(0, 80);
   if (!id) return;
   await ensurePresenceTable();
   await sql(`delete from chat_presence where session_id = $1`, [id]).catch(() => null);
 }
 
-export async function listPresence(): Promise<PresenceMember[]> {
+export async function listPresence(viewerSessionId?: string | null): Promise<PresenceMember[]> {
   await ensurePresenceTable();
   const cutoff = new Date(Date.now() - PRESENCE_TTL_MS).toISOString();
   await sql(`delete from chat_presence where last_seen < $1::timestamptz`, [cutoff]).catch(
@@ -88,9 +91,10 @@ export async function listPresence(): Promise<PresenceMember[]> {
   ).catch(() => []);
 
   return rows.map((row) => ({
-    session_id: row.session_id,
+    id: publicPresenceId(row.session_id),
     display_name: row.display_name,
     role: asRole(row.role),
     last_seen: asIso(row.last_seen),
+    me: Boolean(viewerSessionId && viewerSessionId === row.session_id),
   }));
 }

@@ -1,7 +1,40 @@
 import { sql } from "@/lib/db";
+import { normalizeSecret, safeEqualText } from "@/lib/chatSecurity";
+import { STADIUMS } from "@/lib/stadiums";
 
 export type ChatKind = "picks" | "note" | "chat";
 export type ChatRole = "operator" | "member";
+/** public=全員 / private=依頼者のみ / admin=管理人のみ */
+export type ChatVisibility = "public" | "private" | "admin";
+
+/** チャット欄の「〇〇場 〇〇R」UI用 */
+export type ChatRaceChip = {
+  placeNo: number;
+  placeName: string;
+  raceNo: number;
+  label: string;
+  tickets?: string[];
+  status?: string;
+  why?: string;
+  /** waiting=展示前 / after=展示後反映 */
+  exhibition?: "waiting" | "after" | "unknown";
+};
+
+export type ChatMessageMeta = {
+  date?: string;
+  mode?: string;
+  count?: number;
+  discord?: boolean;
+  placeNo?: number;
+  raceNo?: number;
+  tickets?: string[];
+  visibility?: ChatVisibility;
+  owner_session_id?: string;
+  owner_name?: string;
+  /** チャット欄レースUI（〇〇場 〇〇R） */
+  races?: ChatRaceChip[];
+  race_label?: string;
+};
 
 export type ChatMessage = {
   id: string;
@@ -11,15 +44,18 @@ export type ChatMessage = {
   body: string;
   author_name?: string;
   author_role?: ChatRole;
-  meta?: {
-    date?: string;
-    mode?: string;
-    count?: number;
-    discord?: boolean;
-    placeNo?: number;
-    raceNo?: number;
-    tickets?: string[];
-  };
+  meta?: ChatMessageMeta;
+};
+
+export type PredictionSummaryRow = {
+  message_id: string;
+  created_at: string;
+  owner_name: string;
+  date: string;
+  placeNo: number;
+  placeName: string;
+  raceNo: number;
+  tickets: string[];
 };
 
 type ChatFeed = {
@@ -39,7 +75,7 @@ type ChatRow = {
   body: string;
   author_name?: string | null;
   author_role?: string | null;
-  meta: ChatMessage["meta"] | string | null;
+  meta: ChatMessageMeta | string | null;
 };
 
 function asIso(value: string | Date): string {
@@ -47,11 +83,11 @@ function asIso(value: string | Date): string {
   return value;
 }
 
-function parseMeta(meta: ChatRow["meta"]): ChatMessage["meta"] | undefined {
+function parseMeta(meta: ChatRow["meta"]): ChatMessageMeta | undefined {
   if (!meta) return undefined;
   if (typeof meta === "string") {
     try {
-      return JSON.parse(meta) as ChatMessage["meta"];
+      return JSON.parse(meta) as ChatMessageMeta;
     } catch {
       return undefined;
     }
@@ -74,6 +110,37 @@ function emptyFeed(): ChatFeed {
   return { updated_at: null, messages: [] };
 }
 
+function mapRow(row: ChatRow): ChatMessage {
+  return {
+    id: row.id,
+    created_at: asIso(row.created_at),
+    kind: asKind(row.kind),
+    title: row.title,
+    body: row.body,
+    author_name: row.author_name || undefined,
+    author_role: asRole(row.author_role),
+    meta: parseMeta(row.meta),
+  };
+}
+
+export function messageVisibility(m: ChatMessage): ChatVisibility {
+  const v = m.meta?.visibility;
+  if (v === "private" || v === "admin") return v;
+  return "public";
+}
+
+export function canViewMessage(
+  m: ChatMessage,
+  viewer: { sessionId?: string; isAdmin?: boolean },
+): boolean {
+  const vis = messageVisibility(m);
+  if (vis === "public") return true;
+  if (vis === "admin") return Boolean(viewer.isAdmin);
+  // private: 依頼した本人のみ（管理人にも本文は出さない。管理人は admin ログを見る）
+  const owner = m.meta?.owner_session_id || "";
+  return Boolean(viewer.sessionId && owner && owner === viewer.sessionId);
+}
+
 export function sanitizeDisplayName(raw: string | null | undefined): string {
   const name = (raw || "").replace(/\s+/g, " ").trim().slice(0, MAX_NAME);
   return name || "名無し";
@@ -83,31 +150,82 @@ export function sanitizeChatBody(raw: string | null | undefined): string {
   return (raw || "").trim().slice(0, MAX_BODY);
 }
 
-export async function readChatFeed(): Promise<ChatFeed> {
+async function loadMappedMessages(limit = MAX_MESSAGES): Promise<ChatMessage[]> {
+  const rows = await sql<ChatRow>(
+    `select id, created_at, kind, title, body, author_name, author_role, meta
+     from chat_messages
+     order by created_at asc
+     limit $1`,
+    [limit],
+  );
+  return rows.map(mapRow);
+}
+
+function scrubMessageForClient(m: ChatMessage): ChatMessage {
+  if (!m.meta?.owner_session_id) return m;
+  const { owner_session_id: _omit, ...meta } = m.meta;
+  return { ...m, meta };
+}
+
+export async function readChatFeed(viewer?: {
+  sessionId?: string;
+  isAdmin?: boolean;
+}): Promise<ChatFeed> {
   try {
-    const rows = await sql<ChatRow>(
-      `select id, created_at, kind, title, body, author_name, author_role, meta
-       from chat_messages
-       order by created_at asc
-       limit $1`,
-      [MAX_MESSAGES],
-    );
-    const messages: ChatMessage[] = rows.map((row) => ({
-      id: row.id,
-      created_at: asIso(row.created_at),
-      kind: asKind(row.kind),
-      title: row.title,
-      body: row.body,
-      author_name: row.author_name || undefined,
-      author_role: asRole(row.author_role),
-      meta: parseMeta(row.meta),
-    }));
+    const mapped = await loadMappedMessages();
+    const messages = (
+      viewer
+        ? mapped.filter((m) => canViewMessage(m, viewer))
+        : mapped.filter((m) => messageVisibility(m) === "public")
+    ).map(scrubMessageForClient);
     return {
       updated_at: messages[messages.length - 1]?.created_at ?? null,
       messages,
     };
   } catch {
     return emptyFeed();
+  }
+}
+
+/** 精算など内部ジョブ用（可視性フィルタなし） */
+export async function readAllChatMessagesForJobs(): Promise<ChatMessage[]> {
+  try {
+    return await loadMappedMessages();
+  } catch {
+    return [];
+  }
+}
+
+/** 管理人用: 誰がどのレースのアプリ予想を開いたか（admin ログ由来） */
+export async function listPrivatePredictionSummary(): Promise<PredictionSummaryRow[]> {
+  try {
+    const rows = await sql<ChatRow>(
+      `select id, created_at, kind, title, body, author_name, author_role, meta
+       from chat_messages
+       where coalesce(meta->>'visibility','public') = 'admin'
+         and coalesce(meta->>'mode','') = 'admin_predict_log'
+       order by created_at desc
+       limit 200`,
+    );
+    return rows.map(mapRow).flatMap((m) => {
+      const placeNo = Number(m.meta?.placeNo || 0);
+      const raceNo = Number(m.meta?.raceNo || 0);
+      if (!placeNo || !raceNo) return [];
+      return [
+        {
+          message_id: m.id,
+          created_at: m.created_at,
+          owner_name: m.meta?.owner_name || m.author_name || "名無し",
+          date: String(m.meta?.date || ""),
+          placeNo,
+          placeName: STADIUMS[placeNo] || `場${placeNo}`,
+          raceNo,
+          tickets: Array.isArray(m.meta?.tickets) ? m.meta!.tickets!.map(String) : [],
+        },
+      ];
+    });
+  } catch {
+    return [];
   }
 }
 
@@ -150,14 +268,14 @@ export async function appendChatMessage(
 }
 
 export function inviteCode(): string {
-  const fromEnv = process.env.CHAT_INVITE_CODE?.trim();
+  const fromEnv = normalizeSecret(process.env.CHAT_INVITE_CODE);
   if (fromEnv) return fromEnv;
   if (process.env.NODE_ENV === "production") return "";
   return "shio-invite";
 }
 
 export function operatorKey(): string {
-  const fromEnv = process.env.CHAT_OPERATOR_KEY?.trim();
+  const fromEnv = normalizeSecret(process.env.CHAT_OPERATOR_KEY);
   if (fromEnv) return fromEnv;
   if (process.env.NODE_ENV === "production") return "";
   return "shio-op";
@@ -165,22 +283,25 @@ export function operatorKey(): string {
 
 /** 管理人キー。未設定時は運営キーと同じ。チャット消去など破壊操作専用。 */
 export function adminKey(): string {
-  const fromEnv = process.env.CHAT_ADMIN_KEY?.trim();
+  const fromEnv = normalizeSecret(process.env.CHAT_ADMIN_KEY);
   if (fromEnv) return fromEnv;
   return operatorKey();
 }
 
 export function checkInvite(code: string | null | undefined): boolean {
   const expected = inviteCode();
-  return Boolean(expected && code && code.trim() === expected);
+  const got = normalizeSecret(code);
+  return Boolean(expected && got && safeEqualText(got, expected));
 }
 
 export function checkOperator(key: string | null | undefined): boolean {
   const expected = operatorKey();
-  return Boolean(expected && key && key.trim() === expected);
+  const got = normalizeSecret(key);
+  return Boolean(expected && got && safeEqualText(got, expected));
 }
 
 export function checkAdmin(key: string | null | undefined): boolean {
   const expected = adminKey();
-  return Boolean(expected && key && key.trim() === expected);
+  const got = normalizeSecret(key);
+  return Boolean(expected && got && safeEqualText(got, expected));
 }

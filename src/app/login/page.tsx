@@ -16,12 +16,13 @@ function LoginForm() {
     try {
       const res = await fetch("/api/app-auth", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: key.trim(), action: "login" }),
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "解錠できません");
+        setError(json.hint ? `${json.error}（${json.hint}）` : json.error || "解錠できません");
         return;
       }
       const next = params.get("next") || "/";
@@ -41,7 +42,7 @@ function LoginForm() {
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          placeholder="CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY"
+          placeholder="APP_UNLOCK_KEY（または CHAT_ADMIN_KEY）"
           autoComplete="off"
           className="chat-input"
           onKeyDown={(e) => {
@@ -73,7 +74,8 @@ function LoginForm() {
       </div>
       {error ? <p className="status">{error}</p> : null}
       <p className="note" style={{ marginTop: "0.85rem" }}>
-        友達にはチャットURL（/chat）と招待コードだけ共有してください。管理人キーは渡さないでください。
+        ここに入れるのは招待コードではなく、Cursor Apps の Secrets にある APP_UNLOCK_KEY（未設定なら
+        CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY）です。友達には /chat と招待コードだけ渡してください。
       </p>
     </section>
   );

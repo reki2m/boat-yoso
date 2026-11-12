@@ -3,11 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 const APP_GATE_COOKIE = "shioyomi_app_gate";
 
 function gateSecret(): string {
-  return (
-    process.env.CHAT_ADMIN_KEY?.trim() ||
-    process.env.CHAT_OPERATOR_KEY?.trim() ||
-    (process.env.NODE_ENV === "production" ? "" : "shio-op")
-  );
+  const strip = (v: string | undefined) =>
+    String(v || "")
+      .normalize("NFKC")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .trim();
+  const unlock = strip(process.env.APP_UNLOCK_KEY);
+  const admin = strip(process.env.CHAT_ADMIN_KEY);
+  const op = strip(process.env.CHAT_OPERATOR_KEY);
+  return unlock || admin || op || (process.env.NODE_ENV === "production" ? "" : "shio-op");
 }
 
 async function expectedToken(secret: string): Promise<string> {
@@ -28,6 +32,8 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
     pathname.startsWith("/api/chat") ||
+    // チャットの場選択用。本日開催場の公開一覧のみ（鍵不要）
+    pathname.startsWith("/api/schedule") ||
     pathname.startsWith("/api/app-auth") ||
     pathname === "/login" ||
     pathname.startsWith("/_next") ||

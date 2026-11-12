@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { STADIUMS } from "@/lib/stadiums";
 
 type ChatMessage = {
   id: string;
@@ -19,18 +20,11 @@ type ChatMessage = {
     placeNo?: number;
     raceNo?: number;
     tickets?: string[];
+    visibility?: "public" | "private" | "admin";
+    owner_session_id?: string;
+    owner_name?: string;
+    race_label?: string;
   };
-};
-
-type LiveUrls = {
-  placeName: string;
-  mediaTop: string;
-  raceIndex: string;
-  raceList: string;
-  beforeInfo: string;
-  officialSite?: string;
-  stadiumPage?: string;
-  liveNote?: string;
 };
 
 type ChatLiveTarget = {
@@ -42,41 +36,79 @@ type ChatLiveTarget = {
   status: string;
   skip_detail: string | null;
   why: string | null;
-  live: LiveUrls;
+  live: {
+    mediaTop: string;
+    beforeInfo: string;
+    officialSite?: string;
+    stadiumPage?: string;
+    liveNote?: string;
+  };
+};
+
+type PresenceMember = {
+  id: string;
+  display_name: string;
+  role: "operator" | "member";
+  last_seen: string;
+  me?: boolean;
+};
+
+type StadiumOpt = { id: number; name: string };
+
+type AdminPredictionPick = {
+  message_id: string;
+  created_at: string;
+  owner_name: string;
+  date: string;
+  placeNo: number;
+  placeName: string;
+  raceNo: number;
+  tickets: string[];
+  body: string;
+  label: string;
+  result: {
+    settled: boolean;
+    finishCombo: string | null;
+    hitTickets: string[];
+    stakeYen: number;
+    payoutYen: number;
+    recoveryPct: number | null;
+  };
+};
+
+type AdminOwnerGroup = {
+  owner_name: string;
+  pickCount: number;
+  settledCount: number;
+  stakeYen: number;
+  payoutYen: number;
+  recoveryPct: number | null;
+  picks: AdminPredictionPick[];
+};
+
+type AdminPredictionOversight = {
+  stake_per_ticket: number;
+  totals: {
+    pickCount: number;
+    settledCount: number;
+    stakeYen: number;
+    payoutYen: number;
+    recoveryPct: number | null;
+  };
+  owners: AdminOwnerGroup[];
+  picks: AdminPredictionPick[];
 };
 
 const INVITE_KEY = "shioyomi_chat_invite";
 const NAME_KEY = "shioyomi_chat_name";
-const OP_KEY = "shioyomi_operator_key";
-const ADMIN_KEY = "shioyomi_admin_key";
-const SESSION_KEY = "shioyomi_chat_session";
-
-type PresenceMember = {
-  session_id: string;
-  display_name: string;
-  role: "operator" | "member";
-  last_seen: string;
-};
-
-function ensureSessionId(): string {
-  try {
-    const existing = window.localStorage.getItem(SESSION_KEY) || "";
-    if (existing) return existing;
-    const next = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    window.localStorage.setItem(SESSION_KEY, next);
-    return next;
-  } catch {
-    return `s_${Date.now().toString(36)}`;
-  }
-}
+const LEGACY_OP_KEY = "shioyomi_operator_key";
+const LEGACY_ADMIN_KEY = "shioyomi_admin_key";
+const LEGACY_SESSION_KEY = "shioyomi_chat_session";
 
 const DEFAULT_RULES = [
-  "チャット履歴は当日のレース終了から約1時間後に自動リセット（全消去）されます。",
+  "チャット履歴は当日のレース終了から約1時間後に自動リセットされます。",
   "喧嘩・誹謗中傷・荒らし・個人攻撃は禁止です。",
   "予想・買い目は参考情報であり、的中や利益を保証しません。",
-  "舟券（賭け）の購入・投票は自己責任です（未成年不可）。",
-  "免責事項: 情報誤り・遅延・障害・損失等について当サービスは責任を負いません。",
-  "公式情報は各場・BOAT RACE公式を優先してください。",
 ];
 
 function formatJst(iso: string): string {
@@ -94,26 +126,36 @@ function formatJst(iso: string): string {
 }
 
 function kindLabel(m: ChatMessage): string {
+  if (m.meta?.mode === "admin_predict_log" || m.meta?.visibility === "admin") {
+    return "管理人ログ";
+  }
+  if (m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private") {
+    return "AI予想（自分のみ）";
+  }
   if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中🎯";
-  if (m.kind === "picks") return "買い目";
+  if (m.meta?.mode === "exhibition_after_honmei") return "展示後本命";
+  if (m.kind === "picks" || m.meta?.mode === "morning_auto_honmei" || m.meta?.mode === "honmei_board") {
+    return "本命配信";
+  }
   if (m.kind === "note") return "メモ";
-  return "会話";
+  return "雑談";
 }
 
-function targetPhrase(t: { status: string; skip_detail: string | null }): string {
-  if (t.status === "skipped") return t.skip_detail || "条件外だからスルー";
-  if (t.status === "provisional") return "展示待ち";
-  if (t.status === "confirmed") return "買い目OK";
-  return t.status || "—";
+function targetPhrase(t: { status: string; skip_detail: string | null; stadium_name: string; race: number }): string {
+  if (t.status === "skipped") {
+    return `${t.stadium_name}${t.race}R（${t.skip_detail || "条件外だからスルー"}）`;
+  }
+  if (t.status === "provisional") return `${t.stadium_name}${t.race}R（展示待ち）`;
+  if (t.status === "confirmed") return `${t.stadium_name}${t.race}R（買い目OK）`;
+  return `${t.stadium_name}${t.race}R`;
 }
 
 export default function ChatPage() {
   const [invite, setInvite] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [operatorKey, setOperatorKey] = useState("");
   const [adminKey, setAdminKey] = useState("");
-  const [asOperator, setAsOperator] = useState(false);
-  const [asAdmin, setAsAdmin] = useState(false);
+  const [showAdminGate, setShowAdminGate] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [rules, setRules] = useState<string[]>(DEFAULT_RULES);
   const [unlocked, setUnlocked] = useState(false);
   const [error, setError] = useState("");
@@ -122,49 +164,43 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [targets, setTargets] = useState<ChatLiveTarget[]>([]);
   const [presence, setPresence] = useState<PresenceMember[]>([]);
-  const [sessionId, setSessionId] = useState("");
+  const [adminOversight, setAdminOversight] = useState<AdminPredictionOversight | null>(null);
+  const [selectedAdminPickId, setSelectedAdminPickId] = useState<string>("");
   const [liveDate, setLiveDate] = useState("");
-  const [activeKey, setActiveKey] = useState("");
+  const [stadiums, setStadiums] = useState<StadiumOpt[]>([]);
+  const [races, setRaces] = useState<number[]>(Array.from({ length: 12 }, (_, i) => i + 1));
+  const [pickStadium, setPickStadium] = useState<number>(0);
+  const [pickRace, setPickRace] = useState<number>(1);
   const [pending, startTransition] = useTransition();
   const [sending, setSending] = useState(false);
+  const [predicting, setPredicting] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const sid = ensureSessionId();
-    setSessionId(sid);
+    try {
+      window.localStorage.removeItem(LEGACY_OP_KEY);
+      window.localStorage.removeItem(LEGACY_ADMIN_KEY);
+      window.localStorage.removeItem(LEGACY_SESSION_KEY);
+    } catch {
+      // ignore
+    }
     const savedInvite = window.localStorage.getItem(INVITE_KEY) || "";
     const savedName = window.localStorage.getItem(NAME_KEY) || "";
-    const savedOp = window.localStorage.getItem(OP_KEY) || "";
-    const savedAdmin = window.localStorage.getItem(ADMIN_KEY) || "";
     if (savedName) setDisplayName(savedName);
-    if (savedOp) {
-      setOperatorKey(savedOp);
-      setAsOperator(true);
-    }
-    if (savedAdmin) {
-      setAdminKey(savedAdmin);
-      setAsAdmin(true);
-    }
     if (savedInvite) {
       setInvite(savedInvite);
-      void loadFeed(savedInvite, {
-        quiet: false,
-        refresh: true,
-        session: sid,
-        name: savedName,
-        asOp: Boolean(savedOp),
-      });
+      void enterAndLoad(savedInvite, savedName || "メンバー", false);
     }
+    void loadSchedule();
   }, []);
 
   useEffect(() => {
-    if (!unlocked || !sessionId) return;
+    if (!unlocked) return;
     const onLeave = () => {
       const payload = JSON.stringify({
         kind: "leave",
         invite: invite.trim(),
-        sessionId,
       });
       if (navigator.sendBeacon) {
         navigator.sendBeacon(
@@ -175,7 +211,7 @@ export default function ChatPage() {
     };
     window.addEventListener("pagehide", onLeave);
     return () => window.removeEventListener("pagehide", onLeave);
-  }, [unlocked, sessionId, invite]);
+  }, [unlocked, invite]);
 
   useEffect(() => {
     if (!unlocked) return;
@@ -183,68 +219,119 @@ export default function ChatPage() {
       void loadFeed(invite.trim(), {
         quiet: true,
         refresh: false,
-        session: sessionId,
         name: displayName,
-        asOp: asOperator,
       });
-    }, 5000);
+    }, 10000);
     const liveTimer = window.setInterval(() => {
       void loadFeed(invite.trim(), {
         quiet: true,
         refresh: true,
-        session: sessionId,
         name: displayName,
-        asOp: asOperator,
       });
-    }, 30000);
+    }, 45000);
     return () => {
       window.clearInterval(msgTimer);
       window.clearInterval(liveTimer);
     };
-  }, [unlocked, invite, sessionId, displayName, asOperator]);
+  }, [unlocked, invite, displayName, adminKey, isAdmin]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length, unlocked]);
 
-  useEffect(() => {
-    if (!targets.length) {
-      setActiveKey("");
-      return;
+  async function loadSchedule() {
+    const allRaces = Array.from({ length: 12 }, (_, i) => i + 1);
+    const fallback: StadiumOpt[] = Object.entries(STADIUMS).map(([id, name]) => ({
+      id: Number(id),
+      name,
+    }));
+    try {
+      const res = await fetch("/api/schedule");
+      const json = await res.json().catch(() => ({}));
+      const next: StadiumOpt[] = Array.isArray(json.stadiums) ? json.stadiums : [];
+      if (next.length) {
+        setStadiums(next);
+        setRaces(json.races || allRaces);
+        setPickStadium((prev) => prev || next[0]?.id || 0);
+        return;
+      }
+    } catch {
+      // fall through to full list
     }
-    if (!activeKey || !targets.some((t) => `${t.stadium}-${t.race}` === activeKey)) {
-      setActiveKey(`${targets[0].stadium}-${targets[0].race}`);
+    setStadiums(fallback);
+    setRaces(allRaces);
+    setPickStadium((prev) => prev || fallback[0]?.id || 0);
+  }
+
+  async function enterAndLoad(code: string, name: string, quiet: boolean) {
+    if (!quiet) setError("");
+    try {
+      window.localStorage.setItem(NAME_KEY, name);
+      const enterRes = await fetch("/api/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-invite": code,
+        },
+        body: JSON.stringify({
+          invite: code,
+          kind: "enter",
+          authorName: name,
+          ...(adminKey.trim()
+            ? { adminKey: adminKey.trim(), operatorKey: adminKey.trim() }
+            : {}),
+        }),
+      });
+      const enterJson = await enterRes.json();
+      if (!enterRes.ok) {
+        setUnlocked(false);
+        if (!quiet) {
+          setError(enterJson.error || "入場できません");
+          window.localStorage.removeItem(INVITE_KEY);
+        }
+        return;
+      }
+      await loadFeed(code, { quiet, refresh: true, name });
+    } catch {
+      if (!quiet) setError("入場に失敗しました");
     }
-  }, [targets, activeKey]);
+  }
 
   async function loadFeed(
     code: string,
     opts: {
       quiet: boolean;
       refresh: boolean;
-      session?: string;
       name?: string;
-      asOp?: boolean;
     },
   ) {
     if (!opts.quiet) setError("");
     try {
-      const sid = opts.session || sessionId || ensureSessionId();
       const name = (opts.name ?? displayName).trim();
-      const q = new URLSearchParams({ invite: code });
+      const q = new URLSearchParams();
       if (opts.refresh) q.set("refresh", "1");
-      if (sid && name) {
-        q.set("session", sid);
-        q.set("name", name);
-        q.set("role", (opts.asOp ?? asOperator) ? "operator" : "member");
+      if (name) q.set("name", name);
+      const headers: Record<string, string> = {
+        "x-chat-invite": code,
+      };
+      if (adminKey.trim()) {
+        headers["x-chat-admin"] = adminKey.trim();
+        headers["x-chat-operator"] = adminKey.trim();
       }
-      const res = await fetch(`/api/chat?${q.toString()}`);
+      const res = await fetch(`/api/chat?${q.toString()}`, {
+        headers,
+        credentials: "include",
+      });
       const json = await res.json();
       if (!res.ok) {
         setUnlocked(false);
         setMessages([]);
         setTargets([]);
         setPresence([]);
+        setAdminOversight(null);
+        setSelectedAdminPickId("");
+        setIsAdmin(false);
         if (!opts.quiet) {
           setError(json.error || "入場できません");
           window.localStorage.removeItem(INVITE_KEY);
@@ -257,6 +344,10 @@ export default function ChatPage() {
       setTargets(json.targets || []);
       setPresence(Array.isArray(json.presence) ? json.presence : []);
       setLiveDate(json.liveDate || "");
+      setIsAdmin(Boolean(json.isAdmin));
+      setAdminOversight(
+        json.isAdmin && json.adminOversight ? (json.adminOversight as AdminPredictionOversight) : null,
+      );
       if (Array.isArray(json.rules) && json.rules.length) setRules(json.rules);
     } catch {
       if (!opts.quiet) setError("読み込みに失敗しました");
@@ -265,12 +356,15 @@ export default function ChatPage() {
 
   async function leaveRoom() {
     const code = invite.trim();
-    const sid = sessionId || ensureSessionId();
     try {
       await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "leave", invite: code, sessionId: sid }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-invite": code,
+        },
+        body: JSON.stringify({ kind: "leave", invite: code }),
         keepalive: true,
       });
     } catch {
@@ -281,12 +375,15 @@ export default function ChatPage() {
     setMessages([]);
     setTargets([]);
     setPresence([]);
+    setAdminOversight(null);
+    setSelectedAdminPickId("");
+    setIsAdmin(false);
   }
 
   async function clearChatBulk() {
-    const key = adminKey.trim() || operatorKey.trim();
+    const key = adminKey.trim();
     if (!key) {
-      setError("一括消去には管理人キー（CHAT_ADMIN_KEY）が必要です");
+      setError("一括消去には管理人キーが必要です");
       return;
     }
     if (!window.confirm("チャット履歴を一括消去します。管理人のみの操作です。よろしいですか？")) {
@@ -296,14 +393,15 @@ export default function ChatPage() {
     setError("");
     setStatus("");
     try {
-      window.localStorage.setItem(ADMIN_KEY, key);
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "clear",
-          operatorKey: key,
-        }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-admin": key,
+          "x-chat-operator": key,
+        },
+        body: JSON.stringify({ kind: "clear", operatorKey: key }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -314,9 +412,7 @@ export default function ChatPage() {
       await loadFeed(invite.trim(), {
         quiet: true,
         refresh: false,
-        session: sessionId,
         name: displayName,
-        asOp: asOperator,
       });
     } catch {
       setError("消去に失敗しました");
@@ -339,18 +435,18 @@ export default function ChatPage() {
     setStatus("");
     try {
       window.localStorage.setItem(NAME_KEY, name);
-      if (asOperator && operatorKey.trim()) {
-        window.localStorage.setItem(OP_KEY, operatorKey.trim());
-      }
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-invite": code,
+        },
         body: JSON.stringify({
           invite: code,
           kind: "chat",
           text,
           authorName: name,
-          operatorKey: asOperator ? operatorKey.trim() : undefined,
         }),
       });
       const json = await res.json();
@@ -359,13 +455,11 @@ export default function ChatPage() {
         return;
       }
       setDraft("");
-      setStatus("送信しました");
+      setStatus("雑談を送信しました（全員に表示）");
       await loadFeed(code, {
         quiet: true,
         refresh: false,
-        session: sessionId,
         name,
-        asOp: asOperator,
       });
     } catch {
       setError("送信に失敗しました");
@@ -374,7 +468,57 @@ export default function ChatPage() {
     }
   }
 
-  const active = targets.find((t) => `${t.stadium}-${t.race}` === activeKey) || null;
+  async function requestPredict(opts?: { placeNo?: number; raceNo?: number }) {
+    const code = invite.trim();
+    const name = displayName.trim();
+    const placeNo = Number(opts?.placeNo || pickStadium || 0);
+    const raceNo = Number(opts?.raceNo || pickRace || 0);
+    if (!code || !name) {
+      setError("招待コードと表示名が必要です");
+      return;
+    }
+    if (!placeNo || !raceNo) {
+      setError("場とレースを選んでください");
+      return;
+    }
+    setPickStadium(placeNo);
+    setPickRace(raceNo);
+    setPredicting(true);
+    setError("");
+    setStatus("");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-invite": code,
+        },
+        body: JSON.stringify({
+          invite: code,
+          kind: "predict",
+          placeNo,
+          raceNo,
+          authorName: name,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "予想の取得に失敗しました");
+        return;
+      }
+      setStatus("AI予想を表示しました（自分と管理人のみ／他の友達には見えません）");
+      await loadFeed(code, {
+        quiet: true,
+        refresh: false,
+        name,
+      });
+    } catch {
+      setError("予想の取得に失敗しました");
+    } finally {
+      setPredicting(false);
+    }
+  }
 
   return (
     <main className="shell chat-shell">
@@ -382,7 +526,7 @@ export default function ChatPage() {
         <Link className="top-link" href="/">
           ← 律丸ボート部
         </Link>
-        <p className="brand-kicker">Pit Radio Channel</p>
+        <p className="brand-kicker">Friend Channel</p>
         <h1 className="brand" style={{ fontSize: "clamp(2.2rem, 7vw, 4rem)" }}>
           律丸ボート部
         </h1>
@@ -390,9 +534,6 @@ export default function ChatPage() {
         <div className="gate-rail" aria-hidden>
           <i /><i /><i /><i /><i /><i />
         </div>
-        <p className="lede">
-          「徳山1R」のように場名とレースを送ると予測が返ります。対象レースのライブも同じ画面で見れます。
-        </p>
       </section>
 
       {!unlocked ? (
@@ -434,17 +575,8 @@ export default function ChatPage() {
               className="btn"
               disabled={pending || !invite.trim() || !displayName.trim()}
               onClick={() => {
-                window.localStorage.setItem(NAME_KEY, displayName.trim());
-                const sid = sessionId || ensureSessionId();
-                setSessionId(sid);
                 startTransition(() => {
-                  void loadFeed(invite.trim(), {
-                    quiet: false,
-                    refresh: true,
-                    session: sid,
-                    name: displayName.trim(),
-                    asOp: asOperator,
-                  });
+                  void enterAndLoad(invite.trim(), displayName.trim(), false);
                 });
               }}
             >
@@ -458,12 +590,9 @@ export default function ChatPage() {
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
             <span className="badge">招待入場中</span>
             <span className="badge">{displayName || "名無し"}</span>
-            <span className="badge">{messages.length}件</span>
+            {isAdmin ? <span className="badge">管理人</span> : null}
             {liveDate ? <span className="badge">{liveDate}</span> : null}
           </div>
-          <p className="chat-reset-note">
-            注意: チャット欄はレース終了後（当日最終レースから約1時間後）に自動リセットされます。
-          </p>
           <div className="presence-panel">
             <div className="presence-head">
               <strong>入室中</strong>
@@ -477,129 +606,192 @@ export default function ChatPage() {
               <ul className="presence-list">
                 {presence.map((p) => (
                   <li
-                    key={p.session_id}
-                    className={`presence-chip ${p.role === "operator" ? "op" : ""} ${
-                      p.session_id === sessionId ? "me" : ""
-                    }`}
+                    key={p.id}
+                    className={`presence-chip ${p.me ? "me" : ""}`}
                   >
                     <i aria-hidden />
                     <span>{p.display_name}</span>
-                    {p.role === "operator" ? <em>運営</em> : null}
-                    {p.session_id === sessionId ? <em>自分</em> : null}
+                    {p.me ? <em>自分</em> : null}
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <div className="chat-rules compact">
-            <strong>注意 / 免責</strong>
-            <ul>
-              {rules.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-          </div>
 
-          <div className="chat-live-panel">
+          {isAdmin ? (
+            <div className="chat-admin-panel">
+              <div className="chat-live-head">
+                <strong>管理人専用・回収率</strong>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={sending}
+                  onClick={() => {
+                    void clearChatBulk();
+                  }}
+                >
+                  一括消去
+                </button>
+              </div>
+              <p className="note">友達のAI予想ログです。行を押すと本文と回収率を見られます。</p>
+              {adminOversight ? (
+                <div className="admin-roi-summary">
+                  <span>
+                    全体回収率{" "}
+                    <strong>
+                      {adminOversight.totals.recoveryPct == null
+                        ? "未確定"
+                        : `${adminOversight.totals.recoveryPct.toFixed(1)}%`}
+                    </strong>
+                  </span>
+                  <span>
+                    確定 {adminOversight.totals.settledCount}/{adminOversight.totals.pickCount}件
+                  </span>
+                  <span>
+                    投資 {adminOversight.totals.stakeYen.toLocaleString("ja-JP")}円 / 払戻{" "}
+                    {adminOversight.totals.payoutYen.toLocaleString("ja-JP")}円
+                  </span>
+                </div>
+              ) : null}
+              {!adminOversight || adminOversight.picks.length === 0 ? (
+                <p className="note">まだAI予想ログはありません。</p>
+              ) : (
+                <ul className="chat-predict-log">
+                  {adminOversight.picks.map((p) => (
+                    <li key={p.message_id}>
+                      <button
+                        type="button"
+                        className={`btn ghost ${selectedAdminPickId === p.message_id ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedAdminPickId((cur) =>
+                            cur === p.message_id ? "" : p.message_id,
+                          );
+                          setPickStadium(p.placeNo);
+                          setPickRace(p.raceNo);
+                        }}
+                      >
+                        {p.owner_name} · {p.label}
+                        {p.result.recoveryPct == null
+                          ? ""
+                          : ` · ${p.result.recoveryPct.toFixed(1)}%`}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {(() => {
+                const pick =
+                  adminOversight?.picks.find((p) => p.message_id === selectedAdminPickId) || null;
+                if (!pick) return null;
+                return (
+                  <article className="chat-bubble op admin-log admin-pick-detail">
+                    <div className="chat-bubble-meta">
+                      <strong>
+                        {pick.owner_name} · {pick.label}
+                      </strong>
+                      <span>
+                        回収率{" "}
+                        {pick.result.recoveryPct == null
+                          ? "未確定"
+                          : `${pick.result.recoveryPct.toFixed(1)}%`}
+                      </span>
+                    </div>
+                    <pre className="chat-bubble-body">{pick.body || "予想本文なし"}</pre>
+                  </article>
+                );
+              })()}
+            </div>
+          ) : null}
+
+          <div className="chat-predict-panel chat-ai-bar">
             <div className="chat-live-head">
-              <strong>対象レースライブ</strong>
+              <strong>AI予想</strong>
+            </div>
+            <div className="chat-predict-row">
+              <label className="field">
+                <span>場</span>
+                <select
+                  value={pickStadium || ""}
+                  onChange={(e) => setPickStadium(Number(e.target.value))}
+                  className="chat-input"
+                >
+                  <option value="" disabled>
+                    場を選択
+                  </option>
+                  {stadiums.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>レース</span>
+                <select
+                  value={pickRace}
+                  onChange={(e) => setPickRace(Number(e.target.value))}
+                  className="chat-input"
+                >
+                  {races.map((r) => (
+                    <option key={r} value={r}>
+                      {r}R
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
-                className="btn ghost"
-                disabled={pending}
+                className="btn"
+                disabled={predicting || !pickStadium}
                 onClick={() => {
-                  startTransition(() => {
-                    void loadFeed(invite.trim(), {
-                      quiet: false,
-                      refresh: true,
-                      session: sessionId,
-                      name: displayName,
-                      asOp: asOperator,
-                    });
-                  });
+                  void requestPredict();
                 }}
               >
-                ライブ更新
+                {predicting ? "取得中…" : "AI予想"}
               </button>
             </div>
-            {targets.length === 0 ? (
-              <p className="note">いま対象レースはありません。</p>
+            {targets.length > 0 ? (
+              <p className="chat-honmei-targets">
+                本日の本命対象:{" "}
+                {targets
+                  .slice(0, 6)
+                  .map((t) => targetPhrase(t))
+                  .join(" / ")}
+                {targets.length > 6 ? " …" : ""}
+              </p>
             ) : (
-              <>
-                <div className="cta-row chat-live-targets">
-                  {targets.map((t) => {
-                    const key = `${t.stadium}-${t.race}`;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        className={`btn ${activeKey === key ? "" : "ghost"}`}
-                        onClick={() => setActiveKey(key)}
-                      >
-                        {t.stadium_name} {t.race}R · {targetPhrase(t)}
-                      </button>
-                    );
-                  })}
-                </div>
-                {active ? (
-                  <div className="live-box purchased chat-live-box">
-                    <strong>
-                      {active.stadium_name} {active.race}R
-                    </strong>
-                    <p className="note" style={{ marginTop: "0.35rem" }}>
-                      {active.status === "skipped"
-                        ? targetPhrase(active)
-                        : `買い目 ${active.tickets.join("/")} / ${targetPhrase(active)}`}
-                    </p>
-                    {active.status !== "skipped" && active.why ? (
-                      <p className="note">{active.why}</p>
-                    ) : null}
-                    <div className="cta-row">
-                      <a
-                        className="btn"
-                        href={active.live.officialSite || active.live.stadiumPage || active.live.mediaTop}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        場公式HP
-                      </a>
-                      <a className="btn ghost" href={active.live.beforeInfo} target="_blank" rel="noreferrer">
-                        レース情報
-                      </a>
-                      <a className="btn ghost" href={active.live.mediaTop} target="_blank" rel="noreferrer">
-                        場ライブ
-                      </a>
-                    </div>
-                    <p className="note" style={{ marginTop: "0.55rem" }}>
-                      {active.live.liveNote ||
-                        "各場の公式ホームページ／場ライブへ開きます（boatrace.jp は使いません）。"}
-                    </p>
-                  </div>
-                ) : null}
-              </>
+              <p className="note">いま対象レースはありません。</p>
             )}
           </div>
 
           <div className="chat-stream" ref={listRef}>
-            {messages.length === 0 ? (
-              <p className="status">まだメッセージがありません。最初の一言をどうぞ。</p>
+            {messages.filter((m) => m.meta?.visibility !== "admin").length === 0 ? (
+              <p className="status">まだ雑談がありません。下からメッセージを送れます。</p>
             ) : (
-              messages.map((m) => {
-                const isOp = m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
+              messages
+                .filter((m) => m.meta?.visibility !== "admin")
+                .map((m) => {
+                const isPrivate = m.meta?.visibility === "private";
+                const isOp =
+                  m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
                 const isMine =
-                  m.kind === "chat" &&
-                  m.author_name === displayName.trim() &&
-                  ((asOperator && isOp) || (!asOperator && !isOp));
+                  m.kind === "chat" && m.author_name === displayName.trim() && !isOp;
                 return (
                   <article
                     key={m.id}
-                    className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""}`}
+                    className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""} ${
+                      isPrivate ? "private" : ""
+                    }`}
                   >
                     <div className="chat-bubble-meta">
-                      <strong>{m.author_name || m.title || (isOp ? "運営" : "メンバー")}</strong>
+                      <strong>
+                        {m.kind === "chat"
+                          ? m.author_name || "メンバー"
+                          : m.author_name || m.title || (isOp ? "運営" : "メンバー")}
+                      </strong>
                       <span>{kindLabel(m)}</span>
+                      {isPrivate ? <span>自分のみ</span> : null}
                       <span>{formatJst(m.created_at)} JST</span>
-                      {m.meta?.discord ? <span>Discord</span> : null}
                     </div>
                     <pre className="chat-bubble-body">{m.body}</pre>
                   </article>
@@ -611,12 +803,12 @@ export default function ChatPage() {
 
           <div className="chat-composer">
             <div className="field">
-              <label htmlFor="draft">メッセージ</label>
+              <label htmlFor="draft">雑談メッセージ</label>
               <textarea
                 id="draft"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="例: 徳山1R （場名+レースで予測）"
+                placeholder="みんなに見える雑談を書く"
                 rows={3}
                 maxLength={1000}
                 className="chat-input chat-textarea"
@@ -628,50 +820,6 @@ export default function ChatPage() {
                 }}
               />
             </div>
-            <label className="chat-op-toggle">
-              <input
-                type="checkbox"
-                checked={asOperator}
-                onChange={(e) => setAsOperator(e.target.checked)}
-              />
-              運営として送る
-            </label>
-            {asOperator ? (
-              <div className="field" style={{ marginTop: "0.55rem" }}>
-                <label htmlFor="chatOperatorKey">運営キー</label>
-                <input
-                  id="chatOperatorKey"
-                  type="password"
-                  value={operatorKey}
-                  onChange={(e) => setOperatorKey(e.target.value)}
-                  placeholder="CHAT_OPERATOR_KEY"
-                  autoComplete="off"
-                  className="chat-input"
-                />
-              </div>
-            ) : null}
-            <label className="chat-op-toggle">
-              <input
-                type="checkbox"
-                checked={asAdmin}
-                onChange={(e) => setAsAdmin(e.target.checked)}
-              />
-              管理人メニュー（一括消去）
-            </label>
-            {asAdmin ? (
-              <div className="field" style={{ marginTop: "0.55rem" }}>
-                <label htmlFor="chatAdminKey">管理人キー</label>
-                <input
-                  id="chatAdminKey"
-                  type="password"
-                  value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
-                  placeholder="CHAT_ADMIN_KEY"
-                  autoComplete="off"
-                  className="chat-input"
-                />
-              </div>
-            ) : null}
             <div className="cta-row" style={{ marginTop: "0.75rem" }}>
               <button
                 type="button"
@@ -681,7 +829,7 @@ export default function ChatPage() {
                   void sendMessage();
                 }}
               >
-                {sending ? "送信中…" : "送信"}
+                {sending ? "送信中…" : "メッセージ送信"}
               </button>
               <button
                 type="button"
@@ -692,27 +840,13 @@ export default function ChatPage() {
                     void loadFeed(invite.trim(), {
                       quiet: false,
                       refresh: true,
-                      session: sessionId,
                       name: displayName,
-                      asOp: asOperator,
                     });
                   });
                 }}
               >
                 更新
               </button>
-              {asAdmin ? (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={sending || !(adminKey.trim() || operatorKey.trim())}
-                  onClick={() => {
-                    void clearChatBulk();
-                  }}
-                >
-                  一括消去
-                </button>
-              ) : null}
               <button
                 type="button"
                 className="btn ghost"
@@ -723,9 +857,52 @@ export default function ChatPage() {
                 退出
               </button>
             </div>
-            <p className="note" style={{ marginTop: "0.55rem" }}>
-              一括消去は管理人キー必須です。チャットはレース後に自動リセットされます。
-            </p>
+
+            <div className="chat-admin-gate">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => setShowAdminGate((v) => !v)}
+              >
+                {showAdminGate ? "管理人メニューを閉じる" : "管理人のみ"}
+              </button>
+              {showAdminGate ? (
+                <div className="field" style={{ marginTop: "0.55rem" }}>
+                  <label htmlFor="chatAdminKey">管理人キー</label>
+                  <input
+                    id="chatAdminKey"
+                    type="password"
+                    value={adminKey}
+                    onChange={(e) => setAdminKey(e.target.value)}
+                    placeholder="管理人キー"
+                    autoComplete="off"
+                    className="chat-input"
+                  />
+                  <div className="cta-row" style={{ marginTop: "0.55rem" }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={!adminKey.trim() || pending}
+                      onClick={() => {
+                        startTransition(() => {
+                          void enterAndLoad(
+                            invite.trim(),
+                            displayName.trim() || "管理人",
+                            false,
+                          );
+                        });
+                      }}
+                    >
+                      管理人として確認
+                    </button>
+                  </div>
+                  <p className="note">
+                    キーが正しければ、個人予想の一覧と一括消去が使えます。友達向け画面には出ません。
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
             {status ? <p className="note">{status}</p> : null}
             {error ? <p className="status">{error}</p> : null}
           </div>

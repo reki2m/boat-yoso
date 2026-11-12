@@ -23,6 +23,8 @@ export type ChatRaceReplyPayload = {
   raceNo: number;
   tickets: string[];
   anaTickets: string[];
+  exhibitionReady: boolean;
+  entryChanged: boolean;
 };
 
 export async function buildChatRaceReply(
@@ -144,5 +146,7 @@ export async function buildChatRaceReply(
     raceNo: query.raceNo,
     tickets: deep.tickets.map((t) => t.combo),
     anaTickets: deep.anaTickets.map((t) => t.combo),
+    exhibitionReady: Boolean(exhibition.ready),
+    entryChanged: Boolean(exhibition.entryChanged),
   };
 }
