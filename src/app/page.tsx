@@ -308,7 +308,6 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [, startTransition] = useTransition();
-  const [purchased, setPurchased] = useState(false);
   const [liveStadiums, setLiveStadiums] = useState<LiveStadium[]>([]);
   const [liveDate, setLiveDate] = useState("");
   const [activeLive, setActiveLive] = useState<LiveStadium | null>(null);
@@ -401,7 +400,6 @@ export default function Home() {
     if (opts?.raceNo != null) setRace(opts.raceNo);
     if (!opts?.quiet) {
       setError("");
-      setPurchased(false);
       setLoading(true);
     }
     const ac = new AbortController();
@@ -483,14 +481,13 @@ export default function Home() {
   return (
     <main className="shell">
       <section className="hero">
-        <p className="brand-kicker">Night Circuit Telemetry</p>
         <h1 className="brand">律丸ボート部</h1>
-        <p className="brand-sub">RITSUMARU BOAT CLUB</p>
+        <p className="brand-sub">本命だけ・今日だけ</p>
         <div className="gate-rail" aria-hidden>
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          本命だけ。三連単1-2-3単点、対象8場、1R/9R除外。展示・オッズ通過後だけ買う。1日だいたい1レース前後。毎日自動で最新データ更新と回収率学習を回します。
+          三連単本命のみ。対象6場・1R/9R除外。買い目は朝に固定し、展示後は確定かスルーだけ。1日だいたい0〜2レース。
         </p>
         {research?.update || research?.learning ? (
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
@@ -520,158 +517,9 @@ export default function Home() {
           >
             {loading ? "読み込み中…" : "今日のレースを読む"}
           </button>
-          <div className="field" style={{ minWidth: 220 }}>
-            <label htmlFor="chatShareMode">チャット欄への反映</label>
-            <select
-              id="chatShareMode"
-              value={chatShareMode}
-              onChange={(e) =>
-                setChatShareMode(e.target.value as "none" | "board" | "race")
-              }
-              className="chat-input"
-            >
-              <option value="none">出さない</option>
-              <option value="board">本日の本命を出す</option>
-              <option value="race">表示中のレース予想を出す</option>
-            </select>
-          </div>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              setChatMsg("");
-              const key = operatorKey.trim();
-              if (!key) {
-                setChatMsg("運営キーを入力してからアップしてください");
-                return;
-              }
-              if (chatShareMode === "none") {
-                setChatMsg("「チャット欄への反映」で出す内容を選んでください");
-                return;
-              }
-              if (chatShareMode === "race" && !data) {
-                setChatMsg("先にレースを予想してからアップしてください");
-                return;
-              }
-              setChatBusy(true);
-              void (async () => {
-                try {
-                  const body =
-                    chatShareMode === "board"
-                      ? {
-                          operatorKey: key,
-                          kind: "picks" as const,
-                          mirrorDiscord: false,
-                        }
-                      : {
-                          operatorKey: key,
-                          kind: "note" as const,
-                          mirrorDiscord: false,
-                          note: [
-                            `【管理人予想】${data?.placeName || `場${place}`} ${race}R`,
-                            triple?.skipped
-                              ? "スキップ"
-                              : triple?.ticketsLocked
-                                ? "買い目ロック中（展示待ち）"
-                                : activeBand
-                                  ? `${activeBand.label}: ${activeBand.tickets.join(" · ")}`
-                                  : (data?.deepPicks?.tickets.map((t) => t.combo) || []).join(" · ") ||
-                                    "見送り",
-                            triple?.why ? `理由: ${triple.why}` : "",
-                          ]
-                            .filter(Boolean)
-                            .join("\n"),
-                        };
-                  const res = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body),
-                  });
-                  const json = await res.json();
-                  if (!res.ok) {
-                    setChatMsg(json.hint || json.error || "アップに失敗しました");
-                    return;
-                  }
-                  setChatMsg(
-                    chatShareMode === "board"
-                      ? "本日の本命を専用チャットにアップしました"
-                      : "表示中のレース予想を専用チャットにアップしました",
-                  );
-                } catch {
-                  setChatMsg("アップに失敗しました");
-                } finally {
-                  setChatBusy(false);
-                }
-              })();
-            }}
-            disabled={chatBusy || chatShareMode === "none"}
-          >
-            {chatBusy ? "アップ中…" : "チャットにアップ"}
-          </button>
           <a className="btn ghost" href="/chat">
             専用チャットを開く
           </a>
-          <button
-            type="button"
-            className="btn ghost"
-            disabled={chatBusy}
-            onClick={() => {
-              setChatMsg("");
-              const key = operatorKey.trim();
-              if (!key) {
-                setChatMsg("管理人キーを入力してから消去してください");
-                return;
-              }
-              if (!window.confirm("専用チャット履歴を全消去します。管理人のみの操作です。よろしいですか？")) {
-                return;
-              }
-              setChatBusy(true);
-              void (async () => {
-                try {
-                  const res = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      operatorKey: key,
-                      kind: "clear",
-                    }),
-                  });
-                  const json = await res.json();
-                  if (!res.ok) {
-                    setChatMsg(json.hint || json.error || "消去に失敗しました");
-                    return;
-                  }
-                  setChatMsg(`チャットを消去しました（${json.deleted ?? 0}件）`);
-                } catch {
-                  setChatMsg("消去に失敗しました");
-                } finally {
-                  setChatBusy(false);
-                }
-              })();
-            }}
-          >
-            一括消去（管理人）
-          </button>
-        </div>
-        <p className="note" style={{ marginTop: "0.65rem" }}>
-          専用チャットは招待メンバーと会話できます。一括消去は管理人のみ。レース終了約1時間後に自動消去もあります。
-        </p>
-        <div className="field" style={{ marginTop: "0.85rem", maxWidth: 420 }}>
-          <label htmlFor="operatorKey">管理人キー（あなただけ）</label>
-          <input
-            id="operatorKey"
-            type="password"
-            value={operatorKey}
-            onChange={(e) => setOperatorKey(e.target.value)}
-            placeholder="CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY"
-            autoComplete="off"
-            className="chat-input"
-          />
-        </div>
-        <p className="note" style={{ marginTop: "0.55rem" }}>
-          アプリ本体はこのキーがないと開けません。友達には /chat と招待コードだけ送ってください。
-        </p>
-        <div className="cta-row" style={{ marginTop: "0.55rem" }}>
           <button
             type="button"
             className="btn ghost"
@@ -689,7 +537,159 @@ export default function Home() {
             アプリをロック
           </button>
         </div>
-        {chatMsg ? <p className="note">{chatMsg}</p> : null}
+        <details style={{ marginTop: "0.85rem" }}>
+          <summary className="note" style={{ cursor: "pointer" }}>
+            管理人メニュー（チャット投稿・一括消去）
+          </summary>
+          <div className="cta-row" style={{ marginTop: "0.65rem" }}>
+            <div className="field" style={{ minWidth: 220 }}>
+              <label htmlFor="chatShareMode">チャット欄への反映</label>
+              <select
+                id="chatShareMode"
+                value={chatShareMode}
+                onChange={(e) =>
+                  setChatShareMode(e.target.value as "none" | "board" | "race")
+                }
+                className="chat-input"
+              >
+                <option value="none">出さない</option>
+                <option value="board">本日の本命を出す</option>
+                <option value="race">表示中のレース予想を出す</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setChatMsg("");
+                const key = operatorKey.trim();
+                if (!key) {
+                  setChatMsg("管理人キーを入力してからアップしてください");
+                  return;
+                }
+                if (chatShareMode === "none") {
+                  setChatMsg("「チャット欄への反映」で出す内容を選んでください");
+                  return;
+                }
+                if (chatShareMode === "race" && !data) {
+                  setChatMsg("先にレースを予想してからアップしてください");
+                  return;
+                }
+                setChatBusy(true);
+                void (async () => {
+                  try {
+                    const body =
+                      chatShareMode === "board"
+                        ? {
+                            operatorKey: key,
+                            kind: "picks" as const,
+                            mirrorDiscord: false,
+                          }
+                        : {
+                            operatorKey: key,
+                            kind: "note" as const,
+                            mirrorDiscord: false,
+                            note: [
+                              `【管理人予想】${data?.placeName || `場${place}`} ${race}R`,
+                              triple?.skipped
+                                ? "スキップ"
+                                : triple?.ticketsLocked
+                                  ? "買い目ロック中（展示待ち）"
+                                  : activeBand
+                                    ? `${activeBand.label}: ${activeBand.tickets.join(" · ")}`
+                                    : (data?.deepPicks?.tickets.map((t) => t.combo) || []).join(" · ") ||
+                                      "見送り",
+                              triple?.why ? `理由: ${triple.why}` : "",
+                            ]
+                              .filter(Boolean)
+                              .join("\n"),
+                          };
+                    const res = await fetch("/api/chat", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(body),
+                    });
+                    const json = await res.json();
+                    if (!res.ok) {
+                      setChatMsg(json.hint || json.error || "アップに失敗しました");
+                      return;
+                    }
+                    setChatMsg(
+                      chatShareMode === "board"
+                        ? "本日の本命を専用チャットにアップしました"
+                        : "表示中のレース予想を専用チャットにアップしました",
+                    );
+                  } catch {
+                    setChatMsg("アップに失敗しました");
+                  } finally {
+                    setChatBusy(false);
+                  }
+                })();
+              }}
+              disabled={chatBusy || chatShareMode === "none"}
+            >
+              {chatBusy ? "アップ中…" : "チャットにアップ"}
+            </button>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={chatBusy}
+              onClick={() => {
+                setChatMsg("");
+                const key = operatorKey.trim();
+                if (!key) {
+                  setChatMsg("管理人キーを入力してから消去してください");
+                  return;
+                }
+                if (
+                  !window.confirm(
+                    "専用チャット履歴を全消去します。管理人のみの操作です。よろしいですか？",
+                  )
+                ) {
+                  return;
+                }
+                setChatBusy(true);
+                void (async () => {
+                  try {
+                    const res = await fetch("/api/chat", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        operatorKey: key,
+                        kind: "clear",
+                      }),
+                    });
+                    const json = await res.json();
+                    if (!res.ok) {
+                      setChatMsg(json.hint || json.error || "消去に失敗しました");
+                      return;
+                    }
+                    setChatMsg(`チャットを消去しました（${json.deleted ?? 0}件）`);
+                  } catch {
+                    setChatMsg("消去に失敗しました");
+                  } finally {
+                    setChatBusy(false);
+                  }
+                })();
+              }}
+            >
+              一括消去
+            </button>
+          </div>
+          <div className="field" style={{ marginTop: "0.65rem", maxWidth: 420 }}>
+            <label htmlFor="operatorKey">管理人キー</label>
+            <input
+              id="operatorKey"
+              type="password"
+              value={operatorKey}
+              onChange={(e) => setOperatorKey(e.target.value)}
+              placeholder="CHAT_ADMIN_KEY"
+              autoComplete="off"
+              className="chat-input"
+            />
+          </div>
+          {chatMsg ? <p className="note">{chatMsg}</p> : null}
+        </details>
       </section>
 
       <section className="panel" style={{ marginBottom: "1rem" }}>
@@ -700,7 +700,10 @@ export default function Home() {
         </p>
         {boardStale ? (
           <p className="chat-reset-note" style={{ marginTop: "0.75rem" }}>
-            前日の買い目は朝の時点で非表示にしています。当日分の生成待ちです。
+            {(board as { stale_from?: string } | null)?.stale_from
+              ? `${(board as { stale_from?: string }).stale_from} の買い目は非表示にしました。`
+              : "前日の買い目は非表示にしています。"}
+            当日分の生成待ちです。
           </p>
         ) : null}
         {buyablePicks.length ? (
@@ -947,71 +950,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div style={{ marginTop: "1rem" }}>
-                  <div className="meta" style={{ marginBottom: "0.65rem" }}>
-                    <span className="badge">穴目</span>
-                    <span className="badge">
-                      {data.deepPicks.anaCount
-                        ? `3連単 ${data.deepPicks.anaCount}点`
-                        : "見送り"}
-                    </span>
-                    <span className="badge">
-                      参考的中率{" "}
-                      {(data.deepPicks.anaHitPct ?? data.deepPicks.anaConfidence ?? 0).toFixed(1)}%
-                    </span>
-                    {data.deepPicks.anaAxis ? (
-                      <span className="badge">軸 {data.deepPicks.anaAxis}号</span>
-                    ) : null}
-                  </div>
-                  <div style={{ margin: "0.35rem 0 0.75rem" }}>
-                    <div className="note" style={{ marginBottom: "0.35rem" }}>
-                      {data.deepPicks.anaConfidenceLabel ||
-                        ((data.deepPicks.anaHitPct ?? 0) > 0
-                          ? `参考的中率 ${(data.deepPicks.anaHitPct ?? 0).toFixed(1)}%`
-                          : "見送り")}
-                      。穴は本線の1〜5とは別で、数%帯が普通です。
-                    </div>
-                    <div className="scorebar" aria-label="穴目参考的中率">
-                      <i
-                        style={{
-                          width: `${Math.min(100, ((data.deepPicks.anaHitPct ?? data.deepPicks.anaConfidence ?? 0) / 16) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                  {(data.deepPicks.anaTickets?.length ?? 0) > 0 ? (
-                    <>
-                      <div className="sanren" style={{ marginBottom: "0.75rem" }}>
-                        {data.deepPicks.anaTickets!.map((t) => t.combo).join(" / ")}
-                      </div>
-                      <div className="band-grid">
-                        {data.deepPicks.anaTickets!.map((t) => (
-                          <div key={`ana-${t.combo}`} className="side-card band-ana on">
-                            <span>
-                              {t.rank}. {t.role}
-                            </span>
-                            <strong>{t.combo}</strong>
-                            <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                              {t.why}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="status" style={{ marginBottom: 0 }}>
-                      今回の穴目は見送りです。
-                    </p>
-                  )}
-                  {(data.deepPicks.anaCommentary?.length ?? 0) > 0 ? (
-                    <div className="why-box" style={{ marginTop: "0.85rem" }}>
-                      <strong>穴目コメント</strong>
-                      {data.deepPicks.anaCommentary!.map((line) => (
-                        <p key={line}>{line}</p>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
                 {data.deepPicks.racerViews?.length ? (
                   <div className="table-wrap" style={{ marginTop: "0.85rem" }}>
                     <table>
@@ -1051,11 +989,6 @@ export default function Home() {
                     </table>
                   </div>
                 ) : null}
-                <div className="cta-row" style={{ marginTop: "1rem" }}>
-                  <button type="button" className="btn" onClick={() => setPurchased(true)}>
-                    購入した
-                  </button>
-                </div>
               </div>
             ) : null}
 
@@ -1130,13 +1063,10 @@ export default function Home() {
               </div>
             </div>
 
-            {purchased && liveUrls ? (
+            {liveUrls ? (
               <div className="live-box purchased">
-                <strong>購入済み → 公式リンク</strong>
-                <p className="note" style={{ marginTop: "0.35rem" }}>
-                  {liveUrls.placeName} の場公式ホームページ／レース情報／場ライブを別タブで開きます。
-                </p>
-                <div className="cta-row">
+                <strong>{liveUrls.placeName} 公式リンク</strong>
+                <div className="cta-row" style={{ marginTop: "0.55rem" }}>
                   <a
                     className="btn"
                     href={liveUrls.officialSite || liveUrls.stadiumPage || liveUrls.mediaTop}
@@ -1152,10 +1082,6 @@ export default function Home() {
                     場ライブ
                   </a>
                 </div>
-                <p className="note" style={{ marginTop: "0.55rem" }}>
-                  {liveUrls.liveNote ||
-                    "各場の公式ホームページへ開きます（boatrace.jp は使いません）。"}
-                </p>
               </div>
             ) : null}
 
@@ -1186,7 +1112,7 @@ export default function Home() {
                   )}
                 </div>
                 <p className="note" style={{ marginTop: "0.55rem" }}>
-                  狙い目: 買われすぎがない帯で、考察の穴目（長め）を参考に。異常時は運用本命を自動見送りします。
+                  買われすぎ・資金集中のときは本命を自動見送りします。
                 </p>
               </div>
             ) : null}
@@ -1242,11 +1168,11 @@ export default function Home() {
         ) : null}
       </section>
 
-      <section className="panel" style={{ marginTop: "1rem" }}>
-        <h2 style={{ fontFamily: "var(--font-display)", marginTop: 0 }}>全場・場公式HP / ライブ</h2>
-        <p className="note">
-          {liveDate || "本日"} — 場を押すと各場の公式ホームページ／レース情報／場ライブを開けます（boatrace.jp 不使用）。
-        </p>
+      <details className="panel" style={{ marginTop: "1rem", padding: "1rem" }}>
+        <summary style={{ cursor: "pointer", fontFamily: "var(--font-display)" }}>
+          全場リンク（{liveDate || "本日"}）
+        </summary>
+        <p className="note">場を押すと公式HP／レース情報／場ライブを開けます。</p>
         <div className="stadium-live-grid">
           {liveStadiums.map((s) => (
             <button
@@ -1267,7 +1193,7 @@ export default function Home() {
         </div>
         {activeLive ? (
           <div className="live-box purchased">
-            <strong>{activeLive.name} 場公式リンク</strong>
+            <strong>{activeLive.name}</strong>
             <div className="cta-row" style={{ marginTop: "0.65rem" }}>
               <a
                 className="btn"
@@ -1284,13 +1210,9 @@ export default function Home() {
                 場ライブ
               </a>
             </div>
-            <p className="note" style={{ marginTop: "0.55rem" }}>
-              {activeLive.liveNote ||
-                "各場の公式ホームページへ開きます（boatrace.jp は使いません）。"}
-            </p>
           </div>
         ) : null}
-      </section>
+      </details>
 
       <StakeSimulationPanel
         band={research?.equity10k?.bands?.honmei}

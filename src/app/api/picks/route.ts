@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import picksBoard from "@/data/picks_board.json";
 import accuracy from "@/data/accuracy_summary.json";
-import { readFileSync, readdirSync, existsSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { jstDateKey } from "@/lib/stadiums";
 
@@ -54,29 +54,21 @@ type PickRow = {
   reasons?: string[];
 };
 
-function loadRecentExplainedPicks(limit = 8): PickRow[] {
+/** 当日分だけ。前日の説明付き買い目がアプリに混ざらないようにする */
+function loadTodayExplainedPicks(today: string, limit = 8): PickRow[] {
   const dir = path.join(process.cwd(), "data", "reports");
   if (!existsSync(dir)) return [];
-  const files = readdirSync(dir)
-    .filter((f) => /^picks_20\d{6}\.json$/.test(f))
-    .sort()
-    .reverse();
-  const out: PickRow[] = [];
-  for (const file of files) {
-    try {
-      const doc = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as {
-        picks?: PickRow[];
-      };
-      for (const p of doc.picks || []) {
-        if (!p.why && !(p.reasons || []).length) continue;
-        out.push(p);
-        if (out.length >= limit) return out;
-      }
-    } catch {
-      // ignore broken day files
-    }
+  const file = path.join(dir, `picks_${today}.json`);
+  if (!existsSync(file)) return [];
+  try {
+    const doc = JSON.parse(readFileSync(file, "utf8")) as { picks?: PickRow[] };
+    return (doc.picks || [])
+      .filter((p) => Boolean(p.why || (p.reasons || []).length))
+      .filter((p) => String(p.date || today) === today)
+      .slice(0, limit);
+  } catch {
+    return [];
   }
-  return out;
 }
 
 /** 前日板が朝まで残らないよう、JST当日以外は空板にする */
@@ -114,7 +106,7 @@ export async function GET() {
   const live = loadLiveBoard();
   const { board, stale } = boardForToday(live, today);
   const liveAccuracy = loadLiveAccuracy();
-  const recent = loadRecentExplainedPicks(8);
+  const recent = loadTodayExplainedPicks(today, 8);
   return NextResponse.json({
     board,
     today,
@@ -125,17 +117,17 @@ export async function GET() {
       day_before: true,
       skip_on_entry_change: true,
       require_start_exhibition: true,
-      mode: "honmei_fix_race_filter",
+      mode: "honmei_fixed_tickets",
       disabled_systems: ["oshi", "ana", "tri_1axis_6"],
-      variable_count: true,
-      max_per_day: 4,
+      variable_count: false,
+      max_per_day: 2,
       points: 1,
-      stadium_whitelist: [8, 9, 12, 13, 15, 17, 18, 19],
+      stadium_whitelist: [8, 12, 15, 17, 18, 19],
       race_blacklist: [1, 9],
-      stadium_blacklist: [21],
+      stadium_blacklist: [9, 13, 21],
       odds_filter: true,
       exhibition_strict: true,
-      note: "本命のみ。1-2-3単点・対象8場・1R/9R除外・1日だいたい1レース前後。",
+      note: "本命のみ。買い目は朝固定・展示後は確定/スキップのみ。津・尼崎除外。1R/9R除外。",
     },
   });
 }
