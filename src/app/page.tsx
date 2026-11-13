@@ -602,14 +602,20 @@ export default function Home() {
                             note: [
                               `【管理人予想】${data?.placeName || `場${place}`} ${race}R`,
                               triple?.skipped
-                                ? "スキップ"
-                                : triple?.ticketsLocked
-                                  ? "買い目ロック中（展示待ち）"
-                                  : activeBand
-                                    ? `${activeBand.label}: ${activeBand.tickets.join(" · ")}`
-                                    : (data?.deepPicks?.tickets.map((t) => t.combo) || []).join(" · ") ||
-                                      "見送り",
-                              triple?.why ? `理由: ${triple.why}` : "",
+                                ? "スキップ（進入変更）"
+                                : [
+                                    `本命: ${(data?.deepPicks?.tickets || []).map((t) => t.combo).join(" / ") || "—"}`,
+                                    data?.deepPicks?.sReady
+                                      ? `本命S: ${(data.deepPicks.sTickets || []).map((t) => t.combo).join(" / ")}`
+                                      : "本命S: 条件外",
+                                    `押し目: ${(data?.deepPicks?.oshiTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
+                                    `穴: ${(data?.deepPicks?.anaTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
+                                  ].join("\n"),
+                              data?.deepPicks?.commentary?.[0]
+                                ? `説明: ${data.deepPicks.commentary[0]}`
+                                : triple?.why
+                                  ? `理由: ${triple.why}`
+                                  : "",
                             ]
                               .filter(Boolean)
                               .join("\n"),

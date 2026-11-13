@@ -104,6 +104,7 @@ export function buildSingleRaceChip(opts: {
   placeName?: string;
   raceNo: number;
   tickets?: string[];
+  bands?: ChatRaceChip["bands"];
   status?: string;
   why?: string;
   exhibition?: ChatRaceChip["exhibition"];
@@ -115,6 +116,7 @@ export function buildSingleRaceChip(opts: {
     raceNo: opts.raceNo,
     label: raceChipLabel(placeName, opts.raceNo),
     tickets: opts.tickets || [],
+    bands: opts.bands,
     status: opts.status,
     why: opts.why,
     exhibition: opts.exhibition || exhibitionFromStatus(opts.status),

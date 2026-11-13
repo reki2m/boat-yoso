@@ -7,6 +7,14 @@ export type ChatRole = "operator" | "member";
 /** public=全員 / private=依頼者のみ / admin=管理人のみ */
 export type ChatVisibility = "public" | "private" | "admin";
 
+/** 本体アプリと同じ帯分け（本命 / 本命S / 押し / 穴） */
+export type ChatPickBands = {
+  honmei?: string[];
+  honmeiS?: string[];
+  oshi?: string[];
+  ana?: string[];
+};
+
 /** チャット欄の「〇〇場 〇〇R」UI用 */
 export type ChatRaceChip = {
   placeNo: number;
@@ -14,6 +22,8 @@ export type ChatRaceChip = {
   raceNo: number;
   label: string;
   tickets?: string[];
+  /** 本体と同じ買い目帯。あればUIはこちらを優先 */
+  bands?: ChatPickBands;
   status?: string;
   why?: string;
   /** waiting=展示前 / after=展示後反映 */
@@ -28,6 +38,7 @@ export type ChatMessageMeta = {
   placeNo?: number;
   raceNo?: number;
   tickets?: string[];
+  bands?: ChatPickBands;
   visibility?: ChatVisibility;
   owner_session_id?: string;
   owner_name?: string;
@@ -64,7 +75,8 @@ type ChatFeed = {
 };
 
 const MAX_MESSAGES = 300;
-const MAX_BODY = 1000;
+/** AI予想（本命/本命S/押し/穴）本文が入るため余裕を持たせる */
+const MAX_BODY = 2200;
 const MAX_NAME = 20;
 
 type ChatRow = {

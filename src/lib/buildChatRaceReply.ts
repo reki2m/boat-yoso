@@ -1,6 +1,5 @@
 import { fetchKyoteiRaceBundle } from "@/lib/kyotei";
 import { scoreRace } from "@/lib/predict";
-import { buildTriplePrediction } from "@/lib/tripleSystem";
 import { remapRacersToExhibitionCourses } from "@/lib/exhibition";
 import { fetchStadiumSeriesForms } from "@/lib/seriesForm";
 import { buildRaceDeepPicks } from "@/lib/raceDeepPicks";
@@ -16,13 +15,22 @@ function confidenceWord(score: number): string {
   return "弱い";
 }
 
+export type ChatPickBands = {
+  honmei: string[];
+  honmeiS: string[];
+  oshi: string[];
+  ana: string[];
+};
+
 export type ChatRaceReplyPayload = {
   text: string;
   dateKey: string;
   placeNo: number;
   raceNo: number;
+  /** 全帯の買い目（的中判定・互換用） */
   tickets: string[];
-  /** チャットUIでは出さない（管理人ログ用に残す） */
+  bands: ChatPickBands;
+  /** @deprecated 互換。bands.ana と同じ */
   anaTickets: string[];
   why: string;
   status: "provisional" | "confirmed" | "skipped";
@@ -30,6 +38,18 @@ export type ChatRaceReplyPayload = {
   entryChanged: boolean;
 };
 
+function uniq(list: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of list) {
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+/** 本体アプリと同じ deepPicks を、チャット用本文・帯に整形する */
 export async function buildChatRaceReply(
   query: RaceChatQuery,
   dateKey = jstDateKey(),
@@ -39,19 +59,12 @@ export async function buildChatRaceReply(
     fetchStadiumSeriesForms(query.placeNo, dateKey, query.raceNo),
   ]);
 
+  // 本体 /api/race と同じ：展示確定かつ進入変更なしならコース再マップ
   const racersForScore =
     exhibition.ready && !exhibition.entryChanged
       ? remapRacersToExhibitionCourses(payload.racers, exhibition)
       : payload.racers;
   const prediction = scoreRace(racersForScore);
-  const triple = buildTriplePrediction({
-    placeNo: query.placeNo,
-    dateKey,
-    raceNo: query.raceNo,
-    racers: payload.racers,
-    windSpeed: payload.windSpeed ?? exhibition.windSpeed,
-    exhibition,
-  });
   const deep = buildRaceDeepPicks({
     racers: racersForScore,
     scored: prediction.rankings,
@@ -80,21 +93,33 @@ export async function buildChatRaceReply(
         ? "確定（展示後・買ってOK）"
         : `展示待ち（${exhibition.reason || "展示・進入が揃うまで未確定"}）`;
 
+  const bands: ChatPickBands =
+    status === "skipped"
+      ? { honmei: [], honmeiS: [], oshi: [], ana: [] }
+      : {
+          honmei: deep.tickets.map((t) => t.combo),
+          honmeiS: deep.sReady ? deep.sTickets.map((t) => t.combo) : [],
+          oshi: deep.oshiTickets.map((t) => t.combo).slice(0, 4),
+          ana: deep.anaTickets.map((t) => t.combo).slice(0, 4),
+        };
+
+  const tickets = uniq([
+    ...bands.honmeiS,
+    ...bands.honmei,
+    ...bands.oshi,
+    ...bands.ana,
+  ]);
+
   const whyParts: string[] = [];
   if (deep.confidenceLabel) whyParts.push(deep.confidenceLabel);
   if (deep.axis) whyParts.push(`軸${deep.axis}号 / 相手 ${deep.partners.join("・") || "—"}`);
-  if (triple.skipped) {
-    whyParts.push(triple.focus || "進入変更のため運用本命は見送り");
-  } else if (triple.focus) {
-    whyParts.push(triple.focus);
-  }
-  for (const c of deep.commentary.slice(0, 2)) {
+  for (const c of deep.commentary.slice(0, 3)) {
     if (c) whyParts.push(c);
   }
   if (exhibition.signals?.notes?.length) {
     whyParts.push(`即時: ${exhibition.signals.notes.slice(0, 2).join(" / ")}`);
   }
-  const why = whyParts.filter(Boolean).join(" ").slice(0, 280);
+  const why = whyParts.filter(Boolean).join(" ").slice(0, 320);
 
   const lines: string[] = [
     `【AI予想】${query.placeName} ${query.raceNo}R（${dateKey}）`,
@@ -106,35 +131,42 @@ export async function buildChatRaceReply(
 
   if (status === "skipped") {
     lines.push("（スルーのため券種は出しません）");
-  } else if (deep.count && deep.tickets.length) {
-    for (const t of deep.tickets.slice(0, 6)) {
-      lines.push(`・${t.combo}（${t.role}）`);
-    }
   } else {
-    lines.push("見送り（本線ゲート未達）");
+    lines.push(
+      `本命(${bands.honmei.length}): ${bands.honmei.join(" / ") || "—"}`,
+    );
+    lines.push(
+      bands.honmeiS.length
+        ? `本命S(${bands.honmeiS.length}): ${bands.honmeiS.join(" / ")}`
+        : "本命S: 条件外",
+    );
+    lines.push(
+      `押し目(${bands.oshi.length}/最大4): ${bands.oshi.join(" / ") || "—"}`,
+    );
+    lines.push(
+      `穴(${bands.ana.length}/最大4): ${bands.ana.join(" / ") || "—"}`,
+    );
   }
 
   lines.push("", "【説明】");
-  if (why) {
-    lines.push(why);
-  } else {
-    lines.push("詳細コメントなし");
-  }
+  if (why) lines.push(why);
+  else lines.push("詳細コメントなし");
 
   lines.push(
     "",
     `場公式: ${live.officialSite}`,
     `レース情報: ${live.beforeInfo}`,
-    "※参考情報です。的中を保証しません。",
+    "※本体アプリと同じ予想エンジンです。的中を保証しません。",
   );
 
   return {
-    text: lines.join("\n").slice(0, 1800),
+    text: lines.join("\n").slice(0, 2200),
     dateKey,
     placeNo: query.placeNo,
     raceNo: query.raceNo,
-    tickets: status === "skipped" ? [] : deep.tickets.map((t) => t.combo),
-    anaTickets: [],
+    tickets,
+    bands,
+    anaTickets: bands.ana,
     why,
     status,
     exhibitionReady,

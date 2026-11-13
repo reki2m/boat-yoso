@@ -1,15 +1,33 @@
 /** クライアントでも使える買い目ステータス表示ヘルパ（DB依存なし） */
 
+export type ChatPickBandsView = {
+  honmei?: string[];
+  honmeiS?: string[];
+  oshi?: string[];
+  ana?: string[];
+};
+
 export type RaceChipView = {
   placeNo: number;
   placeName: string;
   raceNo: number;
   label: string;
   tickets?: string[];
+  bands?: ChatPickBandsView;
   status?: string;
   why?: string;
   exhibition?: "waiting" | "after" | "unknown";
 };
+
+export function hasBandTickets(bands?: ChatPickBandsView | null): boolean {
+  if (!bands) return false;
+  return Boolean(
+    bands.honmei?.length ||
+      bands.honmeiS?.length ||
+      bands.oshi?.length ||
+      bands.ana?.length,
+  );
+}
 
 export type RaceStatusTone = "waiting" | "confirmed" | "skipped" | "unknown";
 
