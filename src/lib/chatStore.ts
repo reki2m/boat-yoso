@@ -12,6 +12,10 @@ export type ChatBandTicket = {
   combo: string;
   role?: string;
   why?: string;
+  /** レース終了後の的中判定（配信時に結果を重ねる） */
+  result?: "hit" | "miss";
+  /** 100円あたり払戻（的中時） */
+  payout?: number;
 };
 
 /** 本体アプリと同じ帯分け（本命 / 本命S / 押し / 穴） */
@@ -37,6 +41,10 @@ export type ChatRaceChip = {
   confidenceLabel?: string;
   /** waiting=展示前 / after=展示後反映 */
   exhibition?: "waiting" | "after" | "unknown";
+  /** 公式結果が付いたら true（展示待ち表示を結果表示へ切替） */
+  settled?: boolean;
+  finishCombo?: string;
+  ticketResults?: Array<{ combo: string; result: "hit" | "miss"; payout: number }>;
 };
 
 export type ChatMessageMeta = {

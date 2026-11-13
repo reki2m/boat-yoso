@@ -5,6 +5,7 @@ import Link from "next/link";
 import { STADIUMS } from "@/lib/stadiums";
 import {
   chipToneClass,
+  formatTicketPayout,
   hasBandTickets,
   normalizeBandTickets,
   raceStatusTone,
@@ -216,6 +217,7 @@ type RacePhase = "waiting" | "final" | "result";
 function racePhase(m: ChatMessage, chip: RaceChipView): RacePhase {
   if (m.meta?.mode === "honmei_result" || m.meta?.mode === "chat_hit") return "result";
   const tone = raceStatusTone(chip);
+  if (tone === "result") return "result";
   if (tone === "confirmed" || tone === "skipped") return "final";
   return "waiting";
 }
@@ -964,7 +966,7 @@ export default function ChatPage() {
                     {hasRaceUi && selected ? (
                       <div className="chat-race-ui">
                         <p className="chat-race-summary">
-                          {/確定|展示待ち|スルー/.test(m.title)
+                          {/確定|展示待ち|スルー|結果/.test(m.title)
                             ? m.title
                             : races.length > 1
                               ? `${m.title} · ${summarizeChips(races)}`
@@ -1063,11 +1065,19 @@ export default function ChatPage() {
                                           const ticketKey = `${band.key}:${t.combo}`;
                                           const open =
                                             openTicketByMessage[m.id] === ticketKey;
+                                          const settled = Boolean(t.result);
+                                          const pay = formatTicketPayout(t.payout);
                                           return (
                                             <li key={ticketKey}>
                                               <button
                                                 type="button"
-                                                className={`chat-ticket-btn ${open ? "open" : ""}`}
+                                                className={`chat-ticket-btn ${open ? "open" : ""} ${
+                                                  t.result === "hit"
+                                                    ? "hit"
+                                                    : t.result === "miss"
+                                                      ? "miss"
+                                                      : ""
+                                                }`}
                                                 aria-expanded={open}
                                                 onClick={() =>
                                                   setOpenTicketByMessage((prev) => ({
@@ -1076,7 +1086,19 @@ export default function ChatPage() {
                                                   }))
                                                 }
                                               >
-                                                {t.combo}
+                                                <span className="chat-ticket-combo">
+                                                  {settled
+                                                    ? t.result === "hit"
+                                                      ? "⭕️ "
+                                                      : "❌ "
+                                                    : ""}
+                                                  {t.combo}
+                                                </span>
+                                                {t.result === "hit" && pay ? (
+                                                  <span className="chat-ticket-payout">
+                                                    {pay}
+                                                  </span>
+                                                ) : null}
                                               </button>
                                               {open ? (
                                                 <div className="chat-ticket-why">
@@ -1088,6 +1110,13 @@ export default function ChatPage() {
                                                       selected.why?.trim() ||
                                                       "理由データなし"}
                                                   </p>
+                                                  {settled ? (
+                                                    <p>
+                                                      {t.result === "hit"
+                                                        ? `的中 ⭕️${pay ? ` 払戻 ${pay}` : ""}`
+                                                        : "不的中 ❌"}
+                                                    </p>
+                                                  ) : null}
                                                 </div>
                                               ) : null}
                                             </li>
@@ -1107,11 +1136,21 @@ export default function ChatPage() {
                                 {selected.tickets.map((t) => {
                                   const ticketKey = `flat:${t}`;
                                   const open = openTicketByMessage[m.id] === ticketKey;
+                                  const settledRow = selected.ticketResults?.find(
+                                    (r) => r.combo === t,
+                                  );
+                                  const pay = formatTicketPayout(settledRow?.payout);
                                   return (
                                     <li key={t}>
                                       <button
                                         type="button"
-                                        className={`chat-ticket-btn ${open ? "open" : ""}`}
+                                        className={`chat-ticket-btn ${open ? "open" : ""} ${
+                                          settledRow?.result === "hit"
+                                            ? "hit"
+                                            : settledRow?.result === "miss"
+                                              ? "miss"
+                                              : ""
+                                        }`}
                                         aria-expanded={open}
                                         onClick={() =>
                                           setOpenTicketByMessage((prev) => ({
@@ -1120,7 +1159,17 @@ export default function ChatPage() {
                                           }))
                                         }
                                       >
-                                        {t}
+                                        <span className="chat-ticket-combo">
+                                          {settledRow
+                                            ? settledRow.result === "hit"
+                                              ? "⭕️ "
+                                              : "❌ "
+                                            : ""}
+                                          {t}
+                                        </span>
+                                        {settledRow?.result === "hit" && pay ? (
+                                          <span className="chat-ticket-payout">{pay}</span>
+                                        ) : null}
                                       </button>
                                       {open ? (
                                         <div className="chat-ticket-why">
@@ -1132,6 +1181,13 @@ export default function ChatPage() {
                                               ) ||
                                               "理由データなし"}
                                           </p>
+                                          {settledRow ? (
+                                            <p>
+                                              {settledRow.result === "hit"
+                                                ? `的中 ⭕️${pay ? ` 払戻 ${pay}` : ""}`
+                                                : "不的中 ❌"}
+                                            </p>
+                                          ) : null}
                                         </div>
                                       ) : null}
                                     </li>

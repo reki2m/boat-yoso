@@ -12,10 +12,15 @@ type PickLike = {
   skip_detail?: string | null;
 };
 
-export type RaceStatusTone = "waiting" | "confirmed" | "skipped" | "unknown";
+export type RaceStatusTone =
+  | "waiting"
+  | "confirmed"
+  | "skipped"
+  | "result"
+  | "unknown";
 
 function exhibitionFromStatus(status: string | undefined): ChatRaceChip["exhibition"] {
-  if (status === "confirmed") return "after";
+  if (status === "confirmed" || status === "settled") return "after";
   if (status === "provisional" || status === "programs_unavailable") return "waiting";
   if (status === "skipped") return "unknown";
   return "unknown";
@@ -28,7 +33,10 @@ export function raceChipLabel(placeName: string, raceNo: number): string {
 export function raceStatusTone(chip: PickLike | ChatRaceChip): RaceStatusTone {
   const status = "status" in chip ? chip.status : undefined;
   const exhibition = "exhibition" in chip ? chip.exhibition : undefined;
+  const settled = "settled" in chip ? Boolean(chip.settled) : false;
+  const finishCombo = "finishCombo" in chip ? chip.finishCombo : undefined;
   if (status === "skipped") return "skipped";
+  if (settled || status === "settled" || finishCombo) return "result";
   if (status === "confirmed") return "confirmed";
   if (
     status === "provisional" ||
@@ -41,10 +49,11 @@ export function raceStatusTone(chip: PickLike | ChatRaceChip): RaceStatusTone {
   return "unknown";
 }
 
-/** チップ上の短いバッジ（展示待ち / 確定 / スルー） */
+/** チップ上の短いバッジ（展示待ち / 確定 / スルー / 結果） */
 export function statusLabel(chip: PickLike | ChatRaceChip): string {
   const tone = raceStatusTone(chip);
   if (tone === "skipped") return "スルー";
+  if (tone === "result") return "結果";
   if (tone === "confirmed") return "確定";
   if (tone === "waiting") return "展示待ち";
   return "";
@@ -54,6 +63,10 @@ export function statusLabel(chip: PickLike | ChatRaceChip): string {
 export function statusDetailLabel(chip: PickLike | ChatRaceChip): string {
   const tone = raceStatusTone(chip);
   if (tone === "skipped") return "スルー（このレースは買わない）";
+  if (tone === "result") {
+    const finish = "finishCombo" in chip ? chip.finishCombo : undefined;
+    return finish ? `結果確定（着順 ${finish}）` : "結果確定";
+  }
   if (tone === "confirmed") return "確定（展示後・買ってOK）";
   if (tone === "waiting") return "展示待ち（展示後に確定 or スルー）";
   return "状態未定";
@@ -62,6 +75,7 @@ export function statusDetailLabel(chip: PickLike | ChatRaceChip): string {
 export function chipToneClass(chip: PickLike | ChatRaceChip): string {
   const tone = raceStatusTone(chip);
   if (tone === "skipped") return "skipped";
+  if (tone === "result") return "result";
   if (tone === "confirmed") return "after";
   if (tone === "waiting") return "waiting";
   return "";

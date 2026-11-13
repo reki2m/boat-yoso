@@ -40,6 +40,7 @@ import {
 import { buildRaceChipsFromPicks, buildSingleRaceChip } from "@/lib/chatRaceUi";
 import { STADIUMS } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
+import { enrichChatMessagesWithResults } from "@/lib/chatResultEnrich";
 
 export const dynamic = "force-dynamic";
 
@@ -260,11 +261,14 @@ export async function GET(req: NextRequest) {
     listPresence(sessionId).catch(() => []),
     isAdmin ? listAdminPredictionOversight() : Promise.resolve(null),
   ]);
+  const messages = await enrichChatMessagesWithResults(feed.messages).catch(
+    () => feed.messages,
+  );
   return NextResponse.json(
     {
       ok: true,
       updated_at: feed.updated_at,
-      messages: feed.messages,
+      messages,
       liveDate: live.date,
       targets: live.targets,
       rules: CHAT_HOUSE_RULES,

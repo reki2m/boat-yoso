@@ -29,10 +29,31 @@ async function markPosted(flag: string): Promise<void> {
 }
 
 function ticketsFromMessage(m: ChatMessage): string[] {
-  const meta = m.meta as { tickets?: string[] } | undefined;
-  if (Array.isArray(meta?.tickets) && meta.tickets.length) {
-    return meta.tickets.map(String);
+  const meta = m.meta;
+  const out: string[] = [];
+  const push = (combo: string | undefined) => {
+    const c = String(combo || "").trim();
+    if (c) out.push(c);
+  };
+  if (Array.isArray(meta?.tickets)) {
+    for (const t of meta.tickets) push(String(t));
   }
+  const bands = meta?.bands;
+  if (bands) {
+    for (const list of [bands.honmei, bands.honmeiS, bands.oshi, bands.ana]) {
+      for (const t of list || []) push(t.combo);
+    }
+  }
+  for (const race of meta?.races || []) {
+    for (const t of race.tickets || []) push(String(t));
+    const rb = race.bands;
+    if (rb) {
+      for (const list of [rb.honmei, rb.honmeiS, rb.oshi, rb.ana]) {
+        for (const t of list || []) push(t.combo);
+      }
+    }
+  }
+  if (out.length) return [...new Set(out)];
   // 本文から 1-2-3 形式を拾う（互換）
   const found = m.body.match(/\b[1-6]-[1-6]-[1-6]\b/g) || [];
   return [...new Set(found)];
@@ -84,25 +105,40 @@ export async function settleChatPredictionHits(): Promise<number> {
     if (!res) continue;
 
     const tickets = ticketsFromMessage(m);
-    const hits = tickets
-      .map((t) => ({ combo: t, payout: res.trifecta[t] || 0 }))
-      .filter((x) => x.payout > 0);
+    if (!tickets.length) continue;
+    if (!res.finishCombo) continue;
+
+    const rows = tickets.map((t) => ({
+      combo: t,
+      payout: Number(res.trifecta[t] || 0),
+    }));
+    const hits = rows.filter((x) => x.payout > 0);
 
     await markPosted(flag);
-    if (!hits.length) continue;
 
     const placeName = STADIUMS[info.stadium] || `場${info.stadium}`;
     const lines = [
-      `的中🎯 ${placeName}${info.race}R`,
-      `結果: ${res.finishCombo || "—"}`,
-      ...hits.map((h) => `・予想 ${h.combo}  払戻 ${yen(h.payout)}（100円あたり）`),
-      `合計払戻目安 ${yen(hits.reduce((s, h) => s + h.payout, 0))}（各100円購入時）`,
+      hits.length
+        ? `的中🎯 ${placeName}${info.race}R`
+        : `結果 ${placeName}${info.race}R`,
+      `着順: ${res.finishCombo || "—"}`,
+      "【買い目】",
+      ...rows.map((h) =>
+        h.payout > 0
+          ? `・⭕️ ${h.combo}  払戻 ${yen(h.payout)}（100円あたり）`
+          : `・❌ ${h.combo}`,
+      ),
+      hits.length
+        ? `合計払戻目安 ${yen(hits.reduce((s, h) => s + h.payout, 0))}（各100円購入時）`
+        : "的中なし",
       "※払戻は公式発表の100円あたり金額です。",
     ];
     const privateHit = m.meta?.visibility === "private";
     await appendChatMessage({
       kind: "note",
-      title: `的中🎯 ${placeName}${info.race}R`,
+      title: hits.length
+        ? `的中🎯 ${placeName}${info.race}R`
+        : `結果 ${placeName}${info.race}R`,
       body: lines.join("\n"),
       author_name: "律丸ボート部",
       author_role: "operator",
@@ -112,6 +148,7 @@ export async function settleChatPredictionHits(): Promise<number> {
         count: hits.length,
         placeNo: info.stadium,
         raceNo: info.race,
+        tickets,
         ...(privateHit
           ? {
               // 的中通知も依頼者本人だけ（管理人チャットは別ログ）

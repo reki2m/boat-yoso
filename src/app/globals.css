@@ -1244,6 +1244,16 @@ th {
   opacity: 0.9;
 }
 
+.chat-status-pill.result {
+  color: #ffd0d0;
+  border-color: rgba(255, 110, 110, 0.5);
+  background: rgba(64, 12, 18, 0.72);
+}
+
+.chat-race-chip.result em {
+  color: #ffc0c0;
+}
+
 .chat-pick-block {
   display: grid;
   gap: 0.35rem;
@@ -1275,6 +1285,9 @@ th {
 }
 
 .chat-ticket-btn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 1.05rem;
   font-weight: 800;
@@ -1292,6 +1305,26 @@ th {
 .chat-ticket-btn:hover {
   border-color: rgba(255, 196, 90, 0.7);
   background: rgba(28, 42, 18, 0.95);
+}
+
+.chat-ticket-btn.hit {
+  border-color: rgba(255, 90, 90, 0.65);
+  background: rgba(52, 10, 16, 0.92);
+}
+
+.chat-ticket-btn.miss {
+  opacity: 0.78;
+  border-style: dashed;
+}
+
+.chat-ticket-combo {
+  white-space: nowrap;
+}
+
+.chat-ticket-payout {
+  color: #ff3b3b;
+  font-weight: 900;
+  letter-spacing: 0.01em;
 }
 
 .chat-ticket-why {

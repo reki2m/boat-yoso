@@ -4,6 +4,8 @@ export type ChatBandTicketView = {
   combo: string;
   role?: string;
   why?: string;
+  result?: "hit" | "miss";
+  payout?: number;
 };
 
 export type ChatPickBandsView = {
@@ -25,6 +27,9 @@ export type RaceChipView = {
   confidence?: number;
   confidenceLabel?: string;
   exhibition?: "waiting" | "after" | "unknown";
+  settled?: boolean;
+  finishCombo?: string;
+  ticketResults?: Array<{ combo: string; result: "hit" | "miss"; payout: number }>;
 };
 
 export function normalizeBandTickets(
@@ -38,6 +43,8 @@ export function normalizeBandTickets(
           combo: String(item.combo || ""),
           role: item.role || "",
           why: item.why || "",
+          result: item.result,
+          payout: item.payout,
         },
   ).filter((t) => t.combo);
 }
@@ -52,10 +59,17 @@ export function hasBandTickets(bands?: ChatPickBandsView | null): boolean {
   );
 }
 
-export type RaceStatusTone = "waiting" | "confirmed" | "skipped" | "unknown";
+export type RaceStatusTone =
+  | "waiting"
+  | "confirmed"
+  | "skipped"
+  | "result"
+  | "unknown";
 
 export function raceStatusTone(chip: RaceChipView): RaceStatusTone {
   if (chip.status === "skipped") return "skipped";
+  // 公式結果が付いたら展示待ちのまま残さない
+  if (chip.settled || chip.status === "settled" || chip.finishCombo) return "result";
   if (chip.status === "confirmed") return "confirmed";
   if (
     chip.status === "provisional" ||
@@ -72,6 +86,7 @@ export function raceStatusTone(chip: RaceChipView): RaceStatusTone {
 export function statusBadge(chip: RaceChipView): string {
   const tone = raceStatusTone(chip);
   if (tone === "skipped") return "スルー";
+  if (tone === "result") return "結果";
   if (tone === "confirmed") return "確定";
   if (tone === "waiting") return "展示待ち";
   return "";
@@ -80,6 +95,11 @@ export function statusBadge(chip: RaceChipView): string {
 export function statusDetail(chip: RaceChipView): string {
   const tone = raceStatusTone(chip);
   if (tone === "skipped") return "スルー（このレースは買わない）";
+  if (tone === "result") {
+    return chip.finishCombo
+      ? `結果確定（着順 ${chip.finishCombo}）`
+      : "結果確定";
+  }
   if (tone === "confirmed") return "確定（展示後・買ってOK）";
   if (tone === "waiting") return "展示待ち（展示後に確定 or スルー）";
   return "状態未定";
@@ -88,9 +108,15 @@ export function statusDetail(chip: RaceChipView): string {
 export function chipToneClass(chip: RaceChipView): string {
   const tone = raceStatusTone(chip);
   if (tone === "skipped") return "skipped";
+  if (tone === "result") return "result";
   if (tone === "confirmed") return "after";
   if (tone === "waiting") return "waiting";
   return "";
+}
+
+export function formatTicketPayout(payout: number | undefined): string {
+  if (!payout || payout <= 0) return "";
+  return `¥${payout.toLocaleString("ja-JP")}`;
 }
 
 export function formatTickets(tickets: string[] | undefined, empty = "—"): string {
@@ -102,13 +128,16 @@ export function summarizeChips(chips: RaceChipView[]): string {
   let waiting = 0;
   let confirmed = 0;
   let skipped = 0;
+  let result = 0;
   for (const c of chips) {
     const tone = raceStatusTone(c);
     if (tone === "waiting") waiting += 1;
     else if (tone === "confirmed") confirmed += 1;
     else if (tone === "skipped") skipped += 1;
+    else if (tone === "result") result += 1;
   }
   const parts: string[] = [];
+  if (result) parts.push(`結果${result}`);
   if (confirmed) parts.push(`確定${confirmed}`);
   if (waiting) parts.push(`展示待ち${waiting}`);
   if (skipped) parts.push(`スルー${skipped}`);
