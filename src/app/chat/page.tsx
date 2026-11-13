@@ -220,8 +220,13 @@ function racePhase(m: ChatMessage, chip: RaceChipView): RacePhase {
   return "waiting";
 }
 
+function isPrivateAiPick(m: ChatMessage): boolean {
+  return m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private";
+}
+
 /**
  * 同じレースの展示待ち/確定が複数メッセージに出ないよう、新しい方を残す。
+ * 個人のAI予想（app_race_pick）は本命ボードと別枠なので重複排除しない。
  * 戻り値: messageId → 表示する races（空ならメッセージ自体を隠す対象）
  */
 function dedupeRaceUi(
@@ -230,6 +235,7 @@ function dedupeRaceUi(
   const seenWaiting = new Set<string>();
   const seenFinal = new Set<string>();
   const seenResult = new Set<string>();
+  const seenAi = new Set<string>();
   const out = new Map<string, RaceChipView[]>();
 
   // 新しいメッセージ優先
@@ -240,9 +246,17 @@ function dedupeRaceUi(
       out.set(m.id, []);
       continue;
     }
+    const aiPick = isPrivateAiPick(m);
     const kept: RaceChipView[] = [];
     for (const chip of races) {
       const key = raceKey(chip);
+      // AI予想同士だけ最新1件。ボード本命のスルー/確定とは独立。
+      if (aiPick) {
+        if (seenAi.has(key)) continue;
+        seenAi.add(key);
+        kept.push(chip);
+        continue;
+      }
       const phase = racePhase(m, chip);
       if (phase === "result") {
         if (seenResult.has(key)) continue;

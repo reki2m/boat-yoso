@@ -133,12 +133,8 @@ async function createAppRacePick(opts: {
       bands,
       status: built.status,
       why: built.why,
-      exhibition:
-        built.status === "confirmed"
-          ? "after"
-          : built.status === "skipped"
-            ? "after"
-            : "waiting",
+      // AI予想は本命ボードのスルーと混ぜない（waiting / after のみ）
+      exhibition: built.status === "confirmed" ? "after" : "waiting",
     });
     // 依頼した友達本人だけにアプリ予想本文を見せる（共有チャットは汚さない）
     const reply = await appendChatMessage({
