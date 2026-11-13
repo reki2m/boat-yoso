@@ -1,0 +1,323 @@
+{
+  "ask": [
+    "今年AI予想を買ったらどうなるか",
+    "一番いいロジックを再検証して採用"
+  ],
+  "train_years": [
+    2024,
+    2025
+  ],
+  "test_year": 2026,
+  "train_races": 110479,
+  "test_races": 48662,
+  "current_2026_if_bought_all": {
+    "strategy": "current_flat532",
+    "n": 48662,
+    "skipped": 0,
+    "hit_rate": 23.93,
+    "roi": 67.45,
+    "pnl": -15837100,
+    "bets": 48662000,
+    "pay": 32824900,
+    "avg_tickets": 10.0,
+    "months": {
+      "-0": {
+        "n": 42171,
+        "roi": 67.29,
+        "hit_rate": 23.9
+      },
+      "-1": {
+        "n": 6491,
+        "roi": 68.54,
+        "hit_rate": 24.11
+      }
+    },
+    "min_month_roi": 67.29
+  },
+  "ranked": [
+    {
+      "strategy": "strong_123",
+      "train_roi": 84.4,
+      "train_n": 3200,
+      "test_roi": 102.59,
+      "test_n": 1432,
+      "test_hit": 12.92,
+      "test_avg_tickets": 1.0,
+      "test_min_month_roi": 102.03,
+      "test_pnl": 3710
+    },
+    {
+      "strategy": "elite_123",
+      "train_roi": 73.25,
+      "train_n": 1044,
+      "test_roi": 89.43,
+      "test_n": 457,
+      "test_hit": 11.38,
+      "test_avg_tickets": 1.0,
+      "test_min_month_roi": 87.01,
+      "test_pnl": -4830
+    },
+    {
+      "strategy": "elite_12_stream",
+      "train_roi": 82.25,
+      "train_n": 1044,
+      "test_roi": 81.97,
+      "test_n": 457,
+      "test_hit": 25.82,
+      "test_avg_tickets": 4.0,
+      "test_min_month_roi": 75.24,
+      "test_pnl": -32950
+    },
+    {
+      "strategy": "strong_h5",
+      "train_roi": 82.62,
+      "train_n": 3200,
+      "test_roi": 81.55,
+      "test_n": 1432,
+      "test_hit": 33.1,
+      "test_avg_tickets": 5.0,
+      "test_min_month_roi": 80.7,
+      "test_pnl": -132100
+    },
+    {
+      "strategy": "123_only",
+      "train_roi": 78.98,
+      "train_n": 110479,
+      "test_roi": 79.26,
+      "test_n": 48662,
+      "test_hit": 7.2,
+      "test_avg_tickets": 1.0,
+      "test_min_month_roi": 73.22,
+      "test_pnl": -1009440
+    },
+    {
+      "strategy": "axis1_conf45_stream",
+      "train_roi": 76.57,
+      "train_n": 10814,
+      "test_roi": 77.55,
+      "test_n": 4752,
+      "test_hit": 26.68,
+      "test_avg_tickets": 4.0,
+      "test_min_month_roi": 74.51,
+      "test_pnl": -426820
+    },
+    {
+      "strategy": "conf5_top1",
+      "train_roi": 74.96,
+      "train_n": 9467,
+      "test_roi": 74.48,
+      "test_n": 4041,
+      "test_hit": 6.36,
+      "test_avg_tickets": 1.0,
+      "test_min_month_roi": 49.27,
+      "test_pnl": -103140
+    },
+    {
+      "strategy": "top1_only",
+      "train_roi": 64.87,
+      "train_n": 110479,
+      "test_roi": 71.2,
+      "test_n": 48662,
+      "test_hit": 4.44,
+      "test_avg_tickets": 1.0,
+      "test_min_month_roi": 70.34,
+      "test_pnl": -1401240
+    },
+    {
+      "strategy": "conf5_h5",
+      "train_roi": 70.12,
+      "train_n": 9467,
+      "test_roi": 70.2,
+      "test_n": 4041,
+      "test_hit": 24.5,
+      "test_avg_tickets": 5.0,
+      "test_min_month_roi": 68.16,
+      "test_pnl": -602050
+    },
+    {
+      "strategy": "conf45_h5o3a2",
+      "train_roi": 70.36,
+      "train_n": 30199,
+      "test_roi": 69.78,
+      "test_n": 13313,
+      "test_hit": 28.21,
+      "test_avg_tickets": 10.0,
+      "test_min_month_roi": 69.72,
+      "test_pnl": -4022630
+    },
+    {
+      "strategy": "honmei3_only",
+      "train_roi": 67.27,
+      "train_n": 110479,
+      "test_roi": 69.2,
+      "test_n": 48662,
+      "test_hit": 11.35,
+      "test_avg_tickets": 3.0,
+      "test_min_month_roi": 68.42,
+      "test_pnl": -4496670
+    },
+    {
+      "strategy": "honmei5_only",
+      "train_roi": 68.16,
+      "train_n": 110479,
+      "test_roi": 68.47,
+      "test_n": 48662,
+      "test_hit": 17.03,
+      "test_avg_tickets": 5.0,
+      "test_min_month_roi": 68.23,
+      "test_pnl": -7672290
+    },
+    {
+      "strategy": "thin10_conf3plus",
+      "train_roi": 69.42,
+      "train_n": 56284,
+      "test_roi": 68.31,
+      "test_n": 24854,
+      "test_hit": 26.39,
+      "test_avg_tickets": 10.0,
+      "test_min_month_roi": 68.11,
+      "test_pnl": -7875460
+    },
+    {
+      "strategy": "flat_640",
+      "train_roi": 68.76,
+      "train_n": 110479,
+      "test_roi": 68.13,
+      "test_n": 48662,
+      "test_hit": 25.43,
+      "test_avg_tickets": 10.0,
+      "test_min_month_roi": 67.9,
+      "test_pnl": -15507880
+    },
+    {
+      "strategy": "current_flat532",
+      "train_roi": 68.35,
+      "train_n": 110479,
+      "test_roi": 67.45,
+      "test_n": 48662,
+      "test_hit": 23.93,
+      "test_avg_tickets": 10.0,
+      "test_min_month_roi": 67.29,
+      "test_pnl": -15837100
+    },
+    {
+      "strategy": "conf45_or_strong",
+      "train_roi": 69.23,
+      "train_n": 31776,
+      "test_roi": 67.42,
+      "test_n": 14036,
+      "test_hit": 19.76,
+      "test_avg_tickets": 4.79,
+      "test_min_month_roi": 67.24,
+      "test_pnl": -2192100
+    },
+    {
+      "strategy": "skip_low_conf",
+      "train_roi": 68.66,
+      "train_n": 56284,
+      "test_roi": 67.39,
+      "test_n": 24854,
+      "test_hit": 16.31,
+      "test_avg_tickets": 4.07,
+      "test_min_month_roi": 67.28,
+      "test_pnl": -3299970
+    },
+    {
+      "strategy": "hybrid_best_guess",
+      "train_roi": 67.72,
+      "train_n": 30648,
+      "test_roi": 67.12,
+      "test_n": 13525,
+      "test_hit": 12.99,
+      "test_avg_tickets": 2.93,
+      "test_min_month_roi": 65.55,
+      "test_pnl": -1303870
+    },
+    {
+      "strategy": "conf45_h3o2a0",
+      "train_roi": 68.26,
+      "train_n": 30199,
+      "test_roi": 67.1,
+      "test_n": 13313,
+      "test_hit": 17.43,
+      "test_avg_tickets": 5.0,
+      "test_min_month_roi": 65.59,
+      "test_pnl": -2190270
+    },
+    {
+      "strategy": "conf45_h5",
+      "train_roi": 69.08,
+      "train_n": 30199,
+      "test_roi": 66.98,
+      "test_n": 13313,
+      "test_hit": 20.16,
+      "test_avg_tickets": 5.0,
+      "test_min_month_roi": 66.78,
+      "test_pnl": -2197840
+    },
+    {
+      "strategy": "adaptive_conf",
+      "train_roi": 68.26,
+      "train_n": 110479,
+      "test_roi": 66.3,
+      "test_n": 48662,
+      "test_hit": 22.05,
+      "test_avg_tickets": 10.0,
+      "test_min_month_roi": 65.95,
+      "test_pnl": -16397290
+    }
+  ],
+  "best": {
+    "strategy": "strong_123",
+    "train": {
+      "strategy": "strong_123",
+      "n": 3200,
+      "skipped": 107279,
+      "hit_rate": 9.78,
+      "roi": 84.4,
+      "pnl": -49920,
+      "bets": 320000,
+      "pay": 270080,
+      "avg_tickets": 1.0,
+      "months": {
+        "-0": {
+          "n": 2604,
+          "roi": 83.47,
+          "hit_rate": 9.72
+        },
+        "-1": {
+          "n": 596,
+          "roi": 88.47,
+          "hit_rate": 10.07
+        }
+      },
+      "min_month_roi": 83.47
+    },
+    "test": {
+      "strategy": "strong_123",
+      "n": 1432,
+      "skipped": 47230,
+      "hit_rate": 12.92,
+      "roi": 102.59,
+      "pnl": 3710,
+      "bets": 143200,
+      "pay": 146910,
+      "avg_tickets": 1.0,
+      "months": {
+        "-0": {
+          "n": 1265,
+          "roi": 102.03,
+          "hit_rate": 12.96
+        },
+        "-1": {
+          "n": 167,
+          "roi": 106.83,
+          "hit_rate": 12.57
+        }
+      },
+      "min_month_roi": 102.03
+    },
+    "reason": "strong_123 が2026テストROIで最良（ROI 102.59% / n=1432 / 的中 12.92%）。"
+  },
+  "elapsed_sec": 54.5
+}

@@ -12,10 +12,9 @@ const MAINT_EVERY_MS = 60_000;
 /** 連打防止。1場12Rを順に見られるよう短め。 */
 const RACE_MIN_INTERVAL_MS = 8_000;
 /**
- * 旧: 8件/時 → 8R以降が実質止まる原因だった。
- * 3場×12R分を余裕込みで許可。同一レース再取得は別枠でカウントしない。
+ * 1時間あたり12レース（1場分）。同一レース再取得はカウントしない。
  */
-const RACE_MAX_PER_HOUR = 36;
+export const RACE_MAX_PER_HOUR = 12;
 
 type RaceBucket = {
   windowStart: number;
@@ -169,8 +168,8 @@ export async function allowRaceReply(
   if (!local.ok) return local;
 
   if (local.consumeShared) {
-    // v2: 旧 race-reply（上限8）のカウンタを引き継がない
-    const shared = await allowAuthAttemptShared(`race-reply-v2:${bucketKey || "anon"}`, {
+    // v3: 上限12レース/時。旧カウンタは引き継がない
+    const shared = await allowAuthAttemptShared(`race-reply-v3:${bucketKey || "anon"}`, {
       limit: RACE_MAX_PER_HOUR,
       windowMs: 60 * 60 * 1000,
     });

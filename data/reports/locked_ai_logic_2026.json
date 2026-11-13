@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "scheme": "strong_123_primary",
+  "validated": {
+    "train_years": [2024, 2025],
+    "test_year": 2026,
+    "test_roi": 102.59,
+    "test_n": 1432,
+    "test_hit_rate": 12.92,
+    "current_flat532_2026_roi": 67.45,
+    "report": "validate_ai_logic_2026.json"
+  },
+  "primary": {
+    "label": "strong_123",
+    "tickets": ["1-2-3"],
+    "gate": {
+      "max_c1_class": 1,
+      "min_c1_nat": 6.8,
+      "max_c1_st": 0.15,
+      "min_motor2": 32,
+      "min_gap_c2": 0.8,
+      "grades": [4, 5]
+    }
+  },
+  "fallback_axis1_conf45": {
+    "label": "axis1_conf45_stream",
+    "tickets": ["1-2-3", "1-2-4", "1-2-5", "1-2-6"],
+    "min_confidence": 4
+  },
+  "fallback_other": {
+    "label": "top1_only",
+    "points": 1
+  },
+  "note": "2026検証で strong_123 が最良。毎回10点の現行は回収約67%。押し・穴の常時併売はROIを下げるため本線では出さない。"
+}

@@ -841,6 +841,7 @@ export default function ChatPage() {
           <div className="chat-predict-panel chat-ai-bar">
             <div className="chat-live-head">
               <strong>AI予想</strong>
+              <span className="note">1時間に12レースが上限（同じレースの再取得は数えません）</span>
             </div>
             <div className="chat-predict-row">
               <label className="field">
