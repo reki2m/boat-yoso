@@ -1,18 +1,18 @@
 {
-  "active_date": "20261112",
-  "date": "20261112",
-  "phase": "morning",
-  "generated_at": "2026-11-12T13:26:53.241661+09:00",
+  "active_date": "20261113",
+  "date": "20261113",
+  "phase": "today",
+  "generated_at": "2026-11-13T14:17:00.417971+09:00",
   "picks": [
     {
-      "date": "20261112",
-      "stadium": 17,
-      "stadium_name": "宮島",
+      "date": "20261113",
+      "stadium": 9,
+      "stadium_name": "津",
       "race": 12,
-      "title": "宮島オータムカップ",
+      "title": "ルーキーシリーズ第22戦スカパー!・JLC杯争奪戦",
       "grade": 5,
       "status": "provisional",
-      "closed_at": "2026-11-12 15:33:00",
+      "closed_at": "2026-11-13 16:09:00",
       "skip_on": [
         "entry_change",
         "exhibition_fail",
@@ -31,13 +31,13 @@
       "points": 1,
       "stake_per_ticket": 100,
       "stake_total": 100,
-      "score": 90.57494779016935,
-      "score_gap": 7.416,
+      "score": 96.48763243950295,
+      "score_gap": 12.154,
       "min_pick_score": 48.0,
       "elite": true,
       "validated_roi": null,
-      "innige": 0.5552801872504475,
-      "motor2": 35.0,
+      "innige": 0.5462720732504905,
+      "motor2": 34.02,
       "odds": {
         "source": "missing",
         "missing": true,
@@ -49,165 +49,64 @@
       },
       "entries": {
         "1": {
-          "name": "永田 啓二",
-          "regno": 4288,
-          "nat": 6.99,
-          "st": 0.12,
-          "class": 1,
-          "motor2": 35.0
-        },
-        "2": {
-          "name": "中里 英夫",
-          "regno": 3406,
-          "nat": 5.65,
-          "st": 0.19,
-          "class": 3,
-          "motor2": 60.0
-        },
-        "3": {
-          "name": "北野 輝季",
-          "regno": 4483,
-          "nat": 7.07,
-          "st": 0.15,
-          "class": 1,
-          "motor2": 27.27
-        },
-        "4": {
-          "name": "片橋 幸貴",
-          "regno": 4677,
-          "nat": 6.18,
-          "st": 0.15,
-          "class": 1,
-          "motor2": 0.0
-        },
-        "5": {
-          "name": "西野 翔太",
-          "regno": 4302,
-          "nat": 6.72,
-          "st": 0.15,
-          "class": 1,
-          "motor2": 54.55
-        },
-        "6": {
-          "name": "松井 友汰",
-          "regno": 5049,
-          "nat": 6.31,
-          "st": 0.19,
-          "class": 2,
-          "motor2": 16.67
-        }
-      },
-      "why": "宮島はボリューム単点の本命形。1号の永田 啓二が相対最強（A1・勝率6.99・ST0.12・モーター35.0%）のため、本命Sとして3連単1点（1-2-3）を採用。",
-      "reasons": [
-        "宮島イン逃げ率 55.5%（本命向き）",
-        "1号 永田 啓二 A1 / 勝率 6.99 / ST 0.12",
-        "モーター2連対 35.0% / 1号相対最強（差 7.42）",
-        "ボリューム単点 1-2-3（1点100円）"
-      ]
-    },
-    {
-      "date": "20261112",
-      "stadium": 19,
-      "stadium_name": "下関",
-      "race": 12,
-      "title": "スポーツ報知杯",
-      "grade": 5,
-      "status": "provisional",
-      "closed_at": "2026-11-12 20:38:00",
-      "skip_on": [
-        "entry_change",
-        "exhibition_fail",
-        "unexpected_event",
-        "race_closed",
-        "odds_overbet",
-        "odds_missing_near_close"
-      ],
-      "mode": "honmei_2020_maxminy",
-      "band": "honmei_s",
-      "label": "本命S",
-      "tickets": [
-        "1-2-3"
-      ],
-      "ticket": "trifecta_123",
-      "points": 1,
-      "stake_per_ticket": 100,
-      "stake_total": 100,
-      "score": 85.51738599870589,
-      "score_gap": 4.662,
-      "min_pick_score": 48.0,
-      "elite": true,
-      "validated_roi": null,
-      "innige": 0.5768254442287591,
-      "motor2": 35.83,
-      "odds": {
-        "source": "missing",
-        "missing": true,
-        "ok": null,
-        "favorite": null,
-        "fav_odds": null,
-        "top3_share": null,
-        "reason": "オッズ未取得（展示後に再判定）"
-      },
-      "entries": {
-        "1": {
-          "name": "深川 真二",
-          "regno": 3623,
-          "nat": 6.83,
+          "name": "前田 滉",
+          "regno": 5068,
+          "nat": 7.71,
           "st": 0.14,
           "class": 1,
-          "motor2": 35.83
+          "motor2": 34.02
         },
         "2": {
-          "name": "武重 雄介",
-          "regno": 4263,
-          "nat": 5.34,
-          "st": 0.18,
-          "class": 3,
-          "motor2": 34.62
+          "name": "笹木 香吾",
+          "regno": 5238,
+          "nat": 6.12,
+          "st": 0.15,
+          "class": 2,
+          "motor2": 39.11
         },
         "3": {
-          "name": "清水 攻二",
-          "regno": 3684,
-          "nat": 5.47,
-          "st": 0.18,
-          "class": 2,
-          "motor2": 25.93
+          "name": "松田 淳平",
+          "regno": 5275,
+          "nat": 5.87,
+          "st": 0.13,
+          "class": 1,
+          "motor2": 32.29
         },
         "4": {
-          "name": "田中 信一郎",
-          "regno": 3556,
-          "nat": 7.29,
-          "st": 0.14,
-          "class": 1,
-          "motor2": 46.28
+          "name": "松井 貫太",
+          "regno": 5177,
+          "nat": 4.65,
+          "st": 0.2,
+          "class": 3,
+          "motor2": 36.61
         },
         "5": {
-          "name": "江夏 満",
-          "regno": 4136,
-          "nat": 6.65,
-          "st": 0.17,
-          "class": 1,
-          "motor2": 27.5
+          "name": "篠原 晟弥",
+          "regno": 5092,
+          "nat": 5.4,
+          "st": 0.13,
+          "class": 2,
+          "motor2": 33.62
         },
         "6": {
-          "name": "山本 隆幸",
-          "regno": 4025,
-          "nat": 6.93,
-          "st": 0.18,
-          "class": 1,
-          "motor2": 30.83
+          "name": "山口 晃朋",
+          "regno": 5269,
+          "nat": 6.78,
+          "st": 0.16,
+          "class": 2,
+          "motor2": 34.03
         }
       },
-      "why": "下関はボリューム単点の本命形。1号の深川 真二が相対最強（A1・勝率6.83・ST0.14・モーター35.8%）のため、本命Sとして3連単1点（1-2-3）を採用。",
+      "why": "津はボリューム単点の本命形。1号の前田 滉が相対最強（A1・勝率7.71・ST0.14・モーター34.0%）のため、本命Sとして3連単1点（1-2-3）を採用。",
       "reasons": [
-        "下関イン逃げ率 57.7%（本命向き）",
-        "1号 深川 真二 A1 / 勝率 6.83 / ST 0.14",
-        "モーター2連対 35.8% / 1号相対最強（差 4.66）",
+        "津イン逃げ率 54.6%（本命向き）",
+        "1号 前田 滉 A1 / 勝率 7.71 / ST 0.14",
+        "モーター2連対 34.0% / 1号相対最強（差 12.15）",
         "ボリューム単点 1-2-3（1点100円）"
       ]
     }
   ],
-  "count": 2,
+  "count": 1,
   "status": "ok",
   "note": "本命ボリューム単点。1日最大2R（平均約1.7）。A1/勝率6.5/ST0.15/モーター35。1-2-3のみ。芦屋除外。",
   "mode": "honmei_2020_maxminy",
@@ -218,7 +117,16 @@
     "soft_max_per_day": 2,
     "hard_max_per_day": 2,
     "min_per_day": 0,
-    "fill_to_target": false
+    "fill_to_target": false,
+    "stadium_whitelist": [
+      12,
+      13,
+      15,
+      17,
+      18,
+      19
+    ],
+    "race_blacklist": []
   },
   "disabled_systems": [
     "oshi",
@@ -231,7 +139,7 @@
     21
   ],
   "points_per_race": 2,
-  "elite_count": 2,
+  "elite_count": 1,
   "odds_blocked": 0,
   "feasibility": {
     "target_races_per_day": "1.3-1.5",
@@ -251,19 +159,19 @@
     "note": "年次100%全年度達成は探索0件。下限最大は住之江〜下関6場・ST0.14・勝率6.5。"
   },
   "today": {
-    "date": "20261112",
-    "phase": "morning",
-    "generated_at": "2026-11-12T13:26:53.241661+09:00",
+    "date": "20261113",
+    "phase": "today",
+    "generated_at": "2026-11-13T14:17:00.417971+09:00",
     "picks": [
       {
-        "date": "20261112",
-        "stadium": 17,
-        "stadium_name": "宮島",
+        "date": "20261113",
+        "stadium": 9,
+        "stadium_name": "津",
         "race": 12,
-        "title": "宮島オータムカップ",
+        "title": "ルーキーシリーズ第22戦スカパー!・JLC杯争奪戦",
         "grade": 5,
         "status": "provisional",
-        "closed_at": "2026-11-12 15:33:00",
+        "closed_at": "2026-11-13 16:09:00",
         "skip_on": [
           "entry_change",
           "exhibition_fail",
@@ -282,13 +190,13 @@
         "points": 1,
         "stake_per_ticket": 100,
         "stake_total": 100,
-        "score": 90.57494779016935,
-        "score_gap": 7.416,
+        "score": 96.48763243950295,
+        "score_gap": 12.154,
         "min_pick_score": 48.0,
         "elite": true,
         "validated_roi": null,
-        "innige": 0.5552801872504475,
-        "motor2": 35.0,
+        "innige": 0.5462720732504905,
+        "motor2": 34.02,
         "odds": {
           "source": "missing",
           "missing": true,
@@ -300,165 +208,64 @@
         },
         "entries": {
           "1": {
-            "name": "永田 啓二",
-            "regno": 4288,
-            "nat": 6.99,
-            "st": 0.12,
-            "class": 1,
-            "motor2": 35.0
-          },
-          "2": {
-            "name": "中里 英夫",
-            "regno": 3406,
-            "nat": 5.65,
-            "st": 0.19,
-            "class": 3,
-            "motor2": 60.0
-          },
-          "3": {
-            "name": "北野 輝季",
-            "regno": 4483,
-            "nat": 7.07,
-            "st": 0.15,
-            "class": 1,
-            "motor2": 27.27
-          },
-          "4": {
-            "name": "片橋 幸貴",
-            "regno": 4677,
-            "nat": 6.18,
-            "st": 0.15,
-            "class": 1,
-            "motor2": 0.0
-          },
-          "5": {
-            "name": "西野 翔太",
-            "regno": 4302,
-            "nat": 6.72,
-            "st": 0.15,
-            "class": 1,
-            "motor2": 54.55
-          },
-          "6": {
-            "name": "松井 友汰",
-            "regno": 5049,
-            "nat": 6.31,
-            "st": 0.19,
-            "class": 2,
-            "motor2": 16.67
-          }
-        },
-        "why": "宮島はボリューム単点の本命形。1号の永田 啓二が相対最強（A1・勝率6.99・ST0.12・モーター35.0%）のため、本命Sとして3連単1点（1-2-3）を採用。",
-        "reasons": [
-          "宮島イン逃げ率 55.5%（本命向き）",
-          "1号 永田 啓二 A1 / 勝率 6.99 / ST 0.12",
-          "モーター2連対 35.0% / 1号相対最強（差 7.42）",
-          "ボリューム単点 1-2-3（1点100円）"
-        ]
-      },
-      {
-        "date": "20261112",
-        "stadium": 19,
-        "stadium_name": "下関",
-        "race": 12,
-        "title": "スポーツ報知杯",
-        "grade": 5,
-        "status": "provisional",
-        "closed_at": "2026-11-12 20:38:00",
-        "skip_on": [
-          "entry_change",
-          "exhibition_fail",
-          "unexpected_event",
-          "race_closed",
-          "odds_overbet",
-          "odds_missing_near_close"
-        ],
-        "mode": "honmei_2020_maxminy",
-        "band": "honmei_s",
-        "label": "本命S",
-        "tickets": [
-          "1-2-3"
-        ],
-        "ticket": "trifecta_123",
-        "points": 1,
-        "stake_per_ticket": 100,
-        "stake_total": 100,
-        "score": 85.51738599870589,
-        "score_gap": 4.662,
-        "min_pick_score": 48.0,
-        "elite": true,
-        "validated_roi": null,
-        "innige": 0.5768254442287591,
-        "motor2": 35.83,
-        "odds": {
-          "source": "missing",
-          "missing": true,
-          "ok": null,
-          "favorite": null,
-          "fav_odds": null,
-          "top3_share": null,
-          "reason": "オッズ未取得（展示後に再判定）"
-        },
-        "entries": {
-          "1": {
-            "name": "深川 真二",
-            "regno": 3623,
-            "nat": 6.83,
+            "name": "前田 滉",
+            "regno": 5068,
+            "nat": 7.71,
             "st": 0.14,
             "class": 1,
-            "motor2": 35.83
+            "motor2": 34.02
           },
           "2": {
-            "name": "武重 雄介",
-            "regno": 4263,
-            "nat": 5.34,
-            "st": 0.18,
-            "class": 3,
-            "motor2": 34.62
+            "name": "笹木 香吾",
+            "regno": 5238,
+            "nat": 6.12,
+            "st": 0.15,
+            "class": 2,
+            "motor2": 39.11
           },
           "3": {
-            "name": "清水 攻二",
-            "regno": 3684,
-            "nat": 5.47,
-            "st": 0.18,
-            "class": 2,
-            "motor2": 25.93
+            "name": "松田 淳平",
+            "regno": 5275,
+            "nat": 5.87,
+            "st": 0.13,
+            "class": 1,
+            "motor2": 32.29
           },
           "4": {
-            "name": "田中 信一郎",
-            "regno": 3556,
-            "nat": 7.29,
-            "st": 0.14,
-            "class": 1,
-            "motor2": 46.28
+            "name": "松井 貫太",
+            "regno": 5177,
+            "nat": 4.65,
+            "st": 0.2,
+            "class": 3,
+            "motor2": 36.61
           },
           "5": {
-            "name": "江夏 満",
-            "regno": 4136,
-            "nat": 6.65,
-            "st": 0.17,
-            "class": 1,
-            "motor2": 27.5
+            "name": "篠原 晟弥",
+            "regno": 5092,
+            "nat": 5.4,
+            "st": 0.13,
+            "class": 2,
+            "motor2": 33.62
           },
           "6": {
-            "name": "山本 隆幸",
-            "regno": 4025,
-            "nat": 6.93,
-            "st": 0.18,
-            "class": 1,
-            "motor2": 30.83
+            "name": "山口 晃朋",
+            "regno": 5269,
+            "nat": 6.78,
+            "st": 0.16,
+            "class": 2,
+            "motor2": 34.03
           }
         },
-        "why": "下関はボリューム単点の本命形。1号の深川 真二が相対最強（A1・勝率6.83・ST0.14・モーター35.8%）のため、本命Sとして3連単1点（1-2-3）を採用。",
+        "why": "津はボリューム単点の本命形。1号の前田 滉が相対最強（A1・勝率7.71・ST0.14・モーター34.0%）のため、本命Sとして3連単1点（1-2-3）を採用。",
         "reasons": [
-          "下関イン逃げ率 57.7%（本命向き）",
-          "1号 深川 真二 A1 / 勝率 6.83 / ST 0.14",
-          "モーター2連対 35.8% / 1号相対最強（差 4.66）",
+          "津イン逃げ率 54.6%（本命向き）",
+          "1号 前田 滉 A1 / 勝率 7.71 / ST 0.14",
+          "モーター2連対 34.0% / 1号相対最強（差 12.15）",
           "ボリューム単点 1-2-3（1点100円）"
         ]
       }
     ],
-    "count": 2,
+    "count": 1,
     "status": "ok",
     "mode": "honmei_2020_maxminy",
     "selection": {
@@ -468,7 +275,16 @@
       "soft_max_per_day": 2,
       "hard_max_per_day": 2,
       "min_per_day": 0,
-      "fill_to_target": false
+      "fill_to_target": false,
+      "stadium_whitelist": [
+        12,
+        13,
+        15,
+        17,
+        18,
+        19
+      ],
+      "race_blacklist": []
     },
     "disabled_systems": [
       "oshi",
@@ -480,13 +296,13 @@
     "stadium_blacklist": [
       21
     ],
-    "pool_size": 2,
-    "elite_count": 2,
+    "pool_size": 1,
+    "elite_count": 1,
     "standard_count": 0,
     "points_per_race": 2,
-    "closed_skipped": 65,
+    "closed_skipped": 87,
     "odds_blocked": 0,
-    "blacklisted_stadiums_seen": 1,
+    "blacklisted_stadiums_seen": 0,
     "stake_s": 100,
     "stake_standard": 100,
     "feasibility": {
@@ -508,5 +324,20 @@
     },
     "note": "本命ボリューム単点。1日最大2R（平均約1.7）。A1/勝率6.5/ST0.15/モーター35。1-2-3のみ。芦屋除外。"
   },
-  "tomorrow": null
+  "tomorrow": {
+    "date": "20261114",
+    "phase": "tomorrow",
+    "generated_at": "2026-11-13T14:17:00.512615+09:00",
+    "picks": [],
+    "status": "programs_unavailable",
+    "mode": "honmei_2020_maxminy",
+    "note": "番組未公開。夜中再取得待ち。",
+    "disabled_systems": [
+      "oshi",
+      "ana",
+      "volume_fixed_12",
+      "tri_1axis_6",
+      "honmei_roi_6pt"
+    ]
+  }
 }

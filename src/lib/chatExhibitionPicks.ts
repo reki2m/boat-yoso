@@ -95,23 +95,23 @@ export async function maybePostExhibitionHonmeiUpdates(now = new Date()): Promis
 
   const confirmed = batch.filter((p) => p.status === "confirmed");
   const skipped = batch.filter((p) => p.status === "skipped");
+  // 展示後投稿なので全件 after。スルーも「展示を見たうえでの見送り」と分かるようにする。
   const races = buildRaceChipsFromPicks(batch).map((chip) => ({
     ...chip,
-    exhibition:
-      chip.status === "confirmed" ? ("after" as const) : chip.exhibition || ("unknown" as const),
+    exhibition: "after" as const,
   }));
 
   const built = buildPicksMessage({
     active_date: dateKey,
     date: dateKey,
     mode: "exhibition_after_honmei",
-    note: "展示後の再判定です。進入変更などで見送りになったレースも含みます。",
+    note: "展示後の最終判定です。「確定」は買ってOK、「スルー」は買わない判断です。",
     picks: batch,
   });
 
-  const titleParts = ["展示後予想"];
+  const titleParts = ["展示後"];
   if (confirmed.length) titleParts.push(`確定${confirmed.length}`);
-  if (skipped.length) titleParts.push(`見送り${skipped.length}`);
+  if (skipped.length) titleParts.push(`スルー${skipped.length}`);
 
   await appendChatMessage({
     kind: "picks",

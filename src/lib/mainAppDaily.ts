@@ -134,13 +134,14 @@ export async function runMainAppRoiLearn(): Promise<{
   try {
     const score = await runPython("score_picks.py", ["--days", "14"]);
     const learn = await runPython("learn_roi_daily.py");
+    const incidents = await runPython("learn_exhibition_incidents.py");
     await writeState({
       last_learn_at: new Date().toISOString(),
-      last_learn_ok: score.ok && learn.ok,
+      last_learn_ok: score.ok && learn.ok && incidents.ok,
     });
     return {
-      ok: score.ok && learn.ok,
-      log: `${score.log}\n${learn.log}`.slice(-8000),
+      ok: score.ok && learn.ok && incidents.ok,
+      log: `${score.log}\n${learn.log}\n${incidents.log}`.slice(-8000),
     };
   } finally {
     running = null;

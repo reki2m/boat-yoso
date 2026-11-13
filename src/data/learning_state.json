@@ -23,10 +23,23 @@
   },
   "applied": false,
   "status": "live",
-  "note": "日次学習: サンプル不足のため監視のみ (n=3<20)",
+  "note": "日次学習: サンプル不足のため監視のみ (n=3<20) / 展示前後で買い目券種は変えない。進入変更はスキップし事故学習へ蓄積。",
   "policy": {
     "auto_apply_min_roi_gain_pp": 1.0,
     "min_keep_sample_ratio": 0.55,
     "no_reckless_loosening": true
+  },
+  "exhibition_incidents": {
+    "learned_at": "2026-11-12T14:53:32.740263+09:00",
+    "incident_count": 0,
+    "by_kind": {},
+    "top_entry_change_stadiums": [],
+    "tallies": {},
+    "policy": {
+      "skip_on_entry_change": true,
+      "keep_morning_tickets": true,
+      "prefer_realtime_csv": true,
+      "note": "展示前後で買い目券種は変えない。進入変更はスキップし事故学習へ蓄積。"
+    }
   }
 }

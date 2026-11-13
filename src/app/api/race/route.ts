@@ -8,6 +8,8 @@ import { remapRacersToExhibitionCourses } from "@/lib/exhibition";
 import { jstDateKey } from "@/lib/stadiums";
 import { fetchStadiumSeriesForms } from "@/lib/seriesForm";
 import { buildRaceDeepPicks } from "@/lib/raceDeepPicks";
+import { recordExhibitionIncidents } from "@/lib/exhibitionIncidents";
+import { analyzeLiveWithStream } from "@/lib/liveAnalysis";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +42,8 @@ export async function GET(req: NextRequest) {
       ? Number(windParam)
       : payload.windSpeed ?? exhibition.windSpeed;
 
-  // 進入変更時は買い目スキップ方針のため再マップしない（表示は実進入を別途 exhibition で出す）
+  // 買い目は番組枠ベースで固定。展示はゲート（確定/進入変更スキップ）と表示のみ。
+  // 進入変更時は再マップしない。変更なしでも avgStart は番組値のまま。
   const racersForScore =
     exhibition.ready && !exhibition.entryChanged
       ? remapRacersToExhibitionCourses(payload.racers, exhibition)
@@ -64,7 +67,33 @@ export async function GET(req: NextRequest) {
     exhibition,
     seriesForms,
     placeName: payload.placeName,
+    placeNo: place,
     raceNo: race,
+    raceRank: payload.raceRank,
+    raceName: payload.raceName,
+  });
+
+  const liveExtra = await analyzeLiveWithStream({
+    streamUrl: streamUrl ?? undefined,
+    placeNo: place,
+    dateKey: date,
+    raceNo: race,
+    signals: exhibition.signals,
+    exhibition: exhibition.boats.map((b) => ({
+      boat: b.boat,
+      name: b.name,
+      st: b.slit,
+      exhibit: b.lapTime,
+      course: b.course ?? undefined,
+      entry: b.entry,
+    })),
+  });
+  void recordExhibitionIncidents({
+    date,
+    stadium: place,
+    race,
+    exhibition,
+    streamNote: liveExtra.stream?.message,
   });
 
   return NextResponse.json({
@@ -72,6 +101,7 @@ export async function GET(req: NextRequest) {
     prediction,
     exhibition,
     deepPicks,
+    liveAnalysis: liveExtra,
     courseSkills: courseAnnotated.map((r) => ({
       course: r.course,
       name: r.name,

@@ -1012,11 +1012,20 @@ th {
 }
 
 .chat-honmei-targets {
-  margin: 0.35rem 0 0;
+  margin: 0.45rem 0 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.chat-honmei-targets-label {
   color: var(--danger);
   font-weight: 700;
   font-size: 0.92rem;
   letter-spacing: 0.02em;
+}
+
+.chat-target-chips {
+  margin: 0;
 }
 
 .chat-predict-row .field {
@@ -1096,6 +1105,15 @@ th {
 
 .chat-bubble.has-race-ui .chat-race-ui {
   margin-top: 0.35rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.chat-race-summary {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted, #9bb4c7);
+  line-height: 1.45;
 }
 
 .chat-race-chips {
@@ -1176,11 +1194,131 @@ th {
 }
 
 .chat-race-detail {
-  margin-top: 0.55rem;
-  padding: 0.55rem 0.65rem;
+  margin-top: 0.15rem;
+  padding: 0.7rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.22);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.chat-pick-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.chat-pick-status-row strong {
+  font-size: 1.02rem;
+  letter-spacing: 0.02em;
+}
+
+.chat-status-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.28rem 0.55rem;
+  color: var(--muted, #9bb4c7);
+}
+
+.chat-status-pill.waiting {
+  color: #ffd27a;
+  border-color: rgba(255, 196, 80, 0.45);
+  background: rgba(60, 40, 8, 0.55);
+}
+
+.chat-status-pill.after {
+  color: #9dffc4;
+  border-color: rgba(90, 220, 150, 0.45);
+  background: rgba(10, 48, 32, 0.72);
+}
+
+.chat-status-pill.skipped {
+  color: #c9d4de;
+  border-style: dashed;
+  opacity: 0.9;
+}
+
+.chat-pick-block {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(120, 220, 255, 0.12);
+}
+
+.chat-pick-block-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #9bb4c7);
+}
+
+.chat-ticket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chat-ticket-list li {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid rgba(120, 220, 255, 0.35);
+  background: rgba(8, 28, 42, 0.9);
+  color: #e8f4ff;
+}
+
+.chat-pick-empty {
+  margin: 0;
+  color: var(--muted, #9bb4c7);
+  font-size: 0.9rem;
+}
+
+.chat-pick-explain {
+  background: rgba(0, 0, 0, 0.18);
+  margin: 0 -0.15rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 6px;
+  border-top: none;
+}
+
+.chat-pick-why {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #d5e6f4;
+  white-space: pre-wrap;
+}
+
+.chat-race-more {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.chat-race-more-btn {
+  justify-self: start;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.55rem;
+}
+
+.chat-race-raw {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  opacity: 0.85;
+  font-size: 0.82rem;
 }
 
 .chat-race-hint {

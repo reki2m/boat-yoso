@@ -161,6 +161,119 @@ def evaluate_odds(odds: dict[str, float], cfg: dict, tickets: list[str]) -> dict
     }
 
 
+def _num(v):
+    if v is None or v == "":
+        return None
+    try:
+        return float(str(v).replace("F", "-").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_boatracecsv_preview(date_key: str, stadium: int, race: int) -> dict | None:
+    """BoatraceCSV 直前情報（進入・スタート展示・周回）。OpenAPIより早いことが多い。"""
+    y, m, d = date_key[:4], date_key[4:6], date_key[6:8]
+    code = f"{date_key}{stadium:02d}{race:02d}"
+    boats = {i: {"entry": i, "course": None, "slit": None, "lapTime": None, "entryChanged": False} for i in range(1, 7)}
+    notes = []
+    got = False
+    for kind, mapper in (
+        (
+            "stt",
+            lambda row, i: (
+                _num(row.get(f"艇{i}_コース")),
+                _num(row.get(f"艇{i}_スタート展示")),
+            ),
+        ),
+        (
+            "tkz",
+            lambda row, i: (_num(row.get(f"艇{i}_展示タイム")),),
+        ),
+    ):
+        url = f"https://boatracecsv.github.io/data/previews/{kind}/{y}/{m}/{d}.csv"
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "BoatYosoConfirm/5.0"})
+            with urllib.request.urlopen(req, timeout=20) as res:
+                text = res.read().decode("utf-8")
+        except Exception:
+            continue
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if len(lines) < 2:
+            continue
+        headers = lines[0].split(",")
+        for line in lines[1:]:
+            cols = line.split(",")
+            row = {headers[i]: cols[i] if i < len(cols) else "" for i in range(len(headers))}
+            if row.get("レースコード") != code:
+                continue
+            got = True
+            for i in range(1, 7):
+                if kind == "stt":
+                    course, slit = mapper(row, i)
+                    if course is not None and 1 <= course <= 6:
+                        boats[i]["course"] = int(course)
+                        boats[i]["entryChanged"] = int(course) != i
+                    if slit is not None:
+                        boats[i]["slit"] = slit
+                else:
+                    (lap,) = mapper(row, i)
+                    if lap is not None and 6.2 <= lap <= 8.5:
+                        boats[i]["lapTime"] = lap
+            break
+    if not got:
+        return None
+    entry_changed = any(b["entryChanged"] for b in boats.values())
+    stretch = [b["entry"] for b in boats.values() if b["slit"] is not None and b["slit"] <= 0.1]
+    laps = [b["lapTime"] for b in boats.values() if b["lapTime"] is not None]
+    median = sorted(laps)[len(laps) // 2] if laps else None
+    fast = []
+    if median is not None:
+        for b in boats.values():
+            if b["lapTime"] is not None and median - b["lapTime"] >= 0.04:
+                fast.append(b["entry"])
+    if entry_changed:
+        notes.append("進入変更")
+    if stretch:
+        notes.append(f"スリット伸び {stretch}")
+    if fast:
+        notes.append(f"周回速い {fast}")
+    return {
+        "boats": list(boats.values()),
+        "entry_changed": entry_changed,
+        "notes": notes,
+        "source": "boatracecsv",
+    }
+
+
+def record_incidents(date_key: str, stadium: int, race: int, kind: str, detail: str) -> None:
+    path = REPORTS / "exhibition_incidents.json"
+    src = SRC_DATA / "exhibition_incidents.json"
+    doc = load_json(path, {"updated_at": "", "incidents": [], "tallies": {}}) or {
+        "updated_at": "",
+        "incidents": [],
+        "tallies": {},
+    }
+    key = f"{stadium}:{kind}"
+    doc["tallies"][key] = int(doc["tallies"].get(key) or 0) + 1
+    doc["incidents"].append(
+        {
+            "at": datetime.now(JST).isoformat(),
+            "date": date_key,
+            "stadium": stadium,
+            "race": race,
+            "kind": kind,
+            "detail": detail,
+            "source": "confirm_exhibition",
+        }
+    )
+    doc["incidents"] = doc["incidents"][-2000:]
+    doc["updated_at"] = datetime.now(JST).isoformat()
+    text = json.dumps(doc, ensure_ascii=False, indent=2)
+    for p in (path, src):
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text, encoding="utf-8")
+
+
 def exhibition_for_race(programs: dict, stadium: int, race: int, pick: dict, rules: dict) -> dict:
     ex_cfg = rules.get("exhibition") or {}
     odds_cfg = rules.get("odds") or {}
@@ -192,6 +305,36 @@ def exhibition_for_race(programs: dict, stadium: int, race: int, pick: dict, rul
                 "entryChanged": changed,
             }
         )
+
+    # BoatraceCSV を優先合成（欠落埋め / 進入・ST・周回の即時化）
+    date_key_preview = str(pick.get("date") or race_doc.get("date") or "")
+    if len(date_key_preview) == 10 and "-" in date_key_preview:
+        date_key_preview = date_key_preview.replace("-", "")
+    csv_hit = fetch_boatracecsv_preview(date_key_preview or datetime.now(JST).strftime("%Y%m%d"), stadium, race)
+    signal_notes = []
+    if csv_hit:
+        signal_notes = list(csv_hit.get("notes") or [])
+        by_entry = {int(b["entry"]): b for b in boats if b.get("entry")}
+        merged = []
+        for cb in csv_hit["boats"]:
+            ob = by_entry.get(cb["entry"]) or {}
+            course = cb.get("course") if cb.get("course") is not None else ob.get("course")
+            slit = cb.get("slit") if cb.get("slit") is not None else ob.get("slit")
+            lap = cb.get("lapTime") if cb.get("lapTime") is not None else ob.get("lapTime")
+            entry = cb["entry"]
+            changed = course is not None and course != entry
+            merged.append(
+                {
+                    "entry": entry,
+                    "course": course,
+                    "slit": slit,
+                    "lapTime": lap,
+                    "entryChanged": changed,
+                }
+            )
+        boats = merged
+        entry_changed = any(b["entryChanged"] for b in boats)
+        missing = any(b.get("course") is None or b.get("slit") is None or b.get("lapTime") is None for b in boats)
     remarks = ((race_doc.get("result") or {}).get("remarks") or "") if isinstance(race_doc.get("result"), dict) else ""
     unexpected = bool(remarks) and any(
         k in str(remarks) for k in ("中止", "欠場", "不成立", "レース取り消し", "進入違反")
@@ -289,7 +432,27 @@ def exhibition_for_race(programs: dict, stadium: int, race: int, pick: dict, rul
         status = "provisional"
         skip_reason = "exhibition_pending"
 
-    final_tickets = odds_eval.get("tickets") or tickets
+    # 買い目は朝の provisional を固定。展示後は確定/スキップのみ（券種変更なし）
+    final_tickets = list(tickets)
+    if signal_notes and status == "confirmed":
+        reason = f"{reason}（{' / '.join(signal_notes[:2])}）"
+    elif signal_notes and status == "skipped" and skip_reason == "entry_change":
+        reason = f"{reason}（{' / '.join(signal_notes[:2])}）"
+
+    # 事故学習
+    if skip_reason == "entry_change":
+        record_incidents(date_key or "", stadium, race, "entry_change", reason)
+    elif skip_reason == "exhibition_fail":
+        record_incidents(date_key or "", stadium, race, "exhibition_fail", reason)
+    elif skip_reason == "unexpected":
+        record_incidents(date_key or "", stadium, race, "unexpected", reason)
+    elif signal_notes:
+        for note in signal_notes:
+            if "スリット" in note:
+                record_incidents(date_key or "", stadium, race, "stretch_slit", note)
+            if "周回" in note:
+                record_incidents(date_key or "", stadium, race, "fast_lap", note)
+
     return {
         "ready": ready,
         "status": status,
@@ -302,6 +465,7 @@ def exhibition_for_race(programs: dict, stadium: int, race: int, pick: dict, rul
         "boats": boats,
         "wind_speed": preview.get("wind_speed"),
         "closed_at": race_doc.get("closed_at"),
+        "signal_notes": signal_notes,
         "odds": {
             "source": odds_source,
             "missing": odds_eval.get("missing"),
@@ -331,7 +495,8 @@ def confirm_date(date_key: str) -> dict:
         # already closed picks should not stay active
         ex = exhibition_for_race(programs, int(p["stadium"]), int(p["race"]), p, rules)
         status = ex["status"]
-        tickets = ex.get("tickets") or p.get("tickets") or []
+        # 朝の買い目を固定（展示後に券種を変えない）
+        tickets = list(p.get("tickets") or ex.get("tickets") or [])
         stake = int(p.get("stake_per_ticket") or 100)
         row = {
             **p,
@@ -347,6 +512,7 @@ def confirm_date(date_key: str) -> dict:
                 "exhibitionFail": ex.get("exhibitionFail"),
                 "boats": ex["boats"],
                 "wind_speed": ex["wind_speed"],
+                "signal_notes": ex.get("signal_notes") or [],
             },
             "odds": ex.get("odds") or p.get("odds"),
             "closed_at": ex.get("closed_at") or p.get("closed_at"),
@@ -374,7 +540,7 @@ def confirm_date(date_key: str) -> dict:
         "mode": rules.get("mode") or "honmei_volume_single",
         "disabled_systems": rules.get("disabled_systems") or ["oshi", "ana"],
         "stadium_blacklist": rules.get("stadium_blacklist") or [21],
-        "note": "超厳選2点。展示厳格＋オッズ回避後に確定。進入変更・異常・締切済み・買われすぎはスキップ。押し目穴無効。",
+        "note": "買い目は朝固定。展示後は確定/スキップのみ。BoatraceCSVで進入・スリット・周回を即時確認。進入変更はスルー。",
         "status": "ok",
     }
     picks_path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")

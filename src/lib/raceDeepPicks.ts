@@ -3,6 +3,7 @@ import type { RacerRow } from "./types";
 import type { ExhibitionStatus } from "./exhibition";
 import type { SeriesFinish, SeriesForm } from "./seriesForm";
 import { courseWinRate } from "./courseSkills";
+import { evaluateMainlineEligibility, MAINLINE_RULE } from "./mainlineRule";
 
 export type DeepRacerView = {
   course: number;
@@ -153,12 +154,24 @@ export function buildRaceDeepPicks(input: {
   exhibition?: ExhibitionStatus | null;
   seriesForms?: Map<number, SeriesForm>;
   placeName?: string;
+  placeNo?: number;
   raceNo?: number;
+  gradeNumber?: number | null;
+  raceRank?: string | null;
+  raceName?: string | null;
 }): RaceDeepPicks {
   const seriesForms = input.seriesForms ?? new Map();
   const scoredByCourse = new Map(
     (input.scored ?? []).map((r) => [r.course, r] as const),
   );
+  const mainlineGate = evaluateMainlineEligibility({
+    placeNo: input.placeNo,
+    raceNo: input.raceNo,
+    gradeNumber: input.gradeNumber,
+    raceRank: input.raceRank,
+    raceName: input.raceName,
+    racers: input.racers,
+  });
 
   const views: DeepRacerView[] = input.racers.map((r) => {
     const series = seriesForms.get(r.playerNo);
@@ -215,14 +228,13 @@ export function buildRaceDeepPicks(input: {
         ? clamp(1 - (num(r.seriesDisplayAvg) - 6.55) / 0.35, 0, 1)
         : 0.5;
 
-    // スタート / 展示
+    // スタートは番組STのみ（展示スリットでスコアを動かさない＝展示前後の買い目固定）
     const st = clamp(1 - (r.avgStart - 0.1) / 0.2, 0, 1);
     const exLap = r.exhibitionLap;
     const exSlit = r.exhibitionSlit;
-    const lapScore =
-      exLap != null ? clamp(1 - (exLap - 6.55) / 0.35, 0, 1) : 0.5;
-    const slitScore =
-      exSlit != null ? clamp(1 - (exSlit - 0.1) / 0.2, 0, 1) : 0.5;
+    // 展示はコメント・シグナル用。本線スコアには中立値を入れ、券種が変わらないようにする
+    const lapScore = 0.5;
+    const slitScore = 0.5;
     const abilityScore =
       ability != null ? clamp(ability / 6500, 0, 1) : national;
 
@@ -291,55 +303,11 @@ export function buildRaceDeepPicks(input: {
   const byCourse = new Map(views.map((v) => [v.course, v]));
   const axis = ranked[0]?.course ?? 1;
   const partners = ranked.slice(1, 5).map((v) => v.course);
-  const secondPool = ranked.slice(1, 4).map((v) => v.course);
-  const thirdPool = ranked.slice(1, 5).map((v) => v.course);
 
-  const raw: string[] = [];
-  // 軸頭固定の本線〜相手拡張
-  for (const b of secondPool) {
-    for (const c of thirdPool) {
-      if (b === c || b === axis || c === axis) continue;
-      raw.push(`${axis}-${b}-${c}`);
-    }
-  }
-  // 2着軸の崩し（差が大きい時は少なめ）
   const gap = (ranked[0]?.score ?? 0) - (ranked[1]?.score ?? 0);
-  if (gap < 8 && secondPool[0]) {
-    const alt = secondPool[0];
-    for (const c of thirdPool) {
-      if (c === alt || c === axis) continue;
-      raw.push(`${alt}-${axis}-${c}`);
-      if (raw.length > 10) break;
-    }
-  }
 
-  let tickets = uniqueTickets(raw);
-  // 4〜6点に調整
-  if (tickets.length < 4) {
-    const fillers = [
-      `${axis}-${partners[0] ?? 2}-${partners[1] ?? 3}`,
-      `${axis}-${partners[0] ?? 2}-${partners[2] ?? 4}`,
-      `${axis}-${partners[1] ?? 3}-${partners[0] ?? 2}`,
-      `${axis}-${partners[1] ?? 3}-${partners[2] ?? 4}`,
-      `${axis}-${partners[2] ?? 4}-${partners[0] ?? 2}`,
-      `${axis}-${partners[0] ?? 2}-${partners[3] ?? 5}`,
-    ];
-    tickets = uniqueTickets([...tickets, ...fillers]).slice(0, 6);
-  } else if (tickets.length > 6) {
-    // 信頼ギャップが大きいほど絞る
-    const keep = gap >= 10 ? 4 : gap >= 6 ? 5 : 6;
-    tickets = tickets.slice(0, keep);
-  }
-  if (tickets.length < 4) {
-    tickets = uniqueTickets([
-      ...tickets,
-      "1-2-3",
-      "1-2-4",
-      "1-3-2",
-      "1-3-4",
-    ]).slice(0, 4);
-  }
-
+  // 本線は検証済みゲート通過時のみ。全買い回収率85%以上を優先し、条件外は見送り。
+  const tickets = mainlineGate.ok ? uniqueTickets(mainlineGate.tickets) : [];
   const deepTickets: DeepTicket[] = tickets.map((combo, i) => ({
     combo,
     rank: i + 1,
@@ -374,17 +342,23 @@ export function buildRaceDeepPicks(input: {
   }
   if (second && top) {
     commentary.push(
-      `【展開】軸との差は ${(top.score - second.score).toFixed(1)}点。${
-        gap >= 10
-          ? "差が開いているので本線寄り4点中心。"
-          : "接戦なので相手を広げて5〜6点。"
+      `【展開】軸との差は ${(top.score - second.score).toFixed(1)}点（ゲート差 ${mainlineGate.gap.toFixed(1)}）。${
+        mainlineGate.ok
+          ? "本線ゲート通過のため1-2流し5点を提示。"
+          : "本線ゲート未達のため買い目は見送り。"
       } ${input.exhibition && !input.exhibition.ready ? "展示未確定のため、進入確定後に再評価推奨。" : "展示データもスコアに反映済み。"}`,
     );
   }
   const confidence = mainConfidenceFromGap(gap, top?.score ?? 0);
-  commentary.push(
-    `【買い目】本線〜抑えの3連単 ${deepTickets.length}点（${deepTickets.map((t) => t.combo).join(" / ")}）。信頼度 ${confidence}/5。参考コメントであり的中を保証しません。`,
-  );
+  if (mainlineGate.ok) {
+    commentary.push(
+      `【買い目】本線〜抑えの3連単 ${deepTickets.length}点（${deepTickets.map((t) => t.combo).join(" / ")}）。信頼度 ${confidence}/5。全買い想定の検証回収率 約${MAINLINE_RULE.validated_all_roi}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi}%）。的中保証はありません。`,
+    );
+  } else {
+    commentary.push(
+      `【買い目】本線見送り（${mainlineGate.reasons.slice(0, 3).join(" / ")}）。条件外を出すと全買い回収が85%を割り込むため出さない。信頼度表示 ${confidence}/5 は参考。`,
+    );
+  }
 
   // ---- 穴目: 外枠(4-6)の機力・今節・直近が相対的に強い場合 ----
   const c1 = byCourse.get(1);
@@ -498,7 +472,7 @@ export function buildRaceDeepPicks(input: {
       anaCommentary,
       racerViews: ranked,
       method:
-        "本線信頼度は見た目の強さ(1-5)。信頼度だけでは回収は出ない。穴%は参考のみで運用ロックなし。",
+        "本線は検証ゲート通過時のみ提示（全買い回収率85%以上）。信頼度表示は参考。穴%は運用ロックなし。",
     };
   }
 
@@ -524,6 +498,7 @@ export function buildRaceDeepPicks(input: {
     anaCommentary,
     racerViews: ranked,
     method:
-      "本線信頼度は見た目の強さ(1-5)。信頼度だけでは回収は出ない。穴%は参考のみで運用ロックなし。",
+      "本線は検証ゲート通過時のみ提示（全買い回収率85%以上）。信頼度表示は参考。穴%は運用ロックなし。",
   };
 }
+

@@ -9,12 +9,14 @@ import {
   type ExhibitionBoat,
   type ExhibitionStatus,
 } from "./exhibition";
+import { fetchRealtimeExhibition } from "./realtimeExhibition";
 
 export type { RacePayload, RacerRow };
 
 type CacheEntry = { at: number; payload: RacePayload; exhibition: ExhibitionStatus };
 const cache = new Map<string, CacheEntry>();
-const CACHE_MS = 15 * 1000;
+const CACHE_MS_READY = 20 * 1000;
+const CACHE_MS_PENDING = 8 * 1000;
 
 const CLASS_NAME: Record<number, string> = {
   1: "A1",
@@ -190,8 +192,11 @@ export async function fetchKyoteiRaceBundle(
 ): Promise<RaceBundle> {
   const key = `${date}:${placeNo}:${raceNo}:${opts?.forceSampleExhibition ? "demo" : "live"}`;
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) {
-    return { payload: hit.payload, exhibition: hit.exhibition };
+  if (hit) {
+    const ttl = hit.exhibition.ready ? CACHE_MS_READY : CACHE_MS_PENDING;
+    if (Date.now() - hit.at < ttl) {
+      return { payload: hit.payload, exhibition: hit.exhibition };
+    }
   }
 
   try {
@@ -291,22 +296,46 @@ export async function fetchKyoteiRaceBundle(
       .sort((a, b) => a.course - b.course);
 
     let exhibition = evaluateExhibition(boats, { windSpeed, wave });
-    // 日和側の start/shinnyuu が遅れて空でも、OpenAPI preview に展示が出ていれば合成
+    // 1) BoatraceCSV直前情報（進入・ST・周回）を最優先で合成
+    // 2) 足りなければ OpenAPI preview
+    const namesByEntry = new Map(
+      racers.map((r) => [r.entry ?? r.course, { name: r.name, playerNo: r.playerNo }] as const),
+    );
+    const realtime = await fetchRealtimeExhibition(placeNo, raceNo, date, namesByEntry);
+    if (realtime?.boats?.length) {
+      // realtime を優先し、欠落だけ日和で埋める
+      const preferred = mergeExhibitionBoats(realtime.boats, boats);
+      exhibition = evaluateExhibition(preferred, {
+        windSpeed: realtime.windSpeed ?? windSpeed,
+        wave: realtime.wave ?? wave,
+        signals: realtime.signals,
+      });
+      windSpeed = realtime.windSpeed ?? windSpeed;
+      wave = realtime.wave ?? wave;
+      for (const r of racers) {
+        const hitBoat = exhibition.boats.find((b) => b.entry === (r.entry ?? r.course));
+        if (!hitBoat) continue;
+        r.exhibitionCourse = hitBoat.course;
+        r.exhibitionSlit = hitBoat.slit;
+        r.exhibitionLap = hitBoat.lapTime;
+      }
+    }
     if (!exhibition.ready) {
       const openapi = await fetchOpenApiRace(placeNo, raceNo, date);
       if (openapi?.exhibition?.boats?.length) {
-        const mergedBoats = mergeExhibitionBoats(boats, openapi.exhibition.boats);
+        const mergedBoats = mergeExhibitionBoats(exhibition.boats, openapi.exhibition.boats);
         exhibition = evaluateExhibition(mergedBoats, {
           windSpeed: windSpeed ?? openapi.exhibition.windSpeed,
           wave: wave ?? openapi.exhibition.wave,
+          signals: exhibition.signals,
         });
-        if (exhibition.ready) {
+        if (exhibition.ready || openapi.exhibition.boats.length) {
           for (const r of racers) {
-            const hit = exhibition.boats.find((b) => b.entry === (r.entry ?? r.course));
-            if (!hit) continue;
-            r.exhibitionCourse = hit.course;
-            r.exhibitionSlit = hit.slit;
-            r.exhibitionLap = hit.lapTime;
+            const hitEx = exhibition.boats.find((b) => b.entry === (r.entry ?? r.course));
+            if (!hitEx) continue;
+            r.exhibitionCourse = hitEx.course;
+            r.exhibitionSlit = hitEx.slit;
+            r.exhibitionLap = hitEx.lapTime;
           }
         }
         windSpeed = windSpeed ?? openapi.exhibition.windSpeed;
@@ -330,14 +359,32 @@ export async function fetchKyoteiRaceBundle(
       windSpeed,
       wave,
       note: exhibition.ready
-        ? undefined
-        : "展示の一部が未着です。OpenAPI/日和の両方を確認しても揃わない場合は待ちます。",
+        ? exhibition.signals?.source
+          ? `展示ソース: ${exhibition.signals.source}`
+          : undefined
+        : "展示の一部が未着です。BoatraceCSV/日和/OpenAPIを合成して監視中です。",
     };
     cache.set(key, { at: Date.now(), payload, exhibition });
     return { payload, exhibition };
   } catch {
     const openapi = await fetchOpenApiRace(placeNo, raceNo, date);
     if (openapi) {
+      const namesByEntry = new Map(
+        openapi.payload.racers.map(
+          (r) => [r.entry ?? r.course, { name: r.name, playerNo: r.playerNo }] as const,
+        ),
+      );
+      const realtime = await fetchRealtimeExhibition(placeNo, raceNo, date, namesByEntry);
+      if (realtime?.boats?.length) {
+        const preferred = mergeExhibitionBoats(realtime.boats, openapi.exhibition.boats);
+        openapi.exhibition = evaluateExhibition(preferred, {
+          windSpeed: realtime.windSpeed ?? openapi.exhibition.windSpeed,
+          wave: realtime.wave ?? openapi.exhibition.wave,
+          signals: realtime.signals,
+        });
+        openapi.payload.windSpeed = realtime.windSpeed ?? openapi.payload.windSpeed;
+        openapi.payload.wave = realtime.wave ?? openapi.payload.wave;
+      }
       if (opts?.forceSampleExhibition && !openapi.exhibition.ready) {
         openapi.exhibition = demoExhibitionFromRacers(
           openapi.payload.racers,

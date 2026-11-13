@@ -117,19 +117,20 @@ async function createAppRacePick(opts: {
       raceNo: opts.raceNo,
       raw: `${placeName}${opts.raceNo}R`,
     });
-    const tickets = [...built.tickets, ...built.anaTickets];
-    const raceStatus = built.entryChanged
-      ? "skipped"
-      : built.exhibitionReady
-        ? "confirmed"
-        : "provisional";
+    const tickets = built.tickets;
     const raceChip = buildSingleRaceChip({
       placeNo: built.placeNo,
       placeName,
       raceNo: built.raceNo,
       tickets,
-      status: raceStatus,
-      exhibition: built.exhibitionReady && !built.entryChanged ? "after" : "waiting",
+      status: built.status,
+      why: built.why,
+      exhibition:
+        built.status === "confirmed"
+          ? "after"
+          : built.status === "skipped"
+            ? "after"
+            : "waiting",
     });
     // 依頼した友達本人だけにアプリ予想本文を見せる（共有チャットは汚さない）
     const reply = await appendChatMessage({
@@ -273,11 +274,24 @@ export async function POST(req: NextRequest) {
     kind?: ChatKind | "clear" | "leave" | "predict" | "enter";
     note?: string;
     text?: string;
+    title?: string;
     authorName?: string;
     sessionId?: string;
     mirrorDiscord?: boolean;
     placeNo?: number;
     raceNo?: number;
+    /** 運営がボードを明示指定する場合（未指定なら data/picks_board.json） */
+    picksBoard?: {
+      active_date?: string;
+      date?: string;
+      mode?: string;
+      picks?: Array<Record<string, unknown>>;
+      note?: string;
+    };
+    /** ライブ再判定を挟まず、渡した status のまま投稿（展示後デモ・手動確定用） */
+    preserveStatus?: boolean;
+    races?: ReturnType<typeof buildRaceChipsFromPicks>;
+    mode?: string;
   } = {};
   try {
     body = await req.json();
@@ -502,25 +516,25 @@ export async function POST(req: NextRequest) {
   } = { visibility: "public" };
 
   if (kind === "picks") {
-    const board = picksBoard as {
+    const board = (body.picksBoard || picksBoard) as {
       active_date?: string;
       date?: string;
       mode?: string;
       picks?: Array<Record<string, unknown>>;
       note?: string;
     };
-    const livePicks = await refreshPicksStatus(
-      (board.picks || []).map((p) => ({
-        date: String(p.date || board.active_date || board.date || ""),
-        stadium: Number(p.stadium || 0),
-        stadium_name: typeof p.stadium_name === "string" ? p.stadium_name : undefined,
-        race: Number(p.race || 0),
-        tickets: Array.isArray(p.tickets) ? (p.tickets as string[]) : undefined,
-        status: typeof p.status === "string" ? p.status : undefined,
-        why: typeof p.why === "string" ? p.why : undefined,
-        skip_reason: typeof p.skip_reason === "string" ? p.skip_reason : null,
-      })),
-    );
+    const mapped = (board.picks || []).map((p) => ({
+      date: String(p.date || board.active_date || board.date || ""),
+      stadium: Number(p.stadium || 0),
+      stadium_name: typeof p.stadium_name === "string" ? p.stadium_name : undefined,
+      race: Number(p.race || 0),
+      tickets: Array.isArray(p.tickets) ? (p.tickets as string[]) : undefined,
+      status: typeof p.status === "string" ? p.status : undefined,
+      why: typeof p.why === "string" ? p.why : undefined,
+      skip_reason: typeof p.skip_reason === "string" ? p.skip_reason : null,
+      skip_detail: typeof p.skip_detail === "string" ? p.skip_detail : null,
+    }));
+    const livePicks = body.preserveStatus ? mapped : await refreshPicksStatus(mapped);
     const built = buildPicksMessage({
       active_date: board.active_date,
       date: board.date,
@@ -530,16 +544,32 @@ export async function POST(req: NextRequest) {
     });
     title = built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`;
     text = built.body;
+    const raceChips = buildRaceChipsFromPicks(livePicks).map((chip) => {
+      if (
+        board.mode === "exhibition_after_honmei" &&
+        (chip.status === "confirmed" || chip.status === "skipped")
+      ) {
+        return { ...chip, exhibition: "after" as const };
+      }
+      return chip;
+    });
     meta = {
       date: built.dateKey,
-      mode: "honmei_board",
+      mode:
+        board.mode === "exhibition_after_honmei" ? "exhibition_after_honmei" : "honmei_board",
       count: built.count,
       skipped: built.skippedCount,
       visibility: "public",
-      races: buildRaceChipsFromPicks(livePicks),
+      races: raceChips,
     };
   } else if (!text) {
     return NextResponse.json({ ok: false, error: "メモ本文が空です" }, { status: 400 });
+  } else {
+    if (body.title) title = String(body.title).slice(0, 80);
+    if (body.mode) meta.mode = String(body.mode).slice(0, 64);
+    if (Array.isArray(body.races) && body.races.length) {
+      meta.races = body.races;
+    }
   }
 
   let discordOk = false;
