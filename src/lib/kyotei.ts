@@ -1,6 +1,7 @@
 import { STADIUMS, jstDateKey } from "./stadiums";
 import { SAMPLE_RACE } from "./sample";
 import type { RacePayload, RacerRow } from "./types";
+import { parseSeriesDay, seriesRoundBadge } from "./seriesDay";
 import {
   evaluateExhibition,
   mergeExhibitionBoats,
@@ -346,6 +347,7 @@ export async function fetchKyoteiRaceBundle(
       exhibition = demoExhibitionFromRacers(racers, windSpeed ?? 5, wave ?? 3);
     }
 
+    const seriesDay = parseSeriesDay(first.race_date);
     const payload: RacePayload = {
       source: "kyoteibiyori",
       date,
@@ -354,6 +356,8 @@ export async function fetchKyoteiRaceBundle(
       raceNo,
       raceName: String(first.race_name ?? ""),
       raceRank: String(first.race_rank ?? ""),
+      seriesDay,
+      seriesDayLabel: seriesDay != null ? seriesRoundBadge(seriesDay) : "",
       racers,
       fetchedAt: new Date().toISOString(),
       windSpeed,
