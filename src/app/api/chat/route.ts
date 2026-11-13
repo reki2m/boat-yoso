@@ -124,11 +124,13 @@ async function createAppRacePick(opts: {
       raw: `${placeName}${opts.raceNo}R`,
     });
     const tickets = built.tickets;
+    const bands = built.bands;
     const raceChip = buildSingleRaceChip({
       placeNo: built.placeNo,
       placeName,
       raceNo: built.raceNo,
       tickets,
+      bands,
       status: built.status,
       why: built.why,
       exhibition:
@@ -152,6 +154,7 @@ async function createAppRacePick(opts: {
         placeNo: built.placeNo,
         raceNo: built.raceNo,
         tickets,
+        bands,
         visibility: "private",
         owner_session_id: opts.sessionId,
         owner_name: opts.ownerName,
@@ -172,6 +175,7 @@ async function createAppRacePick(opts: {
         placeNo: built.placeNo,
         raceNo: built.raceNo,
         tickets,
+        bands,
         visibility: "admin",
         owner_session_id: opts.sessionId,
         owner_name: opts.ownerName,

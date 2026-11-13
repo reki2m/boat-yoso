@@ -1280,6 +1280,22 @@ th {
   color: #e8f4ff;
 }
 
+.chat-band-stack {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.chat-band-row {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.chat-band-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c5e4f7;
+}
+
 .chat-pick-empty {
   margin: 0;
   color: var(--muted, #9bb4c7);

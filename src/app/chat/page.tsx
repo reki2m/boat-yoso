@@ -5,6 +5,7 @@ import Link from "next/link";
 import { STADIUMS } from "@/lib/stadiums";
 import {
   chipToneClass,
+  hasBandTickets,
   raceStatusTone,
   splitPickBody,
   statusBadge,
@@ -29,6 +30,12 @@ type ChatMessage = {
     placeNo?: number;
     raceNo?: number;
     tickets?: string[];
+    bands?: {
+      honmei?: string[];
+      honmeiS?: string[];
+      oshi?: string[];
+      ana?: string[];
+    };
     visibility?: "public" | "private" | "admin";
     owner_session_id?: string;
     owner_name?: string;
@@ -195,6 +202,7 @@ function messageRaces(m: ChatMessage): RaceChipView[] {
         raceNo: m.meta.raceNo,
         label: m.meta.race_label || `${STADIUMS[m.meta.placeNo] || ""} ${m.meta.raceNo}R`,
         tickets: m.meta.tickets || [],
+        bands: m.meta.bands,
         status: undefined,
         exhibition: "unknown",
       },
@@ -984,19 +992,61 @@ export default function ChatPage() {
 
                           <div className="chat-pick-block">
                             <div className="chat-pick-block-label">買い目</div>
-                            {selected.status === "skipped" ||
-                            !(selected.tickets && selected.tickets.length) ? (
-                              <p className="chat-pick-empty">
-                                {selected.status === "skipped"
-                                  ? "スルーのため買い目なし"
-                                  : "買い目なし"}
-                              </p>
-                            ) : (
+                            {selected.status === "skipped" ? (
+                              <p className="chat-pick-empty">スルーのため買い目なし</p>
+                            ) : hasBandTickets(selected.bands) ? (
+                              <div className="chat-band-stack">
+                                {(
+                                  [
+                                    {
+                                      key: "honmei",
+                                      label: "本命",
+                                      list: selected.bands?.honmei || [],
+                                    },
+                                    {
+                                      key: "honmeiS",
+                                      label: "本命S",
+                                      list: selected.bands?.honmeiS || [],
+                                    },
+                                    {
+                                      key: "oshi",
+                                      label: "押し目",
+                                      list: selected.bands?.oshi || [],
+                                    },
+                                    {
+                                      key: "ana",
+                                      label: "穴",
+                                      list: selected.bands?.ana || [],
+                                    },
+                                  ] as const
+                                ).map((band) => (
+                                  <div key={band.key} className="chat-band-row">
+                                    <span className="chat-band-label">
+                                      {band.label}
+                                      {band.list.length ? ` · ${band.list.length}` : ""}
+                                    </span>
+                                    {band.list.length ? (
+                                      <ul className="chat-ticket-list">
+                                        {band.list.map((t) => (
+                                          <li key={`${band.key}-${t}`}>{t}</li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <p className="chat-pick-empty">
+                                        {band.key === "honmeiS" ? "条件外" : "—"}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : selected.tickets && selected.tickets.length ? (
                               <ul className="chat-ticket-list">
                                 {selected.tickets.map((t) => (
                                   <li key={t}>{t}</li>
                                 ))}
                               </ul>
+                            ) : (
+                              <p className="chat-pick-empty">買い目なし</p>
                             )}
                           </div>
 
