@@ -107,6 +107,8 @@ export function buildSingleRaceChip(opts: {
   bands?: ChatRaceChip["bands"];
   status?: string;
   why?: string;
+  confidence?: number;
+  confidenceLabel?: string;
   exhibition?: ChatRaceChip["exhibition"];
 }): ChatRaceChip {
   const placeName = opts.placeName || STADIUMS[opts.placeNo] || `場${opts.placeNo}`;
@@ -119,6 +121,8 @@ export function buildSingleRaceChip(opts: {
     bands: opts.bands,
     status: opts.status,
     why: opts.why,
+    confidence: opts.confidence,
+    confidenceLabel: opts.confidenceLabel,
     exhibition: opts.exhibition || exhibitionFromStatus(opts.status),
   };
 }

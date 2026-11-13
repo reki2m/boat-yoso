@@ -133,6 +133,8 @@ async function createAppRacePick(opts: {
       bands,
       status: built.status,
       why: built.why,
+      confidence: built.confidence,
+      confidenceLabel: built.confidenceLabel,
       // AI予想は本命ボードのスルーと混ぜない（waiting / after のみ）
       exhibition: built.status === "confirmed" ? "after" : "waiting",
     });
@@ -151,6 +153,8 @@ async function createAppRacePick(opts: {
         raceNo: built.raceNo,
         tickets,
         bands,
+        confidence: built.confidence,
+        confidenceLabel: built.confidenceLabel,
         visibility: "private",
         owner_session_id: opts.sessionId,
         owner_name: opts.ownerName,
@@ -172,6 +176,8 @@ async function createAppRacePick(opts: {
         raceNo: built.raceNo,
         tickets,
         bands,
+        confidence: built.confidence,
+        confidenceLabel: built.confidenceLabel,
         visibility: "admin",
         owner_session_id: opts.sessionId,
         owner_name: opts.ownerName,

@@ -7,12 +7,19 @@ export type ChatRole = "operator" | "member";
 /** public=全員 / private=依頼者のみ / admin=管理人のみ */
 export type ChatVisibility = "public" | "private" | "admin";
 
+/** 1点分の買い目（押すと理由を出す用） */
+export type ChatBandTicket = {
+  combo: string;
+  role?: string;
+  why?: string;
+};
+
 /** 本体アプリと同じ帯分け（本命 / 本命S / 押し / 穴） */
 export type ChatPickBands = {
-  honmei?: string[];
-  honmeiS?: string[];
-  oshi?: string[];
-  ana?: string[];
+  honmei?: ChatBandTicket[];
+  honmeiS?: ChatBandTicket[];
+  oshi?: ChatBandTicket[];
+  ana?: ChatBandTicket[];
 };
 
 /** チャット欄の「〇〇場 〇〇R」UI用 */
@@ -26,6 +33,8 @@ export type ChatRaceChip = {
   bands?: ChatPickBands;
   status?: string;
   why?: string;
+  confidence?: number;
+  confidenceLabel?: string;
   /** waiting=展示前 / after=展示後反映 */
   exhibition?: "waiting" | "after" | "unknown";
 };
@@ -39,6 +48,8 @@ export type ChatMessageMeta = {
   raceNo?: number;
   tickets?: string[];
   bands?: ChatPickBands;
+  confidence?: number;
+  confidenceLabel?: string;
   visibility?: ChatVisibility;
   owner_session_id?: string;
   owner_name?: string;

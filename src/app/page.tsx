@@ -328,6 +328,8 @@ export default function Home() {
   const [chatMsg, setChatMsg] = useState("");
   const [raceConfidence, setRaceConfidence] = useState<Record<string, number>>({});
   const [exhibitionCheckedAt, setExhibitionCheckedAt] = useState("");
+  /** 買い目カードを押すと理由を開く */
+  const [openTicketKey, setOpenTicketKey] = useState("");
   /** none=出さない / board=本日の本命 / race=表示中レース予想 */
   const [chatShareMode, setChatShareMode] = useState<"none" | "board" | "race">("none");
 
@@ -1004,81 +1006,80 @@ export default function Home() {
                   </div>
                 </div>
 
-                {data.deepPicks.sReady && (data.deepPicks.sTickets || []).length ? (
-                  <div style={{ marginBottom: "0.85rem" }}>
-                    <strong>本命Sの内訳（回収100%超）</strong>
-                    <div className="band-grid" style={{ marginTop: "0.45rem" }}>
-                      {data.deepPicks.sTickets!.map((t) => (
-                        <div key={`s-${t.combo}`} className="side-card on">
-                          <span>
-                            {t.rank}. {t.role}
-                          </span>
-                          <strong>{t.combo}</strong>
-                          <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                            {t.why}
-                          </div>
-                        </div>
-                      ))}
+                {(
+                  [
+                    {
+                      key: "s",
+                      title: "本命Sの内訳（回収100%超）",
+                      show: Boolean(
+                        data.deepPicks.sReady && (data.deepPicks.sTickets || []).length,
+                      ),
+                      list: data.deepPicks.sTickets || [],
+                    },
+                    {
+                      key: "h",
+                      title: "本命の内訳（4〜6点）",
+                      show: Boolean(data.deepPicks.tickets.length),
+                      list: data.deepPicks.tickets,
+                    },
+                    {
+                      key: "o",
+                      title: "押し目の内訳（最大4）",
+                      show: Boolean((data.deepPicks.oshiTickets || []).length),
+                      list: data.deepPicks.oshiTickets || [],
+                    },
+                    {
+                      key: "a",
+                      title: "穴の内訳（最大4）",
+                      show: Boolean((data.deepPicks.anaTickets || []).length),
+                      list: data.deepPicks.anaTickets || [],
+                    },
+                  ] as const
+                )
+                  .filter((section) => section.show)
+                  .map((section) => (
+                    <div key={section.key} style={{ marginBottom: "0.85rem" }}>
+                      <strong>
+                        {section.title}
+                        <span className="note" style={{ marginLeft: "0.45rem" }}>
+                          押すと理由
+                        </span>
+                      </strong>
+                      <div className="band-grid" style={{ marginTop: "0.45rem" }}>
+                        {section.list.map((t) => {
+                          const ticketKey = `${section.key}-${t.combo}`;
+                          const open = openTicketKey === ticketKey;
+                          return (
+                            <button
+                              key={ticketKey}
+                              type="button"
+                              className={`side-card on ticket-why-card ${open ? "open" : ""}`}
+                              aria-expanded={open}
+                              onClick={() =>
+                                setOpenTicketKey((prev) =>
+                                  prev === ticketKey ? "" : ticketKey,
+                                )
+                              }
+                            >
+                              <span>
+                                {t.rank}. {t.role}
+                              </span>
+                              <strong>{t.combo}</strong>
+                              {open ? (
+                                <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                                  {t.why || "理由データなし"}
+                                </div>
+                              ) : (
+                                <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                                  理由を見る
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ) : null}
-
-                {data.deepPicks.tickets.length ? (
-                  <div style={{ marginBottom: "0.85rem" }}>
-                    <strong>本命の内訳（4〜6点）</strong>
-                    <div className="band-grid" style={{ marginTop: "0.45rem" }}>
-                      {data.deepPicks.tickets.map((t) => (
-                        <div key={`h-${t.combo}`} className="side-card on">
-                          <span>
-                            {t.rank}. {t.role}
-                          </span>
-                          <strong>{t.combo}</strong>
-                          <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                            {t.why}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {(data.deepPicks.oshiTickets || []).length ? (
-                  <div style={{ marginBottom: "0.85rem" }}>
-                    <strong>押し目の内訳（最大4）</strong>
-                    <div className="band-grid" style={{ marginTop: "0.45rem" }}>
-                      {data.deepPicks.oshiTickets!.map((t) => (
-                        <div key={`o-${t.combo}`} className="side-card on">
-                          <span>
-                            {t.rank}. {t.role}
-                          </span>
-                          <strong>{t.combo}</strong>
-                          <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                            {t.why}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {(data.deepPicks.anaTickets || []).length ? (
-                  <div style={{ marginBottom: "0.85rem" }}>
-                    <strong>穴の内訳（最大4）</strong>
-                    <div className="band-grid" style={{ marginTop: "0.45rem" }}>
-                      {data.deepPicks.anaTickets!.map((t) => (
-                        <div key={`a-${t.combo}`} className="side-card on">
-                          <span>
-                            {t.rank}. {t.role}
-                          </span>
-                          <strong>{t.combo}</strong>
-                          <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                            {t.why}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
+                  ))}
 
                 <div className="why-box" style={{ marginTop: "0.85rem" }}>
                   <strong>考察コメント</strong>

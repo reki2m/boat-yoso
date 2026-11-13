@@ -1,10 +1,16 @@
 /** クライアントでも使える買い目ステータス表示ヘルパ（DB依存なし） */
 
+export type ChatBandTicketView = {
+  combo: string;
+  role?: string;
+  why?: string;
+};
+
 export type ChatPickBandsView = {
-  honmei?: string[];
-  honmeiS?: string[];
-  oshi?: string[];
-  ana?: string[];
+  honmei?: Array<string | ChatBandTicketView>;
+  honmeiS?: Array<string | ChatBandTicketView>;
+  oshi?: Array<string | ChatBandTicketView>;
+  ana?: Array<string | ChatBandTicketView>;
 };
 
 export type RaceChipView = {
@@ -16,16 +22,33 @@ export type RaceChipView = {
   bands?: ChatPickBandsView;
   status?: string;
   why?: string;
+  confidence?: number;
+  confidenceLabel?: string;
   exhibition?: "waiting" | "after" | "unknown";
 };
+
+export function normalizeBandTickets(
+  list: Array<string | ChatBandTicketView> | undefined,
+): ChatBandTicketView[] {
+  if (!list?.length) return [];
+  return list.map((item) =>
+    typeof item === "string"
+      ? { combo: item, role: "", why: "" }
+      : {
+          combo: String(item.combo || ""),
+          role: item.role || "",
+          why: item.why || "",
+        },
+  ).filter((t) => t.combo);
+}
 
 export function hasBandTickets(bands?: ChatPickBandsView | null): boolean {
   if (!bands) return false;
   return Boolean(
-    bands.honmei?.length ||
-      bands.honmeiS?.length ||
-      bands.oshi?.length ||
-      bands.ana?.length,
+    normalizeBandTickets(bands.honmei).length ||
+      normalizeBandTickets(bands.honmeiS).length ||
+      normalizeBandTickets(bands.oshi).length ||
+      normalizeBandTickets(bands.ana).length,
   );
 }
 
