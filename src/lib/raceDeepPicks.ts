@@ -4,6 +4,16 @@ import type { ExhibitionStatus } from "./exhibition";
 import type { SeriesFinish, SeriesForm } from "./seriesForm";
 import { courseWinRate } from "./courseSkills";
 import { evaluateMainlineEligibility, MAINLINE_RULE } from "./mainlineRule";
+import tenPointAlloc from "../data/locked_ten_point_alloc.json";
+
+/** 検証ロック: 本命+押し+穴 = 10点（flat 5/3/2） */
+export const TEN_POINT_ALLOC = {
+  honmei: Number(tenPointAlloc.alloc?.honmei ?? 5),
+  oshi: Number(tenPointAlloc.alloc?.oshi ?? 3),
+  ana: Number(tenPointAlloc.alloc?.ana ?? 2),
+  total: Number(tenPointAlloc.total_points ?? 10),
+  scheme: String(tenPointAlloc.scheme ?? "flat_532"),
+} as const;
 
 export type DeepRacerView = {
   course: number;
@@ -44,7 +54,7 @@ export type DeepTicket = {
 export type ConfidenceScore = 0 | 1 | 2 | 3 | 4 | 5;
 
 export type RaceDeepPicks = {
-  /** 通常本命（毎回 4〜6点。スコア上位軸） */
+  /** 通常本命（検証ロック: 5点。スコア上位軸） */
   tickets: DeepTicket[];
   count: number;
   axis: number;
@@ -58,12 +68,12 @@ export type RaceDeepPicks = {
   sCount: number;
   sReady: boolean;
   sLabel: string;
-  /** 押し目（最大4点） */
+  /** 押し目（検証ロック: 3点） */
   oshiTickets: DeepTicket[];
   oshiCount: number;
   oshiAxis: number | null;
   oshiCommentary: string[];
-  /** 穴目（最大4点） */
+  /** 穴目（検証ロック: 2点） */
   anaTickets: DeepTicket[];
   anaCount: number;
   anaAxis: number | null;
@@ -91,6 +101,19 @@ function confidenceLabelOf(score: ConfidenceScore): string {
   return map[(score < 1 ? 1 : score > 5 ? 5 : score) as 1 | 2 | 3 | 4 | 5];
 }
 
+/** 2020-2026検証で固定5/3/2が最良。信頼度は表示・解説用。 */
+export function allocForConfidence(_confidence: ConfidenceScore): {
+  honmei: number;
+  oshi: number;
+  ana: number;
+} {
+  return {
+    honmei: TEN_POINT_ALLOC.honmei,
+    oshi: TEN_POINT_ALLOC.oshi,
+    ana: TEN_POINT_ALLOC.ana,
+  };
+}
+
 export function mainConfidenceFromGap(gap: number, topScore: number): ConfidenceScore {
   // 軸の絶対評価 + 2位との差で 1-5
   let score = 1;
@@ -114,11 +137,11 @@ export function confidenceFromRankings(scored: ScoredRacer[]): ConfidenceScore {
  * 穴目は運用対象外の参考表示。
  * 本命が強いレースほど穴は薄く見せる（旧UIの「厚め〜16%」固定感を避ける）。
  */
-/** 通常本命: 毎回 4〜6点。スコア1位軸の流し。 */
+/** 通常本命: 検証ロック点数。スコア1位軸の流し。 */
 function buildHonmeiTickets(
   ranked: DeepRacerView[],
   byCourse: Map<number, DeepRacerView>,
-  confidence: ConfidenceScore,
+  want: number,
 ): { tickets: DeepTicket[]; axis: number; partners: number[] } {
   const axisView = ranked[0];
   const axis = axisView?.course ?? 1;
@@ -153,10 +176,8 @@ function buildHonmeiTickets(
       }
     }
   }
-  // 信頼度で点数: 4〜6
-  const want = confidence >= 5 ? 6 : confidence >= 3 ? 5 : 4;
   let list = uniqueTickets(raw).slice(0, want);
-  if (list.length < 4) {
+  if (list.length < want) {
     const fb = partners.slice(0, 3);
     list = uniqueTickets([
       ...list,
@@ -164,9 +185,9 @@ function buildHonmeiTickets(
       `${axis}-${fb[0]}-${fb[2]}`,
       `${axis}-${fb[1]}-${fb[0]}`,
       `${axis}-${fb[1]}-${fb[2]}`,
-    ]).slice(0, Math.max(4, want));
+    ]).slice(0, want);
   }
-  const tickets: DeepTicket[] = list.slice(0, 6).map((combo, i) => ({
+  const tickets: DeepTicket[] = list.slice(0, want).map((combo, i) => ({
     combo,
     rank: i + 1,
     role: i === 0 ? "本線" : i < 3 ? "抑え" : "相手拡張",
@@ -179,6 +200,7 @@ function buildOshiTickets(
   ranked: DeepRacerView[],
   byCourse: Map<number, DeepRacerView>,
   exclude: Set<string>,
+  want: number,
 ): { tickets: DeepTicket[]; axis: number | null; commentary: string[] } {
   const commentary: string[] = [];
   if (ranked.length < 3) {
@@ -219,7 +241,7 @@ function buildOshiTickets(
   if (c3 && c1) raw.push("3-1-2", "3-1-4", "3-1-5");
 
   let list = uniqueTickets(raw).filter((t) => !exclude.has(t));
-  if (list.length < 4) {
+  if (list.length < want) {
     const fb = partners.slice(0, 3);
     list = uniqueTickets([
       ...list,
@@ -229,7 +251,7 @@ function buildOshiTickets(
       `${axis}-${fb[1]}-${fb[2]}`,
     ]).filter((t) => !exclude.has(t));
   }
-  list = list.slice(0, 4);
+  list = list.slice(0, want);
   const tickets: DeepTicket[] = list.map((combo, i) => ({
     combo,
     rank: i + 1,
@@ -240,7 +262,7 @@ function buildOshiTickets(
     `【押し軸】${axisView.course}号 ${axisView.name}（${axisView.className}）。全国${axisView.nationalWin.toFixed(2)} / ST${axisView.avgStart.toFixed(2)} / モーター${axisView.motorTop2.toFixed(0)}% / 評価${axisView.score.toFixed(1)}。`,
   );
   commentary.push(
-    `【押し買い目】最大4点（今回${tickets.length}点）。差し・まくり傾向から再計算。`,
+    `【押し買い目】${want}点枠（今回${tickets.length}点）。差し・まくり傾向から再計算。`,
   );
   return { tickets, axis, commentary };
 }
@@ -458,15 +480,18 @@ export function buildRaceDeepPicks(input: {
   const byCourse = new Map(views.map((v) => [v.course, v]));
   const gap = (ranked[0]?.score ?? 0) - (ranked[1]?.score ?? 0);
   const confidence = mainConfidenceFromGap(gap, ranked[0]?.score ?? 0);
+  const alloc = allocForConfidence(confidence);
 
-  // 通常本命: 毎回 4〜6点
-  const honmeiBuilt = buildHonmeiTickets(ranked, byCourse, confidence);
+  // 通常本命: 検証ロック点数
+  const honmeiBuilt = buildHonmeiTickets(ranked, byCourse, alloc.honmei);
   const deepTickets = honmeiBuilt.tickets;
   const axis = honmeiBuilt.axis;
   const partners = honmeiBuilt.partners;
 
-  // 本命S: 回収100%超の検証ゲート通過時のみ（別枠）
-  const sCombos = mainlineGate.ok ? uniqueTickets(mainlineGate.tickets).slice(0, 6) : [];
+  // 本命S: 回収100%超の検証ゲート通過時のみ（本命枠内の印・点数は増やさない）
+  const sCombos = mainlineGate.ok
+    ? uniqueTickets(mainlineGate.tickets).slice(0, alloc.honmei)
+    : [];
   const sTickets: DeepTicket[] = sCombos.map((combo, i) => ({
     combo,
     rank: i + 1,
@@ -505,7 +530,7 @@ export function buildRaceDeepPicks(input: {
   }
   if (second && top) {
     commentary.push(
-      `【展開】軸との差は ${(top.score - second.score).toFixed(1)}点。本命は毎回4〜6点、本命Sは回収100%超のときだけ別枠。`,
+      `【展開】軸との差は ${(top.score - second.score).toFixed(1)}点。買い目は本命${alloc.honmei}+押し${alloc.oshi}+穴${alloc.ana}=${TEN_POINT_ALLOC.total}点（2020-2026検証）。本命Sは条件内のみ本命枠の印。`,
     );
   }
   commentary.push(
@@ -513,7 +538,7 @@ export function buildRaceDeepPicks(input: {
   );
   if (sReady) {
     commentary.push(
-      `【本命S】${sTickets.length}点（${sTickets.map((t) => t.combo).join(" / ")}）。検証回収 約${MAINLINE_RULE.validated_all_roi}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi}%）。`,
+      `【本命S】本命枠内 ${sTickets.length}点（${sTickets.map((t) => t.combo).join(" / ")}）。検証回収 約${MAINLINE_RULE.validated_all_roi}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi}%）。点数は増やしません。`,
     );
   } else {
     commentary.push(
@@ -525,13 +550,13 @@ export function buildRaceDeepPicks(input: {
     ...deepTickets.map((t) => t.combo),
     ...sTickets.map((t) => t.combo),
   ]);
-  const oshiBuilt = buildOshiTickets(ranked, byCourse, excludeForOshi);
-  const oshiTickets = oshiBuilt.tickets.slice(0, 4);
+  const oshiBuilt = buildOshiTickets(ranked, byCourse, excludeForOshi, alloc.oshi);
+  const oshiTickets = oshiBuilt.tickets.slice(0, alloc.oshi);
   const oshiAxis = oshiBuilt.axis;
   const oshiCommentary = oshiBuilt.commentary;
   if (oshiTickets.length) {
     commentary.push(
-      `【押し目】${oshiAxis}号軸 ${oshiTickets.length}点（最大4・${oshiTickets.map((t) => t.combo).join(" / ")}）。`,
+      `【押し目】${oshiAxis}号軸 ${oshiTickets.length}点（枠${alloc.oshi}・${oshiTickets.map((t) => t.combo).join(" / ")}）。`,
     );
   }
 
@@ -594,8 +619,8 @@ export function buildRaceDeepPicks(input: {
     ]);
     let anaTicketsList = uniqueTickets(anaRaw)
       .filter((t) => !excludeAna.has(t))
-      .slice(0, 4);
-    if (anaTicketsList.length < 4) {
+      .slice(0, alloc.ana);
+    if (anaTicketsList.length < alloc.ana) {
       const fb = [2, 3, 1, 5, 6, 4].filter((n) => n !== anaAxis);
       anaTicketsList = uniqueTickets([
         ...anaTicketsList,
@@ -605,7 +630,7 @@ export function buildRaceDeepPicks(input: {
         `${anaAxis}-1-${fb[0]}`,
       ])
         .filter((t) => !excludeAna.has(t))
-        .slice(0, 4);
+        .slice(0, alloc.ana);
     }
 
     const anaHitPct = anaHitPctFromUpside(anaLead.upside, c1Strong, anaTicketsList.length);
@@ -625,15 +650,15 @@ export function buildRaceDeepPicks(input: {
       anaCommentary.push(
         weakIn
           ? `【狙い目】1号 ${c1.name} は勝率${c1.nationalWin.toFixed(2)} / ST${c1.avgStart.toFixed(2)} / モーター${c1.motorTop2.toFixed(0)}%で絶対ではなく、外の伸び・まくり差しが残る。`
-          : `【注意】1号 ${c1.name} も強い（勝率${c1.nationalWin.toFixed(2)} / ST${c1.avgStart.toFixed(2)}）。穴は最大4点。`,
+          : `【注意】1号 ${c1.name} も強い（勝率${c1.nationalWin.toFixed(2)} / ST${c1.avgStart.toFixed(2)}）。穴は${alloc.ana}点枠。`,
       );
     }
     anaCommentary.push(
-      `【穴買い目】最大4点（今回${anaDeep.length}点: ${anaDeep.map((t) => t.combo).join(" / ")}）。${anaPctLabel(anaHitPct)}。`,
+      `【穴買い目】${alloc.ana}点枠（今回${anaDeep.length}点: ${anaDeep.map((t) => t.combo).join(" / ")}）。${anaPctLabel(anaHitPct)}。`,
     );
 
     commentary.push(
-      `【穴目】${ana.course}号軸 ${anaDeep.length}点（最大4・参考${anaHitPct}%）。`,
+      `【穴目】${ana.course}号軸 ${anaDeep.length}点（枠${alloc.ana}・参考${anaHitPct}%）。`,
     );
 
     return finishDeepPicks({
@@ -653,11 +678,12 @@ export function buildRaceDeepPicks(input: {
       anaHitPct,
       anaCommentary,
       ranked,
+      alloc,
     });
   }
 
-  // 穴条件が薄いときも外枠上位で最大4点
-  if (anaLead && anaAxis != null) {
+  // 穴条件が薄いときも外枠上位で枠内点数
+  if (anaLead && anaAxis != null && alloc.ana > 0) {
     const fb = ranked
       .filter((r) => r.course !== anaAxis)
       .slice(0, 4)
@@ -674,7 +700,7 @@ export function buildRaceDeepPicks(input: {
       `${anaAxis}-${fb[1]}-${fb[2]}`,
     ])
       .filter((t) => !excludeAna.has(t))
-      .slice(0, 4);
+      .slice(0, alloc.ana);
     const anaDeep: DeepTicket[] = fallback.map((combo, i) => ({
       combo,
       rank: i + 1,
@@ -683,9 +709,9 @@ export function buildRaceDeepPicks(input: {
     }));
     const anaHitPct = Math.max(4, anaHitPctFromUpside(anaLead.upside, c1Strong, anaDeep.length));
     anaCommentary.push(
-      `【穴目】条件弱めだが外枠上位 ${anaLead.v.course}号軸で最大4点（今回${anaDeep.length}・${anaPctLabel(anaHitPct)}）。`,
+      `【穴目】条件弱めだが外枠上位 ${anaLead.v.course}号軸で${alloc.ana}点枠（今回${anaDeep.length}・${anaPctLabel(anaHitPct)}）。`,
     );
-    commentary.push(`【穴目】参考 ${anaDeep.length}点（条件弱め・最大4）。`);
+    commentary.push(`【穴目】参考 ${anaDeep.length}点（条件弱め・枠${alloc.ana}）。`);
     return finishDeepPicks({
       deepTickets,
       axis,
@@ -703,6 +729,7 @@ export function buildRaceDeepPicks(input: {
       anaHitPct,
       anaCommentary,
       ranked,
+      alloc,
     });
   }
 
@@ -726,6 +753,7 @@ export function buildRaceDeepPicks(input: {
     anaHitPct: 0,
     anaCommentary,
     ranked,
+    alloc,
   });
 }
 
@@ -746,33 +774,35 @@ function finishDeepPicks(input: {
   anaHitPct: number;
   anaCommentary: string[];
   ranked: DeepRacerView[];
+  alloc: { honmei: number; oshi: number; ana: number };
 }): RaceDeepPicks {
+  const oshi = input.oshiTickets.slice(0, input.alloc.oshi);
+  const ana = input.anaTickets.slice(0, input.alloc.ana);
   return {
-    tickets: input.deepTickets,
-    count: input.deepTickets.length,
+    tickets: input.deepTickets.slice(0, input.alloc.honmei),
+    count: Math.min(input.alloc.honmei, input.deepTickets.length),
     axis: input.axis,
     partners: input.partners,
     confidence: input.confidence,
     confidenceLabel: confidenceLabelOf(input.confidence),
     commentary: input.commentary,
-    sTickets: input.sTickets,
-    sCount: input.sTickets.length,
+    sTickets: input.sTickets.slice(0, input.alloc.honmei),
+    sCount: Math.min(input.alloc.honmei, input.sTickets.length),
     sReady: input.sReady,
     sLabel: input.sLabel,
-    oshiTickets: input.oshiTickets.slice(0, 4),
-    oshiCount: Math.min(4, input.oshiTickets.length),
+    oshiTickets: oshi,
+    oshiCount: oshi.length,
     oshiAxis: input.oshiAxis,
     oshiCommentary: input.oshiCommentary,
-    anaTickets: input.anaTickets.slice(0, 4),
-    anaCount: Math.min(4, input.anaTickets.length),
+    anaTickets: ana,
+    anaCount: ana.length,
     anaAxis: input.anaAxis,
     anaHitPct: input.anaHitPct,
     anaConfidence: input.anaHitPct,
     anaConfidenceLabel: anaPctLabel(input.anaHitPct),
     anaCommentary: input.anaCommentary,
     racerViews: input.ranked,
-    method:
-      "本命は毎回4〜6点。本命Sは回収100%超の検証ゲート通過時のみ別枠。押し目・穴は各最大4点。的中保証なし。",
+    method: `本命${input.alloc.honmei}+押し${input.alloc.oshi}+穴${input.alloc.ana}=${TEN_POINT_ALLOC.total}点（${TEN_POINT_ALLOC.scheme}・2020-2026検証）。本命Sは条件内のみ本命枠の印。的中保証なし。`,
   };
 }
 

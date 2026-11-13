@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "scheme": "flat_532",
+  "total_points": 10,
+  "alloc": {
+    "honmei": 5,
+    "oshi": 3,
+    "ana": 2
+  },
+  "note": "2020-2026全レース検証で、信頼度連動案より固定 本命5・押し3・穴2 が年次下限ROI・全体ROIとも最良。信頼度連動（5→本命厚め / 1-3→押し穴増）も検証済みで次点。",
+  "validated": {
+    "period": "2020-01-01..2026-11-12",
+    "races": 336723,
+    "roi": 68.07,
+    "min_year_roi": 67.07,
+    "hit_rate": 23.89,
+    "report": "validate_ten_point_alloc_2020.json"
+  },
+  "runner_ups": [
+    "user_capped",
+    "mild_tilt",
+    "flat_640"
+  ]
+}

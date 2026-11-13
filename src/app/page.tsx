@@ -499,7 +499,7 @@ export default function Home() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          レースを選ぶと本命4〜6点・押し目最大4・穴最大4を出します。回収100%超だけ本命Sとして別枠。
+          レースを選ぶと本命5・押し3・穴2の合計10点を出します。回収100%超だけ本命S印（点数は増やしません）。
         </p>
         {research?.update || research?.learning ? (
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
@@ -940,7 +940,7 @@ export default function Home() {
                         : "—"}
                     </strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                      毎回4〜6点 · 軸{data.deepPicks.axis}号
+                      本命5点 · 軸{data.deepPicks.axis}号
                     </div>
                   </div>
                   <div
@@ -967,7 +967,7 @@ export default function Home() {
                     }`}
                   >
                     <span>
-                      押し目 · 最大4
+                      押し目 · 3点
                       {data.deepPicks.oshiAxis != null
                         ? ` · 軸${data.deepPicks.oshiAxis}号`
                         : ""}
@@ -978,7 +978,7 @@ export default function Home() {
                         : "—"}
                     </strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                      差し・まくり傾向（最大4点）
+                      差し・まくり傾向（3点枠）
                     </div>
                   </div>
                   <div
@@ -987,7 +987,7 @@ export default function Home() {
                     }`}
                   >
                     <span>
-                      穴 · 最大4
+                      穴 · 2点
                       {data.deepPicks.anaAxis != null
                         ? ` · 軸${data.deepPicks.anaAxis}号`
                         : ""}
@@ -1001,7 +1001,7 @@ export default function Home() {
                         : "—"}
                     </strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                      外枠上振れ（最大4点）
+                      外枠上振れ（2点枠）
                     </div>
                   </div>
                 </div>
@@ -1018,19 +1018,19 @@ export default function Home() {
                     },
                     {
                       key: "h",
-                      title: "本命の内訳（4〜6点）",
+                      title: "本命の内訳（5点）",
                       show: Boolean(data.deepPicks.tickets.length),
                       list: data.deepPicks.tickets,
                     },
                     {
                       key: "o",
-                      title: "押し目の内訳（最大4）",
+                      title: "押し目の内訳（3点）",
                       show: Boolean((data.deepPicks.oshiTickets || []).length),
                       list: data.deepPicks.oshiTickets || [],
                     },
                     {
                       key: "a",
-                      title: "穴の内訳（最大4）",
+                      title: "穴の内訳（2点）",
                       show: Boolean((data.deepPicks.anaTickets || []).length),
                       list: data.deepPicks.anaTickets || [],
                     },
@@ -1208,14 +1208,14 @@ export default function Home() {
                       label: "本命",
                       ok: Boolean(data.deepPicks?.count),
                       tickets: data.deepPicks?.tickets.map((t) => t.combo) || [],
-                      note: "毎回4〜6点",
+                      note: "5点枠",
                     },
                     {
                       band: "honmei-s",
                       label: "本命S",
                       ok: Boolean(data.deepPicks?.sReady),
                       tickets: data.deepPicks?.sTickets?.map((t) => t.combo) || [],
-                      note: data.deepPicks?.sLabel || "回収100%超のみ",
+                      note: data.deepPicks?.sLabel || "回収100%超のみ（本命枠内）",
                     },
                     {
                       band: "oshi",
@@ -1223,7 +1223,7 @@ export default function Home() {
                       ok: Boolean(data.deepPicks?.oshiCount),
                       tickets:
                         data.deepPicks?.oshiTickets?.map((t) => t.combo) || [],
-                      note: "最大4点",
+                      note: "3点枠",
                     },
                     {
                       band: "ana",
@@ -1231,7 +1231,7 @@ export default function Home() {
                       ok: Boolean(data.deepPicks?.anaCount),
                       tickets:
                         data.deepPicks?.anaTickets?.map((t) => t.combo) || [],
-                      note: "最大4点",
+                      note: "2点枠",
                     },
                   ] as const
                 ).map((b) => (

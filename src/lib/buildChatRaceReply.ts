@@ -165,10 +165,10 @@ export async function buildChatRaceReply(
       : "本命S: 条件外",
   );
   lines.push(
-    `押し目(${bands.oshi.length}/最大4): ${combosOf(bands.oshi).join(" / ") || "—"}`,
+    `押し目(${bands.oshi.length}/3): ${combosOf(bands.oshi).join(" / ") || "—"}`,
   );
   lines.push(
-    `穴(${bands.ana.length}/最大4): ${combosOf(bands.ana).join(" / ") || "—"}`,
+    `穴(${bands.ana.length}/2): ${combosOf(bands.ana).join(" / ") || "—"}`,
   );
 
   lines.push("", "【説明】");
