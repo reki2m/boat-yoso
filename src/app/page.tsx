@@ -142,6 +142,8 @@ type RaceResponse = {
       liveNote?: string;
     };
   };
+  seriesDay?: number | null;
+  seriesDayLabel?: string;
   deepPicks?: {
     tickets: Array<{ combo: string; rank: number; role: string; why: string }>;
     count: number;
@@ -150,6 +152,10 @@ type RaceResponse = {
     confidence: number;
     confidenceLabel?: string;
     commentary: string[];
+    oshiTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
+    oshiCount?: number;
+    oshiAxis?: number | null;
+    oshiCommentary?: string[];
     anaTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
     anaCount?: number;
     anaAxis?: number | null;
@@ -482,12 +488,12 @@ export default function Home() {
     <main className="shell">
       <section className="hero">
         <h1 className="brand">律丸ボート部</h1>
-        <p className="brand-sub">本命だけ・今日だけ</p>
+        <p className="brand-sub">本命・押し目・穴 · 今日のレース</p>
         <div className="gate-rail" aria-hidden>
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          三連単本命のみ。対象6場・1R/9R除外。買い目は朝に固定し、展示後は確定かスルーだけ。1日だいたい0〜2レース。
+          レースを選ぶと本命・押し目・穴を出します。本命は回収100%超の検証条件だけ。押し目と穴はスコアと過去傾向から毎回再計算。
         </p>
         {research?.update || research?.learning ? (
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
@@ -732,7 +738,7 @@ export default function Home() {
           </div>
         ) : (
           <p className="status" style={{ marginBottom: 0 }}>
-            本日の条件該当はありません（見送り）。
+            本日の本命ボード該当はありません。下でレースを選ぶと押し目・穴は出ます。
           </p>
         )}
         {buyablePicks[0]?.why ? (
@@ -814,7 +820,11 @@ export default function Home() {
               <span className="badge">
                 {data.placeName} {data.raceNo}R
               </span>
+              {data.seriesDayLabel ? (
+                <span className="badge">{data.seriesDayLabel}</span>
+              ) : null}
               <span className="badge">{data.raceName || "番組"}</span>
+              <span className="badge">{data.raceRank || "一般"}</span>
               <span className={`badge ${data.exhibition?.ready ? "" : "warn"}`}>
                 展示:{" "}
                 {triple?.skipped
@@ -892,57 +902,147 @@ export default function Home() {
             {data.deepPicks ? (
               <div className="panel" style={{ marginTop: "1rem", padding: "1rem" }}>
                 <div className="meta" style={{ marginBottom: "0.65rem" }}>
-                  <span className="badge">考察買い目</span>
+                  <span className="badge">本日の買い目</span>
+                  {data.seriesDayLabel ? (
+                    <span className="badge">{data.seriesDayLabel}</span>
+                  ) : null}
                   <span className="badge">
-                    {data.deepPicks.count
-                      ? `3連単 ${data.deepPicks.count}点`
-                      : "本線見送り"}
+                    本命{data.deepPicks.count || 0} · 押し
+                    {data.deepPicks.oshiCount || 0} · 穴
+                    {data.deepPicks.anaCount || 0}
                   </span>
-                  <span className="badge">
-                    信頼度 {data.deepPicks.confidence}/5
-                    {data.deepPicks.confidenceLabel
-                      ? `（${data.deepPicks.confidenceLabel.replace(/^\d\/5\s*/, "")}）`
-                      : ""}
-                  </span>
-                  <span className="badge">軸 {data.deepPicks.axis}号</span>
                 </div>
-                <div
-                  className="cta-row"
-                  style={{ margin: "0.35rem 0 0.75rem", gap: "0.35rem" }}
-                  aria-label={`本線信頼度 ${data.deepPicks.confidence} of 5`}
-                >
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <span
-                      key={`main-conf-${n}`}
-                      className={`badge ${n <= data.deepPicks!.confidence ? "" : "warn"}`}
-                    >
-                      {n}
+
+                <div className="band-grid" style={{ marginBottom: "0.85rem" }}>
+                  <div className={`side-card band-honmei ${data.deepPicks.count ? "on" : ""}`}>
+                    <span>
+                      本命
+                      {data.deepPicks.count
+                        ? ` · 信頼度${data.deepPicks.confidence}/5`
+                        : " · 条件外"}
                     </span>
-                  ))}
+                    <strong>
+                      {data.deepPicks.tickets.length
+                        ? data.deepPicks.tickets.map((t) => t.combo).join(" · ")
+                        : "見送り（回収100%超のみ）"}
+                    </strong>
+                    <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                      {data.deepPicks.count
+                        ? `軸${data.deepPicks.axis}号 · 検証条件通過`
+                        : "本命ゲート未達。押し目・穴を参照"}
+                    </div>
+                  </div>
+                  <div
+                    className={`side-card band-oshi ${
+                      data.deepPicks.oshiCount ? "on" : ""
+                    }`}
+                  >
+                    <span>
+                      押し目
+                      {data.deepPicks.oshiAxis != null
+                        ? ` · 軸${data.deepPicks.oshiAxis}号`
+                        : ""}
+                    </span>
+                    <strong>
+                      {(data.deepPicks.oshiTickets || []).length
+                        ? data.deepPicks.oshiTickets!.map((t) => t.combo).join(" · ")
+                        : "算出中／不足"}
+                    </strong>
+                    <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                      スコア2位軸・差しまくり傾向から再計算
+                    </div>
+                  </div>
+                  <div
+                    className={`side-card band-ana ${
+                      data.deepPicks.anaCount ? "on" : ""
+                    }`}
+                  >
+                    <span>
+                      穴
+                      {data.deepPicks.anaAxis != null
+                        ? ` · 軸${data.deepPicks.anaAxis}号`
+                        : ""}
+                      {data.deepPicks.anaHitPct
+                        ? ` · 参考${data.deepPicks.anaHitPct}%`
+                        : ""}
+                    </span>
+                    <strong>
+                      {(data.deepPicks.anaTickets || []).length
+                        ? data.deepPicks.anaTickets!.map((t) => t.combo).join(" · ")
+                        : "見送り"}
+                    </strong>
+                    <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                      外枠の機力・今節・ST上振れ
+                    </div>
+                  </div>
                 </div>
-                <div className="sanren" style={{ marginBottom: "0.75rem" }}>
-                  {data.deepPicks.tickets.length
-                    ? data.deepPicks.tickets.map((t) => t.combo).join(" / ")
-                    : "見送り（全買い回収85%未満になる条件のため出さない）"}
-                </div>
+
                 {data.deepPicks.tickets.length ? (
-                  <div className="band-grid">
-                    {data.deepPicks.tickets.map((t) => (
-                      <div key={t.combo} className="side-card on">
-                        <span>
-                          {t.rank}. {t.role}
-                        </span>
-                        <strong>{t.combo}</strong>
-                        <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                          {t.why}
+                  <div style={{ marginBottom: "0.85rem" }}>
+                    <strong>本命の内訳</strong>
+                    <div className="band-grid" style={{ marginTop: "0.45rem" }}>
+                      {data.deepPicks.tickets.map((t) => (
+                        <div key={`h-${t.combo}`} className="side-card on">
+                          <span>
+                            {t.rank}. {t.role}
+                          </span>
+                          <strong>{t.combo}</strong>
+                          <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                            {t.why}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 ) : null}
+
+                {(data.deepPicks.oshiTickets || []).length ? (
+                  <div style={{ marginBottom: "0.85rem" }}>
+                    <strong>押し目の内訳</strong>
+                    <div className="band-grid" style={{ marginTop: "0.45rem" }}>
+                      {data.deepPicks.oshiTickets!.map((t) => (
+                        <div key={`o-${t.combo}`} className="side-card on">
+                          <span>
+                            {t.rank}. {t.role}
+                          </span>
+                          <strong>{t.combo}</strong>
+                          <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                            {t.why}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(data.deepPicks.anaTickets || []).length ? (
+                  <div style={{ marginBottom: "0.85rem" }}>
+                    <strong>穴の内訳</strong>
+                    <div className="band-grid" style={{ marginTop: "0.45rem" }}>
+                      {data.deepPicks.anaTickets!.map((t) => (
+                        <div key={`a-${t.combo}`} className="side-card on">
+                          <span>
+                            {t.rank}. {t.role}
+                          </span>
+                          <strong>{t.combo}</strong>
+                          <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                            {t.why}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="why-box" style={{ marginTop: "0.85rem" }}>
                   <strong>考察コメント</strong>
                   {data.deepPicks.commentary.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                  {(data.deepPicks.oshiCommentary || []).map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                  {(data.deepPicks.anaCommentary || []).map((line) => (
                     <p key={line}>{line}</p>
                   ))}
                   <p className="note" style={{ marginBottom: 0 }}>
@@ -994,7 +1094,12 @@ export default function Home() {
 
             <div className="pick">
               <div className="pick-main">
-                <span className="badge">{triple?.focus ?? "運用本命（参考）"}</span>
+                <span className="badge">
+                  {data.seriesDayLabel
+                    ? `${data.seriesDayLabel} · `
+                    : ""}
+                  {triple?.focus ?? "本日の推奨"}
+                </span>
                 <h2>
                   {triple?.skipped
                     ? "スキップ"
@@ -1002,16 +1107,24 @@ export default function Home() {
                       ? "買い目ロック中"
                       : activeBand
                         ? `${activeBand.label}採用`
-                        : "運用本命は見送り"}
+                        : data.deepPicks?.oshiCount
+                          ? "押し目を優先"
+                          : data.deepPicks?.anaCount
+                            ? "穴を参照"
+                            : "推奨券を上で確認"}
                 </h2>
                 <p>
                   {triple?.skipped
                     ? "進入変更または予期しない事態のため、このレースは買いません。"
                     : triple?.ticketsLocked
-                      ? "進入状況・スリット・周回タイムの確定後に買い目を出します。"
+                      ? "進入状況・スリット・周回タイムの確定後に買い目を確定します。"
                       : activeBand
                         ? `${activeBand.ticketLabel} / ${activeBand.tickets.join(" · ")}`
-                        : "上の考察買い目（4〜6点）を優先表示。運用FIX本命は条件該当時のみ。"}
+                        : data.deepPicks?.oshiTickets?.length
+                          ? `本命条件外のため押し目: ${data.deepPicks.oshiTickets
+                              .map((t) => t.combo)
+                              .join(" · ")}`
+                          : "上の本命・押し目・穴を参照してください。"}
                 </p>
                 <div className="sanren">
                   {triple?.skipped
@@ -1020,7 +1133,9 @@ export default function Home() {
                       ? "WAIT"
                       : (activeBand?.tickets?.length
                           ? activeBand.tickets
-                          : data.deepPicks?.tickets.map((t) => t.combo) ?? ["見送り"]
+                          : data.deepPicks?.oshiTickets?.length
+                            ? data.deepPicks.oshiTickets.map((t) => t.combo)
+                            : data.deepPicks?.tickets.map((t) => t.combo) ?? ["—"]
                         ).join(" / ")}
                 </div>
                 {triple?.why ? (
@@ -1041,23 +1156,44 @@ export default function Home() {
                 </p>
               </div>
               <div className="side-picks">
-                {(triple?.bands ?? []).map((b) => (
+                {(
+                  [
+                    {
+                      band: "honmei",
+                      label: "本命",
+                      ok: Boolean(data.deepPicks?.count || activeBand?.ok),
+                      tickets:
+                        activeBand?.tickets?.length
+                          ? activeBand.tickets
+                          : data.deepPicks?.tickets.map((t) => t.combo) || [],
+                      note: data.deepPicks?.count
+                        ? "検証100%超ゲート通過"
+                        : "条件外（押し・穴を参照）",
+                    },
+                    {
+                      band: "oshi",
+                      label: "押し目",
+                      ok: Boolean(data.deepPicks?.oshiCount),
+                      tickets:
+                        data.deepPicks?.oshiTickets?.map((t) => t.combo) || [],
+                      note: "スコア・過去傾向から再計算",
+                    },
+                    {
+                      band: "ana",
+                      label: "穴",
+                      ok: Boolean(data.deepPicks?.anaCount),
+                      tickets:
+                        data.deepPicks?.anaTickets?.map((t) => t.combo) || [],
+                      note: data.deepPicks?.anaConfidenceLabel || "外枠上振れ",
+                    },
+                  ] as const
+                ).map((b) => (
                   <div key={b.band} className={`side-card band-${b.band} ${b.ok ? "on" : ""}`}>
-                    <span>
-                      {b.label}
-                      {b.meetsTarget ? " ★目標達成ルール" : ""}
-                    </span>
+                    <span>{b.label}</span>
                     <strong>{b.ok ? b.tickets.join(" · ") : "見送り"}</strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                      {b.ok
-                        ? `${b.ticketLabel}${b.validatedRoi != null ? ` / 検証ROI ${b.validatedRoi.toFixed(1)}%` : ""}`
-                        : b.reasons.slice(0, 2).join(" / ")}
+                      {b.note}
                     </div>
-                    {b.ok && b.why ? (
-                      <div className="note" style={{ margin: "0.45rem 0 0" }}>
-                        {b.why}
-                      </div>
-                    ) : null}
                   </div>
                 ))}
               </div>

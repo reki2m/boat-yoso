@@ -44,6 +44,9 @@ export type RacePayload = {
   raceNo: number;
   raceName: string;
   raceRank: string;
+  /** 開催日目（1=初日 …）。UIでは回目として表示 */
+  seriesDay?: number | null;
+  seriesDayLabel?: string;
   racers: RacerRow[];
   fetchedAt: string;
   note?: string;
