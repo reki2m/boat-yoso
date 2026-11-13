@@ -4,7 +4,7 @@ import {
   type ChatMessage,
 } from "@/lib/chatStore";
 import { sql } from "@/lib/db";
-import { fetchDayResults, resultKey } from "@/lib/raceResults";
+import { fetchDayResults, hasRaceResult, resultKey } from "@/lib/raceResults";
 import { STADIUMS } from "@/lib/stadiums";
 
 async function alreadyPosted(flag: string): Promise<boolean> {
@@ -102,11 +102,10 @@ export async function settleChatPredictionHits(): Promise<number> {
 
     const day = await fetchDayResults(info.date);
     const res = day.get(resultKey(info.stadium, info.race));
-    if (!res) continue;
+    if (!hasRaceResult(res)) continue;
 
     const tickets = ticketsFromMessage(m);
     if (!tickets.length) continue;
-    if (!res.finishCombo) continue;
 
     const rows = tickets.map((t) => ({
       combo: t,

@@ -1,5 +1,5 @@
 import type { ChatBandTicket, ChatMessage, ChatRaceChip } from "@/lib/chatStore";
-import { fetchDayResults, resultKey } from "@/lib/raceResults";
+import { fetchDayResults, hasRaceResult, resultKey } from "@/lib/raceResults";
 import { STADIUMS } from "@/lib/stadiums";
 
 function yen(n: number): string {
@@ -23,7 +23,6 @@ function enrichChip(
   trifecta: Record<string, number>,
   finishCombo: string | null,
 ): ChatRaceChip {
-  const tickets = (chip.tickets || []).map(String).filter(Boolean);
   const bands = chip.bands
     ? {
         honmei: (chip.bands.honmei || []).map((t) => withTicketResult(t, trifecta)),
@@ -32,6 +31,16 @@ function enrichChip(
         ana: (chip.bands.ana || []).map((t) => withTicketResult(t, trifecta)),
       }
     : undefined;
+
+  const fromBands = [
+    ...(bands?.honmei || []),
+    ...(bands?.honmeiS || []),
+    ...(bands?.oshi || []),
+    ...(bands?.ana || []),
+  ].map((t) => t.combo);
+  const tickets = [
+    ...new Set([...(chip.tickets || []).map(String).filter(Boolean), ...fromBands]),
+  ];
 
   const settledTickets = tickets.map((combo) => {
     const payout = Number(trifecta[combo] || 0);
@@ -98,9 +107,10 @@ export async function enrichChatMessagesWithResults(
       let changed = false;
       const nextRaces = races.map((chip) => {
         const res = day.get(resultKey(chip.placeNo, chip.raceNo));
-        if (!res?.finishCombo) return chip;
+        // results/v3 の空スタブは無視。着順 or 払戻があるときだけ結果表示へ。
+        if (!hasRaceResult(res)) return chip;
         changed = true;
-        return enrichChip(chip, res.trifecta, res.finishCombo);
+        return enrichChip(chip, res!.trifecta, res!.finishCombo);
       });
       if (!changed) return m;
       return {
@@ -117,7 +127,7 @@ export async function enrichChatMessagesWithResults(
     const raceNo = Number(m.meta?.raceNo || 0);
     if (!placeNo || !raceNo) return m;
     const res = day.get(resultKey(placeNo, raceNo));
-    if (!res?.finishCombo) return m;
+    if (!hasRaceResult(res)) return m;
 
     const tickets = (m.meta?.tickets || []).map(String).filter(Boolean);
     const bands = m.meta?.bands

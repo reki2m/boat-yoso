@@ -1,5 +1,5 @@
 import { sql } from "@/lib/db";
-import { fetchDayResults, resultKey } from "@/lib/raceResults";
+import { fetchDayResults, hasRaceResult, resultKey } from "@/lib/raceResults";
 import { STADIUMS } from "@/lib/stadiums";
 
 const STAKE_PER_TICKET = 100;
@@ -192,7 +192,7 @@ export async function listAdminPredictionOversight(): Promise<AdminPredictionOve
       const day = resultsByDate.get(d.date);
       const res = day?.get(resultKey(d.placeNo, d.raceNo));
       const stakeYen = STAKE_PER_TICKET * Math.max(d.tickets.length, 0);
-      if (!res) {
+      if (!hasRaceResult(res)) {
         return {
           message_id: d.message_id,
           created_at: d.created_at,

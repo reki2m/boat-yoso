@@ -5,7 +5,7 @@ import {
 } from "@/lib/chatHonmeiFlags";
 import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
 import { loadPicksBoardForDate } from "@/lib/loadPicksBoard";
-import { fetchDayResults, resultKey } from "@/lib/raceResults";
+import { fetchDayResults, hasRaceResult, resultKey } from "@/lib/raceResults";
 import { refreshPicksStatus, type LivePickRow } from "@/lib/refreshPicksStatus";
 import { jstDateKey, STADIUMS } from "@/lib/stadiums";
 
@@ -57,10 +57,15 @@ export async function maybePostHonmeiRaceResults(now = new Date()): Promise<{
     if (await alreadyResultPosted(dateKey, stadium, race)) continue;
 
     const res = day.get(resultKey(stadium, race));
-    if (!res || !res.finishCombo) continue;
+    if (!hasRaceResult(res)) continue;
 
     await markResultPosted(dateKey, stadium, race);
-    await postOneResult(dateKey, p, res.finishCombo, res.trifecta);
+    await postOneResult(
+      dateKey,
+      p,
+      res!.finishCombo || "—",
+      res!.trifecta,
+    );
     posted += 1;
   }
 
