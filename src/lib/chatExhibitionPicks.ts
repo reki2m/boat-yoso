@@ -1,32 +1,15 @@
 import { buildPicksMessage } from "@/lib/buildPicksMessage";
 import { appendChatMessage } from "@/lib/chatStore";
+import {
+  alreadyFinalPosted,
+  markFinalPosted,
+  markWaitingPosted,
+} from "@/lib/chatHonmeiFlags";
 import { buildRaceChipsFromPicks } from "@/lib/chatRaceUi";
-import { sql } from "@/lib/db";
 import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
 import { loadPicksBoardForDate, type PicksBoardDoc } from "@/lib/loadPicksBoard";
 import { refreshPicksStatus, type LivePickRow } from "@/lib/refreshPicksStatus";
 import { jstDateKey } from "@/lib/stadiums";
-
-async function alreadyPosted(flag: string): Promise<boolean> {
-  try {
-    const rows = await sql<{ value: string }>(
-      `select value from chat_meta where key = $1 limit 1`,
-      [flag],
-    );
-    return Boolean(rows[0]?.value);
-  } catch {
-    return false;
-  }
-}
-
-async function markPosted(flag: string): Promise<void> {
-  await sql(
-    `insert into chat_meta (key, value, updated_at)
-     values ($1, $2, now())
-     on conflict (key) do update set value = excluded.value, updated_at = now()`,
-    [flag, "1"],
-  );
-}
 
 async function resolveTodayBoard(dateKey: string): Promise<PicksBoardDoc> {
   const existing = await loadPicksBoardForDate(dateKey);
@@ -50,13 +33,9 @@ function asLiveRows(board: PicksBoardDoc, dateKey: string): LivePickRow[] {
   }));
 }
 
-function postFlag(dateKey: string, stadium: number, race: number): string {
-  return `exhibition_chat_posted:${dateKey}:${stadium}:${race}`;
-}
-
 /**
- * 展示確定後の本命をチャット欄へ「〇〇場 〇〇R」UI付きで投稿する。
- * 朝の展示待ち投稿とは別に、確定（または進入変更スキップ）になったレースだけ1回ずつ出す。
+ * 展示確定後の本命をチャット欄へ投稿する。
+ * 確定/スルーはレースごと1回だけ（朝の展示待ちとは別メッセージ）。
  */
 export async function maybePostExhibitionHonmeiUpdates(now = new Date()): Promise<{
   posted: number;
@@ -73,14 +52,12 @@ export async function maybePostExhibitionHonmeiUpdates(now = new Date()): Promis
     return p.status === "confirmed" || p.status === "skipped";
   });
 
-  let posted = 0;
   const batch: LivePickRow[] = [];
 
   for (const p of ready) {
     const stadium = Number(p.stadium || 0);
     const race = Number(p.race || 0);
-    const flag = postFlag(dateKey, stadium, race);
-    if (await alreadyPosted(flag)) continue;
+    if (await alreadyFinalPosted(dateKey, stadium, race)) continue;
     batch.push(p);
   }
 
@@ -90,12 +67,15 @@ export async function maybePostExhibitionHonmeiUpdates(now = new Date()): Promis
 
   // 先にフラグを立てて二重投稿を抑止
   for (const p of batch) {
-    await markPosted(postFlag(dateKey, Number(p.stadium), Number(p.race)));
+    const stadium = Number(p.stadium);
+    const race = Number(p.race);
+    await markFinalPosted(dateKey, stadium, race);
+    // 待ち未投稿のまま確定した場合も、待ちの再投稿を防ぐ
+    await markWaitingPosted(dateKey, stadium, race);
   }
 
   const confirmed = batch.filter((p) => p.status === "confirmed");
   const skipped = batch.filter((p) => p.status === "skipped");
-  // 展示後投稿なので全件 after。スルーも「展示を見たうえでの見送り」と分かるようにする。
   const races = buildRaceChipsFromPicks(batch).map((chip) => ({
     ...chip,
     exhibition: "after" as const,
@@ -105,7 +85,7 @@ export async function maybePostExhibitionHonmeiUpdates(now = new Date()): Promis
     active_date: dateKey,
     date: dateKey,
     mode: "exhibition_after_honmei",
-    note: "展示後の最終判定です。「確定」は買ってOK、「スルー」は買わない判断です。",
+    note: "展示後の最終判定です（レースごと1回）。「確定」は買ってOK、「スルー」は買わない判断です。",
     picks: batch,
   });
 
@@ -128,6 +108,5 @@ export async function maybePostExhibitionHonmeiUpdates(now = new Date()): Promis
     },
   });
 
-  posted = batch.length;
-  return { posted, dateKey };
+  return { posted: batch.length, dateKey };
 }

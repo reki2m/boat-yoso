@@ -31,6 +31,12 @@ import {
 } from "@/lib/chatSession";
 import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 import { listAdminPredictionOversight } from "@/lib/chatAdminOversight";
+import {
+  alreadyFinalPosted,
+  alreadyWaitingPosted,
+  markFinalPosted,
+  markWaitingPosted,
+} from "@/lib/chatHonmeiFlags";
 import { buildRaceChipsFromPicks, buildSingleRaceChip } from "@/lib/chatRaceUi";
 import { STADIUMS } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
@@ -535,16 +541,47 @@ export async function POST(req: NextRequest) {
       skip_detail: typeof p.skip_detail === "string" ? p.skip_detail : null,
     }));
     const livePicks = body.preserveStatus ? mapped : await refreshPicksStatus(mapped);
+    const dateKey = String(
+      board.active_date || board.date || livePicks[0]?.date || "",
+    ).replace(/-/g, "");
+
+    // 展示待ち / 確定・スルーはレースごと1回だけ投稿
+    const fresh = [];
+    for (const p of livePicks) {
+      const stadium = Number(p.stadium || 0);
+      const race = Number(p.race || 0);
+      if (!stadium || !race || !/^\d{8}$/.test(dateKey)) {
+        fresh.push(p);
+        continue;
+      }
+      const isFinal = p.status === "confirmed" || p.status === "skipped";
+      if (isFinal) {
+        if (await alreadyFinalPosted(dateKey, stadium, race)) continue;
+      } else if (await alreadyWaitingPosted(dateKey, stadium, race)) {
+        continue;
+      }
+      fresh.push(p);
+    }
+
+    if (!fresh.length) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: "already_posted_for_phase",
+        message: null,
+      });
+    }
+
     const built = buildPicksMessage({
-      active_date: board.active_date,
-      date: board.date,
+      active_date: board.active_date || dateKey,
+      date: board.date || dateKey,
       mode: board.mode,
       note: board.note,
-      picks: livePicks,
+      picks: fresh,
     });
     title = built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`;
     text = built.body;
-    const raceChips = buildRaceChipsFromPicks(livePicks).map((chip) => {
+    const raceChips = buildRaceChipsFromPicks(fresh).map((chip) => {
       if (
         board.mode === "exhibition_after_honmei" &&
         (chip.status === "confirmed" || chip.status === "skipped")
@@ -562,6 +599,18 @@ export async function POST(req: NextRequest) {
       visibility: "public",
       races: raceChips,
     };
+
+    for (const p of fresh) {
+      const stadium = Number(p.stadium || 0);
+      const race = Number(p.race || 0);
+      if (!stadium || !race || !/^\d{8}$/.test(dateKey)) continue;
+      if (p.status === "confirmed" || p.status === "skipped") {
+        await markFinalPosted(dateKey, stadium, race);
+        await markWaitingPosted(dateKey, stadium, race);
+      } else {
+        await markWaitingPosted(dateKey, stadium, race);
+      }
+    }
   } else if (!text) {
     return NextResponse.json({ ok: false, error: "メモ本文が空です" }, { status: 400 });
   } else {

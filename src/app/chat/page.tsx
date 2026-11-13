@@ -5,6 +5,7 @@ import Link from "next/link";
 import { STADIUMS } from "@/lib/stadiums";
 import {
   chipToneClass,
+  raceStatusTone,
   splitPickBody,
   statusBadge,
   statusDetail,
@@ -141,6 +142,7 @@ function kindLabel(m: ChatMessage): string {
   if (m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private") {
     return "AI予想（自分のみ）";
   }
+  if (m.meta?.mode === "honmei_result") return "結果・払戻";
   if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中";
   if (m.meta?.mode === "exhibition_after_honmei") return "展示後・確定/スルー";
   if (m.kind === "picks" || m.meta?.mode === "morning_auto_honmei" || m.meta?.mode === "honmei_board") {
@@ -199,6 +201,59 @@ function messageRaces(m: ChatMessage): RaceChipView[] {
     ];
   }
   return [];
+}
+
+type RacePhase = "waiting" | "final" | "result";
+
+function racePhase(m: ChatMessage, chip: RaceChipView): RacePhase {
+  if (m.meta?.mode === "honmei_result" || m.meta?.mode === "chat_hit") return "result";
+  const tone = raceStatusTone(chip);
+  if (tone === "confirmed" || tone === "skipped") return "final";
+  return "waiting";
+}
+
+/**
+ * 同じレースの展示待ち/確定が複数メッセージに出ないよう、新しい方を残す。
+ * 戻り値: messageId → 表示する races（空ならメッセージ自体を隠す対象）
+ */
+function dedupeRaceUi(
+  messages: ChatMessage[],
+): Map<string, RaceChipView[]> {
+  const seenWaiting = new Set<string>();
+  const seenFinal = new Set<string>();
+  const seenResult = new Set<string>();
+  const out = new Map<string, RaceChipView[]>();
+
+  // 新しいメッセージ優先
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const m = messages[i];
+    const races = messageRaces(m);
+    if (!races.length) {
+      out.set(m.id, []);
+      continue;
+    }
+    const kept: RaceChipView[] = [];
+    for (const chip of races) {
+      const key = raceKey(chip);
+      const phase = racePhase(m, chip);
+      if (phase === "result") {
+        if (seenResult.has(key)) continue;
+        seenResult.add(key);
+        kept.push(chip);
+      } else if (phase === "final") {
+        if (seenFinal.has(key)) continue;
+        seenFinal.add(key);
+        seenWaiting.add(key); // 確定後は待ち表示も不要
+        kept.push(chip);
+      } else {
+        if (seenWaiting.has(key) || seenFinal.has(key)) continue;
+        seenWaiting.add(key);
+        kept.push(chip);
+      }
+    }
+    out.set(m.id, kept);
+  }
+  return out;
 }
 
 export default function ChatPage() {
@@ -840,17 +895,22 @@ export default function ChatPage() {
             {messages.filter((m) => m.meta?.visibility !== "admin").length === 0 ? (
               <p className="status">まだ雑談がありません。下からメッセージを送れます。</p>
             ) : (
-              messages
-                .filter((m) => m.meta?.visibility !== "admin")
-                .map((m) => {
+              (() => {
+                const visible = messages.filter((m) => m.meta?.visibility !== "admin");
+                const raceUiById = dedupeRaceUi(visible);
+                return visible.map((m) => {
                 const isPrivate = m.meta?.visibility === "private";
                 const isOp =
                   m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
                 const isMine =
                   m.kind === "chat" && m.author_name === displayName.trim() && !isOp;
-                const races = messageRaces(m);
+                const originalRaces = messageRaces(m);
+                const races = raceUiById.get(m.id) || [];
+                // 同じレースの重複投稿は新しい方だけ残す
+                if (originalRaces.length > 0 && races.length === 0) return null;
                 const hasRaceUi = races.length > 0;
                 const isExhibition = m.meta?.mode === "exhibition_after_honmei";
+                const isResult = m.meta?.mode === "honmei_result";
                 const openKey =
                   openRaceByMessage[m.id] || (races[0] ? raceKey(races[0]) : "");
                 const selected =
@@ -862,7 +922,9 @@ export default function ChatPage() {
                     key={m.id}
                     className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""} ${
                       isPrivate ? "private" : ""
-                    } ${hasRaceUi ? "has-race-ui" : ""} ${isExhibition ? "exhibition-after" : ""}`}
+                    } ${hasRaceUi ? "has-race-ui" : ""} ${isExhibition ? "exhibition-after" : ""} ${
+                      isResult ? "honmei-result" : ""
+                    }`}
                   >
                     <div className="chat-bubble-meta">
                       <strong>
@@ -975,7 +1037,8 @@ export default function ChatPage() {
                     )}
                   </article>
                 );
-              })
+              });
+              })()
             )}
             <div ref={bottomRef} />
           </div>

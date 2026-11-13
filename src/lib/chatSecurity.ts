@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { maybeAutoClearChat } from "@/lib/chatAutoClear";
 import { settleChatPredictionHits } from "@/lib/chatHitSettle";
 import { maybePostExhibitionHonmeiUpdates } from "@/lib/chatExhibitionPicks";
+import { maybePostHonmeiRaceResults } from "@/lib/chatHonmeiResults";
 import { maybePostMorningHonmeiPicks } from "@/lib/chatMorningPicks";
 import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 import { sql } from "@/lib/db";
@@ -74,6 +75,7 @@ export async function maybeRunChatMaintenance(): Promise<{ ran: boolean }> {
   await maybeAutoClearChat().catch(() => null);
   await maybePostMorningHonmeiPicks().catch(() => null);
   await maybePostExhibitionHonmeiUpdates().catch(() => null);
+  await maybePostHonmeiRaceResults().catch(() => null);
   await settleChatPredictionHits().catch(() => null);
   return { ran: true };
 }

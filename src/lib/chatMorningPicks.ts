@@ -1,11 +1,17 @@
 import { buildPicksMessage } from "@/lib/buildPicksMessage";
 import { appendChatMessage } from "@/lib/chatStore";
+import {
+  alreadyFinalPosted,
+  alreadyWaitingPosted,
+  markWaitingPosted,
+} from "@/lib/chatHonmeiFlags";
 import { buildRaceChipsFromPicks } from "@/lib/chatRaceUi";
 import { sql } from "@/lib/db";
 import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
 import { loadPicksBoardForDate, type PicksBoardDoc } from "@/lib/loadPicksBoard";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 import { maybePostExhibitionHonmeiUpdates } from "@/lib/chatExhibitionPicks";
+import { maybePostHonmeiRaceResults } from "@/lib/chatHonmeiResults";
 import { jstDateKey } from "@/lib/stadiums";
 
 const META_KEY = "morning_honmei_posted_for";
@@ -51,6 +57,7 @@ async function resolveTodayBoard(dateKey: string): Promise<PicksBoardDoc> {
 
 /**
  * 毎朝 7:00 JST 以降、本日の本命買い目をチャットへ1回だけ投稿する。
+ * 各レースの「展示待ち」は1回限り（確定/スルー済みは朝投稿に含めない）。
  */
 export async function maybePostMorningHonmeiPicks(
   now = new Date(),
@@ -90,18 +97,34 @@ export async function maybePostMorningHonmeiPicks(
       })),
     );
 
+    // 未投稿の展示待ちだけ。確定/スルー済み・既に待ち投稿済みは除外。
+    const fresh = [];
+    for (const p of livePicks) {
+      const stadium = Number(p.stadium || 0);
+      const race = Number(p.race || 0);
+      if (!stadium || !race) continue;
+      if (p.status === "confirmed" || p.status === "skipped") continue;
+      if (await alreadyFinalPosted(dateKey, stadium, race)) continue;
+      if (await alreadyWaitingPosted(dateKey, stadium, race)) continue;
+      fresh.push(p);
+    }
+
+    if (!fresh.length) {
+      return { posted: false, dateKey, reason: "no_fresh_waiting", count: 0 };
+    }
+
     const built = buildPicksMessage({
       active_date: dateKey,
       date: dateKey,
       mode: typeof board.mode === "string" ? board.mode : "honmei_2020_maxminy",
       note:
         typeof board.note === "string"
-          ? `朝の本命（暫定）。展示後に「確定」か「スルー」へ更新。${board.note}`
-          : "朝の本命（暫定）。展示待ちは展示後に「確定」または「スルー」へ更新します。",
-      picks: livePicks,
+          ? `朝の本命（暫定・1回のみ）。展示後に「確定」か「スルー」へ更新。${board.note}`
+          : "朝の本命（暫定・1回のみ）。展示待ちは展示後に「確定」または「スルー」へ更新します。",
+      picks: fresh,
     });
 
-    const races = buildRaceChipsFromPicks(livePicks);
+    const races = buildRaceChipsFromPicks(fresh);
     await appendChatMessage({
       kind: "picks",
       title: built.title.startsWith("本命") ? built.title : `本命予想 ${built.title}`,
@@ -116,6 +139,10 @@ export async function maybePostMorningHonmeiPicks(
         races,
       },
     });
+
+    for (const p of fresh) {
+      await markWaitingPosted(dateKey, Number(p.stadium), Number(p.race));
+    }
 
     return { posted: true, dateKey, count: built.count };
   } catch (error) {
@@ -140,8 +167,9 @@ export function startMorningHonmeiScheduler(): void {
   const tick = () => {
     void maybePostMorningHonmeiPicks().catch(() => null);
     void maybePostExhibitionHonmeiUpdates().catch(() => null);
+    void maybePostHonmeiRaceResults().catch(() => null);
   };
-  // 起動直後と以降1分ごと（朝本命＋展示後確定）
+  // 起動直後と以降1分ごと（朝本命＋展示後確定＋結果）
   tick();
   setInterval(tick, 60_000);
 }
