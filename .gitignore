@@ -59,3 +59,7 @@ data/reports/accuracy_2026*.json
 data/reports/picks_202608*.json
 data/reports/picks_202609*.json
 data/reports/picks_202610*.json
+
+# runtime exhibition incident store (regenerated)
+data/reports/exhibition_incidents.json
+src/data/exhibition_incidents.json
