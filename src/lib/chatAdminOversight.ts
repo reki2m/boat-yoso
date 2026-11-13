@@ -192,7 +192,7 @@ export async function listAdminPredictionOversight(): Promise<AdminPredictionOve
       const day = resultsByDate.get(d.date);
       const res = day?.get(resultKey(d.placeNo, d.raceNo));
       const stakeYen = STAKE_PER_TICKET * Math.max(d.tickets.length, 0);
-      if (!hasRaceResult(res)) {
+      if (!res || !hasRaceResult(res)) {
         return {
           message_id: d.message_id,
           created_at: d.created_at,

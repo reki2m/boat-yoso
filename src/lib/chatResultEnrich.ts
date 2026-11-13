@@ -108,9 +108,9 @@ export async function enrichChatMessagesWithResults(
       const nextRaces = races.map((chip) => {
         const res = day.get(resultKey(chip.placeNo, chip.raceNo));
         // results/v3 の空スタブは無視。着順 or 払戻があるときだけ結果表示へ。
-        if (!hasRaceResult(res)) return chip;
+        if (!res || !hasRaceResult(res)) return chip;
         changed = true;
-        return enrichChip(chip, res!.trifecta, res!.finishCombo);
+        return enrichChip(chip, res.trifecta, res.finishCombo);
       });
       if (!changed) return m;
       return {
@@ -127,7 +127,7 @@ export async function enrichChatMessagesWithResults(
     const raceNo = Number(m.meta?.raceNo || 0);
     if (!placeNo || !raceNo) return m;
     const res = day.get(resultKey(placeNo, raceNo));
-    if (!hasRaceResult(res)) return m;
+    if (!res || !hasRaceResult(res)) return m;
 
     const tickets = (m.meta?.tickets || []).map(String).filter(Boolean);
     const bands = m.meta?.bands
@@ -138,14 +138,6 @@ export async function enrichChatMessagesWithResults(
           ana: (m.meta.bands.ana || []).map((t) => withTicketResult(t, res.trifecta)),
         }
       : undefined;
-    const ticketResults = tickets.map((combo) => {
-      const payout = Number(res.trifecta[combo] || 0);
-      return {
-        combo,
-        result: (payout > 0 ? "hit" : "miss") as "hit" | "miss",
-        payout,
-      };
-    });
 
     return {
       ...m,

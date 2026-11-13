@@ -57,14 +57,14 @@ export async function maybePostHonmeiRaceResults(now = new Date()): Promise<{
     if (await alreadyResultPosted(dateKey, stadium, race)) continue;
 
     const res = day.get(resultKey(stadium, race));
-    if (!hasRaceResult(res)) continue;
+    if (!res || !hasRaceResult(res)) continue;
 
     await markResultPosted(dateKey, stadium, race);
     await postOneResult(
       dateKey,
       p,
-      res!.finishCombo || "—",
-      res!.trifecta,
+      res.finishCombo || "—",
+      res.trifecta,
     );
     posted += 1;
   }

@@ -102,7 +102,7 @@ export async function settleChatPredictionHits(): Promise<number> {
 
     const day = await fetchDayResults(info.date);
     const res = day.get(resultKey(info.stadium, info.race));
-    if (!hasRaceResult(res)) continue;
+    if (!res || !hasRaceResult(res)) continue;
 
     const tickets = ticketsFromMessage(m);
     if (!tickets.length) continue;
