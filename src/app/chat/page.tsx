@@ -3,6 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { STADIUMS } from "@/lib/stadiums";
+import {
+  chipToneClass,
+  splitPickBody,
+  statusBadge,
+  statusDetail,
+  summarizeChips,
+  type RaceChipView,
+} from "@/lib/chatRaceDisplay";
 
 type ChatMessage = {
   id: string;
@@ -24,6 +32,7 @@ type ChatMessage = {
     owner_session_id?: string;
     owner_name?: string;
     race_label?: string;
+    races?: RaceChipView[];
   };
 };
 
@@ -132,8 +141,8 @@ function kindLabel(m: ChatMessage): string {
   if (m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private") {
     return "AI予想（自分のみ）";
   }
-  if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中🎯";
-  if (m.meta?.mode === "exhibition_after_honmei") return "展示後本命";
+  if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中";
+  if (m.meta?.mode === "exhibition_after_honmei") return "展示後・確定/スルー";
   if (m.kind === "picks" || m.meta?.mode === "morning_auto_honmei" || m.meta?.mode === "honmei_board") {
     return "本命配信";
   }
@@ -141,13 +150,55 @@ function kindLabel(m: ChatMessage): string {
   return "雑談";
 }
 
-function targetPhrase(t: { status: string; skip_detail: string | null; stadium_name: string; race: number }): string {
-  if (t.status === "skipped") {
-    return `${t.stadium_name}${t.race}R（${t.skip_detail || "条件外だからスルー"}）`;
+function targetToneClass(status: string): string {
+  if (status === "skipped") return "skipped";
+  if (status === "confirmed") return "after";
+  if (status === "provisional" || status === "programs_unavailable") return "waiting";
+  return "";
+}
+
+function targetBadge(status: string): string {
+  if (status === "skipped") return "スルー";
+  if (status === "confirmed") return "確定";
+  if (status === "provisional" || status === "programs_unavailable") return "展示待ち";
+  return "";
+}
+
+function raceKey(chip: Pick<RaceChipView, "placeNo" | "raceNo">): string {
+  return `${chip.placeNo}:${chip.raceNo}`;
+}
+
+/** meta.races.why が空の古い投稿向けに【説明】本文から拾う */
+function whyFallback(explainBlock: string, chip: RaceChipView): string {
+  if (!explainBlock) return "";
+  const label = `${chip.placeName} ${chip.raceNo}R`;
+  const lines = explainBlock.split("\n").map((l) => l.trim());
+  for (const line of lines) {
+    if (line.includes(label) || line.includes(`${chip.placeName}${chip.raceNo}R`)) {
+      return line.replace(/^[・･]\s*/, "").replace(/^.*?[—–-]\s*/, "").trim();
+    }
   }
-  if (t.status === "provisional") return `${t.stadium_name}${t.race}R（展示待ち）`;
-  if (t.status === "confirmed") return `${t.stadium_name}${t.race}R（買い目OK）`;
-  return `${t.stadium_name}${t.race}R`;
+  // 単レース投稿なら説明ブロック全体
+  if (lines.length === 1) return lines[0].replace(/^[・･]\s*/, "");
+  return "";
+}
+
+function messageRaces(m: ChatMessage): RaceChipView[] {
+  if (Array.isArray(m.meta?.races) && m.meta!.races!.length) return m.meta!.races!;
+  if (m.meta?.placeNo && m.meta?.raceNo) {
+    return [
+      {
+        placeNo: m.meta.placeNo,
+        placeName: STADIUMS[m.meta.placeNo] || `場${m.meta.placeNo}`,
+        raceNo: m.meta.raceNo,
+        label: m.meta.race_label || `${STADIUMS[m.meta.placeNo] || ""} ${m.meta.raceNo}R`,
+        tickets: m.meta.tickets || [],
+        status: undefined,
+        exhibition: "unknown",
+      },
+    ];
+  }
+  return [];
 }
 
 export default function ChatPage() {
@@ -174,6 +225,9 @@ export default function ChatPage() {
   const [pending, startTransition] = useTransition();
   const [sending, setSending] = useState(false);
   const [predicting, setPredicting] = useState(false);
+  /** messageId → "placeNo:raceNo" */
+  const [openRaceByMessage, setOpenRaceByMessage] = useState<Record<string, string>>({});
+  const [showBodyByMessage, setShowBodyByMessage] = useState<Record<string, boolean>>({});
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -751,14 +805,32 @@ export default function ChatPage() {
               </button>
             </div>
             {targets.length > 0 ? (
-              <p className="chat-honmei-targets">
-                本日の本命対象:{" "}
-                {targets
-                  .slice(0, 6)
-                  .map((t) => targetPhrase(t))
-                  .join(" / ")}
-                {targets.length > 6 ? " …" : ""}
-              </p>
+              <div className="chat-honmei-targets">
+                <span className="chat-honmei-targets-label">本日の本命対象</span>
+                <div className="chat-race-chips chat-target-chips">
+                  {targets.slice(0, 8).map((t) => {
+                    const badge = targetBadge(t.status);
+                    return (
+                      <button
+                        key={`${t.stadium}-${t.race}`}
+                        type="button"
+                        className={`chat-race-chip ${targetToneClass(t.status)}`}
+                        title={t.skip_detail || t.why || undefined}
+                        onClick={() => {
+                          setPickStadium(t.stadium);
+                          setPickRace(t.race);
+                        }}
+                      >
+                        <span className="chat-race-chip-label">
+                          {t.stadium_name}
+                          {t.race}R
+                        </span>
+                        {badge ? <em>{badge}</em> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
               <p className="note">いま対象レースはありません。</p>
             )}
@@ -776,12 +848,21 @@ export default function ChatPage() {
                   m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
                 const isMine =
                   m.kind === "chat" && m.author_name === displayName.trim() && !isOp;
+                const races = messageRaces(m);
+                const hasRaceUi = races.length > 0;
+                const isExhibition = m.meta?.mode === "exhibition_after_honmei";
+                const openKey =
+                  openRaceByMessage[m.id] || (races[0] ? raceKey(races[0]) : "");
+                const selected =
+                  races.find((r) => raceKey(r) === openKey) || races[0] || null;
+                const split = hasRaceUi ? splitPickBody(m.body) : null;
+                const showRaw = Boolean(showBodyByMessage[m.id]);
                 return (
                   <article
                     key={m.id}
                     className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""} ${
                       isPrivate ? "private" : ""
-                    }`}
+                    } ${hasRaceUi ? "has-race-ui" : ""} ${isExhibition ? "exhibition-after" : ""}`}
                   >
                     <div className="chat-bubble-meta">
                       <strong>
@@ -793,7 +874,105 @@ export default function ChatPage() {
                       {isPrivate ? <span>自分のみ</span> : null}
                       <span>{formatJst(m.created_at)} JST</span>
                     </div>
-                    <pre className="chat-bubble-body">{m.body}</pre>
+
+                    {hasRaceUi && selected ? (
+                      <div className="chat-race-ui">
+                        <p className="chat-race-summary">
+                          {/確定|展示待ち|スルー/.test(m.title)
+                            ? m.title
+                            : races.length > 1
+                              ? `${m.title} · ${summarizeChips(races)}`
+                              : m.title}
+                        </p>
+                        <div className="chat-race-chips" role="list">
+                          {races.map((chip) => {
+                            const badge = statusBadge(chip);
+                            const active = raceKey(chip) === raceKey(selected);
+                            return (
+                              <button
+                                key={raceKey(chip)}
+                                type="button"
+                                role="listitem"
+                                className={`chat-race-chip ${chipToneClass(chip)} ${
+                                  active ? "active" : ""
+                                }`}
+                                onClick={() =>
+                                  setOpenRaceByMessage((prev) => ({
+                                    ...prev,
+                                    [m.id]: raceKey(chip),
+                                  }))
+                                }
+                              >
+                                <span className="chat-race-chip-label">{chip.label}</span>
+                                {badge ? <em>{badge}</em> : null}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="chat-race-detail">
+                          <div className="chat-pick-status-row">
+                            <strong>{selected.label}</strong>
+                            <span
+                              className={`chat-status-pill ${chipToneClass(selected)}`}
+                            >
+                              {statusDetail(selected)}
+                            </span>
+                          </div>
+
+                          <div className="chat-pick-block">
+                            <div className="chat-pick-block-label">買い目</div>
+                            {selected.status === "skipped" ||
+                            !(selected.tickets && selected.tickets.length) ? (
+                              <p className="chat-pick-empty">
+                                {selected.status === "skipped"
+                                  ? "スルーのため買い目なし"
+                                  : "買い目なし"}
+                              </p>
+                            ) : (
+                              <ul className="chat-ticket-list">
+                                {selected.tickets.map((t) => (
+                                  <li key={t}>{t}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+
+                          <div className="chat-pick-block chat-pick-explain">
+                            <div className="chat-pick-block-label">説明</div>
+                            <p className="chat-pick-why">
+                              {selected.why?.trim() ||
+                                whyFallback(split?.explainBlock || "", selected) ||
+                                (selected.status === "skipped"
+                                  ? "条件外または進入変更のためスルー"
+                                  : "—")}
+                            </p>
+                          </div>
+                        </div>
+
+                        {split && (split.explainBlock || split.rest || m.body) ? (
+                          <div className="chat-race-more">
+                            <button
+                              type="button"
+                              className="btn ghost chat-race-more-btn"
+                              onClick={() =>
+                                setShowBodyByMessage((prev) => ({
+                                  ...prev,
+                                  [m.id]: !prev[m.id],
+                                }))
+                              }
+                            >
+                              {showRaw ? "本文を閉じる" : "全文を見る"}
+                            </button>
+                            {showRaw ? (
+                              <pre className="chat-bubble-body chat-race-raw">{m.body}</pre>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <pre className="chat-bubble-body">{m.body}</pre>
+                    )}
                   </article>
                 );
               })

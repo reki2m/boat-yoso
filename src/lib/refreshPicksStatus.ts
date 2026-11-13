@@ -45,7 +45,7 @@ export function pickStatusPhrase(input: {
     return skipReasonLabel(input.skip_reason);
   }
   if (status === "provisional") return "展示待ち";
-  if (status === "confirmed") return "買い目OK";
+  if (status === "confirmed") return "確定";
   return status || "—";
 }
 

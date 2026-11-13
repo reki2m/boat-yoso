@@ -96,8 +96,8 @@ export async function maybePostMorningHonmeiPicks(
       mode: typeof board.mode === "string" ? board.mode : "honmei_2020_maxminy",
       note:
         typeof board.note === "string"
-          ? `朝7時自動投稿。${board.note}`
-          : "朝7時自動投稿。展示・進入確定前のため展示待ちの場合があります。",
+          ? `朝の本命（暫定）。展示後に「確定」か「スルー」へ更新。${board.note}`
+          : "朝の本命（暫定）。展示待ちは展示後に「確定」または「スルー」へ更新します。",
       picks: livePicks,
     });
 
