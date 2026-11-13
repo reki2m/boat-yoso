@@ -1269,6 +1269,12 @@ th {
 }
 
 .chat-ticket-list li {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.chat-ticket-btn {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 1.05rem;
   font-weight: 800;
@@ -1278,6 +1284,63 @@ th {
   border: 1px solid rgba(120, 220, 255, 0.35);
   background: rgba(8, 28, 42, 0.9);
   color: #e8f4ff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.chat-ticket-btn.open,
+.chat-ticket-btn:hover {
+  border-color: rgba(255, 196, 90, 0.7);
+  background: rgba(28, 42, 18, 0.95);
+}
+
+.chat-ticket-why {
+  max-width: 18rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(120, 220, 255, 0.18);
+  background: rgba(0, 0, 0, 0.28);
+  color: #d7ebf8;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.chat-ticket-why strong {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #ffe2a8;
+  font-size: 0.75rem;
+}
+
+.chat-ticket-why p {
+  margin: 0;
+}
+
+.chat-confidence-row {
+  margin: 0.15rem 0 0.35rem;
+}
+
+.chat-confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 196, 90, 0.45);
+  background: rgba(48, 36, 8, 0.55);
+  color: #ffe2a8;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.chat-pick-hint {
+  margin-left: 0.45rem;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted, #9bb4c7);
 }
 
 .chat-band-stack {
@@ -1294,6 +1357,18 @@ th {
   font-size: 0.78rem;
   font-weight: 700;
   color: #c5e4f7;
+}
+
+.ticket-why-card {
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+
+.ticket-why-card.open {
+  border-color: rgba(255, 196, 90, 0.55);
 }
 
 .chat-pick-empty {

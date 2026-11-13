@@ -2,7 +2,7 @@ import { fetchKyoteiRaceBundle } from "@/lib/kyotei";
 import { scoreRace } from "@/lib/predict";
 import { remapRacersToExhibitionCourses } from "@/lib/exhibition";
 import { fetchStadiumSeriesForms } from "@/lib/seriesForm";
-import { buildRaceDeepPicks } from "@/lib/raceDeepPicks";
+import { buildRaceDeepPicks, type DeepTicket } from "@/lib/raceDeepPicks";
 import { liveBroadcastUrls } from "@/lib/liveBroadcast";
 import { jstDateKey } from "@/lib/stadiums";
 import type { RaceChatQuery } from "@/lib/parseRaceChatQuery";
@@ -15,11 +15,17 @@ function confidenceWord(score: number): string {
   return "弱い";
 }
 
+export type ChatBandTicket = {
+  combo: string;
+  role: string;
+  why: string;
+};
+
 export type ChatPickBands = {
-  honmei: string[];
-  honmeiS: string[];
-  oshi: string[];
-  ana: string[];
+  honmei: ChatBandTicket[];
+  honmeiS: ChatBandTicket[];
+  oshi: ChatBandTicket[];
+  ana: ChatBandTicket[];
 };
 
 export type ChatRaceReplyPayload = {
@@ -30,9 +36,11 @@ export type ChatRaceReplyPayload = {
   /** 全帯の買い目（的中判定・互換用） */
   tickets: string[];
   bands: ChatPickBands;
-  /** @deprecated 互換。bands.ana と同じ */
+  /** @deprecated 互換。bands.ana の combo 一覧 */
   anaTickets: string[];
   why: string;
+  confidence: number;
+  confidenceLabel: string;
   status: "provisional" | "confirmed" | "skipped";
   exhibitionReady: boolean;
   entryChanged: boolean;
@@ -47,6 +55,19 @@ function uniq(list: string[]): string[] {
     out.push(t);
   }
   return out;
+}
+
+function asBandTickets(list: DeepTicket[], limit?: number): ChatBandTicket[] {
+  const rows = limit != null ? list.slice(0, limit) : list;
+  return rows.map((t) => ({
+    combo: t.combo,
+    role: t.role,
+    why: t.why || "",
+  }));
+}
+
+function combosOf(list: ChatBandTicket[]): string[] {
+  return list.map((t) => t.combo);
 }
 
 /** 本体アプリと同じ deepPicks を、チャット用本文・帯に整形する */
@@ -81,7 +102,6 @@ export async function buildChatRaceReply(
   const entryChanged = Boolean(exhibition.entryChanged);
   const exhibitionReady = Boolean(exhibition.ready);
   // 本体の deepPicks と同じく進入変更でも買い目は出す（本命ボードの「スルー」とは別）。
-  // AI予想の状態は展示の有無だけ（展示待ち / 確定）。
   const status: ChatRaceReplyPayload["status"] = exhibitionReady
     ? "confirmed"
     : "provisional";
@@ -95,24 +115,30 @@ export async function buildChatRaceReply(
       : `展示待ち（${exhibition.reason || "展示・進入が揃うまで未確定"}）`;
 
   const bands: ChatPickBands = {
-    honmei: deep.tickets.map((t) => t.combo),
-    honmeiS: deep.sReady ? deep.sTickets.map((t) => t.combo) : [],
-    oshi: deep.oshiTickets.map((t) => t.combo).slice(0, 4),
-    ana: deep.anaTickets.map((t) => t.combo).slice(0, 4),
+    honmei: asBandTickets(deep.tickets),
+    honmeiS: deep.sReady ? asBandTickets(deep.sTickets) : [],
+    oshi: asBandTickets(deep.oshiTickets, 4),
+    ana: asBandTickets(deep.anaTickets, 4),
   };
 
   const tickets = uniq([
-    ...bands.honmeiS,
-    ...bands.honmei,
-    ...bands.oshi,
-    ...bands.ana,
+    ...combosOf(bands.honmeiS),
+    ...combosOf(bands.honmei),
+    ...combosOf(bands.oshi),
+    ...combosOf(bands.ana),
   ]);
+
+  const confidence = deep.confidence;
+  const confidenceLabel =
+    deep.confidenceLabel || `${confidence}/5 ${confidenceWord(confidence)}`;
 
   const whyParts: string[] = [];
   if (entryChanged) {
-    whyParts.push("進入変更のサインあり。本体と同じ参考買い目を表示（本日の本命ボード対象外でもAI予想は出します）。");
+    whyParts.push(
+      "進入変更のサインあり。本体と同じ参考買い目を表示（本日の本命ボード対象外でもAI予想は出します）。",
+    );
   }
-  if (deep.confidenceLabel) whyParts.push(deep.confidenceLabel);
+  whyParts.push(`信頼度 ${confidenceLabel}`);
   if (deep.axis) whyParts.push(`軸${deep.axis}号 / 相手 ${deep.partners.join("・") || "—"}`);
   for (const c of deep.commentary.slice(0, 3)) {
     if (c) whyParts.push(c);
@@ -125,29 +151,30 @@ export async function buildChatRaceReply(
   const lines: string[] = [
     `【AI予想】${query.placeName} ${query.raceNo}R（${dateKey}）`,
     `状態: ${statusLine}`,
-    `信頼度: ${deep.confidence}/5（${confidenceWord(deep.confidence)}）`,
+    `信頼度: ${confidence}/5（${confidenceWord(confidence)}）`,
     "",
     "【買い目】",
   ];
 
   lines.push(
-    `本命(${bands.honmei.length}): ${bands.honmei.join(" / ") || "—"}`,
+    `本命(${bands.honmei.length}): ${combosOf(bands.honmei).join(" / ") || "—"}`,
   );
   lines.push(
     bands.honmeiS.length
-      ? `本命S(${bands.honmeiS.length}): ${bands.honmeiS.join(" / ")}`
+      ? `本命S(${bands.honmeiS.length}): ${combosOf(bands.honmeiS).join(" / ")}`
       : "本命S: 条件外",
   );
   lines.push(
-    `押し目(${bands.oshi.length}/最大4): ${bands.oshi.join(" / ") || "—"}`,
+    `押し目(${bands.oshi.length}/最大4): ${combosOf(bands.oshi).join(" / ") || "—"}`,
   );
   lines.push(
-    `穴(${bands.ana.length}/最大4): ${bands.ana.join(" / ") || "—"}`,
+    `穴(${bands.ana.length}/最大4): ${combosOf(bands.ana).join(" / ") || "—"}`,
   );
 
   lines.push("", "【説明】");
   if (why) lines.push(why);
   else lines.push("詳細コメントなし");
+  lines.push("※買い目を押すと理由が表示されます。");
 
   lines.push(
     "",
@@ -163,8 +190,10 @@ export async function buildChatRaceReply(
     raceNo: query.raceNo,
     tickets,
     bands,
-    anaTickets: bands.ana,
+    anaTickets: combosOf(bands.ana),
     why,
+    confidence,
+    confidenceLabel,
     status,
     exhibitionReady,
     entryChanged,

@@ -6,6 +6,7 @@ import { STADIUMS } from "@/lib/stadiums";
 import {
   chipToneClass,
   hasBandTickets,
+  normalizeBandTickets,
   raceStatusTone,
   splitPickBody,
   statusBadge,
@@ -30,12 +31,9 @@ type ChatMessage = {
     placeNo?: number;
     raceNo?: number;
     tickets?: string[];
-    bands?: {
-      honmei?: string[];
-      honmeiS?: string[];
-      oshi?: string[];
-      ana?: string[];
-    };
+    bands?: RaceChipView["bands"];
+    confidence?: number;
+    confidenceLabel?: string;
     visibility?: "public" | "private" | "admin";
     owner_session_id?: string;
     owner_name?: string;
@@ -203,6 +201,8 @@ function messageRaces(m: ChatMessage): RaceChipView[] {
         label: m.meta.race_label || `${STADIUMS[m.meta.placeNo] || ""} ${m.meta.raceNo}R`,
         tickets: m.meta.tickets || [],
         bands: m.meta.bands,
+        confidence: m.meta.confidence,
+        confidenceLabel: m.meta.confidenceLabel,
         status: undefined,
         exhibition: "unknown",
       },
@@ -305,6 +305,8 @@ export default function ChatPage() {
   /** messageId → "placeNo:raceNo" */
   const [openRaceByMessage, setOpenRaceByMessage] = useState<Record<string, string>>({});
   const [showBodyByMessage, setShowBodyByMessage] = useState<Record<string, boolean>>({});
+  /** messageId → "band:combo" で買い目理由を開く */
+  const [openTicketByMessage, setOpenTicketByMessage] = useState<Record<string, string>>({});
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -1004,8 +1006,24 @@ export default function ChatPage() {
                             </span>
                           </div>
 
+                          {(selected.confidence != null ||
+                            selected.confidenceLabel ||
+                            m.meta?.confidence != null) && (
+                            <div className="chat-confidence-row">
+                              <span className="chat-confidence-badge">
+                                信頼度{" "}
+                                {selected.confidenceLabel ||
+                                  m.meta?.confidenceLabel ||
+                                  `${selected.confidence ?? m.meta?.confidence}/5`}
+                              </span>
+                            </div>
+                          )}
+
                           <div className="chat-pick-block">
-                            <div className="chat-pick-block-label">買い目</div>
+                            <div className="chat-pick-block-label">
+                              買い目
+                              <em className="chat-pick-hint">押すと理由</em>
+                            </div>
                             {selected.status === "skipped" ? (
                               <p className="chat-pick-empty">スルーのため買い目なし</p>
                             ) : hasBandTickets(selected.bands) ? (
@@ -1015,22 +1033,22 @@ export default function ChatPage() {
                                     {
                                       key: "honmei",
                                       label: "本命",
-                                      list: selected.bands?.honmei || [],
+                                      list: normalizeBandTickets(selected.bands?.honmei),
                                     },
                                     {
                                       key: "honmeiS",
                                       label: "本命S",
-                                      list: selected.bands?.honmeiS || [],
+                                      list: normalizeBandTickets(selected.bands?.honmeiS),
                                     },
                                     {
                                       key: "oshi",
                                       label: "押し目",
-                                      list: selected.bands?.oshi || [],
+                                      list: normalizeBandTickets(selected.bands?.oshi),
                                     },
                                     {
                                       key: "ana",
                                       label: "穴",
-                                      list: selected.bands?.ana || [],
+                                      list: normalizeBandTickets(selected.bands?.ana),
                                     },
                                   ] as const
                                 ).map((band) => (
@@ -1041,9 +1059,40 @@ export default function ChatPage() {
                                     </span>
                                     {band.list.length ? (
                                       <ul className="chat-ticket-list">
-                                        {band.list.map((t) => (
-                                          <li key={`${band.key}-${t}`}>{t}</li>
-                                        ))}
+                                        {band.list.map((t) => {
+                                          const ticketKey = `${band.key}:${t.combo}`;
+                                          const open =
+                                            openTicketByMessage[m.id] === ticketKey;
+                                          return (
+                                            <li key={ticketKey}>
+                                              <button
+                                                type="button"
+                                                className={`chat-ticket-btn ${open ? "open" : ""}`}
+                                                aria-expanded={open}
+                                                onClick={() =>
+                                                  setOpenTicketByMessage((prev) => ({
+                                                    ...prev,
+                                                    [m.id]: open ? "" : ticketKey,
+                                                  }))
+                                                }
+                                              >
+                                                {t.combo}
+                                              </button>
+                                              {open ? (
+                                                <div className="chat-ticket-why">
+                                                  {t.role ? (
+                                                    <strong>{t.role}</strong>
+                                                  ) : null}
+                                                  <p>
+                                                    {t.why?.trim() ||
+                                                      selected.why?.trim() ||
+                                                      "理由データなし"}
+                                                  </p>
+                                                </div>
+                                              ) : null}
+                                            </li>
+                                          );
+                                        })}
                                       </ul>
                                     ) : (
                                       <p className="chat-pick-empty">
@@ -1055,9 +1104,39 @@ export default function ChatPage() {
                               </div>
                             ) : selected.tickets && selected.tickets.length ? (
                               <ul className="chat-ticket-list">
-                                {selected.tickets.map((t) => (
-                                  <li key={t}>{t}</li>
-                                ))}
+                                {selected.tickets.map((t) => {
+                                  const ticketKey = `flat:${t}`;
+                                  const open = openTicketByMessage[m.id] === ticketKey;
+                                  return (
+                                    <li key={t}>
+                                      <button
+                                        type="button"
+                                        className={`chat-ticket-btn ${open ? "open" : ""}`}
+                                        aria-expanded={open}
+                                        onClick={() =>
+                                          setOpenTicketByMessage((prev) => ({
+                                            ...prev,
+                                            [m.id]: open ? "" : ticketKey,
+                                          }))
+                                        }
+                                      >
+                                        {t}
+                                      </button>
+                                      {open ? (
+                                        <div className="chat-ticket-why">
+                                          <p>
+                                            {selected.why?.trim() ||
+                                              whyFallback(
+                                                split?.explainBlock || "",
+                                                selected,
+                                              ) ||
+                                              "理由データなし"}
+                                          </p>
+                                        </div>
+                                      ) : null}
+                                    </li>
+                                  );
+                                })}
                               </ul>
                             ) : (
                               <p className="chat-pick-empty">買い目なし</p>
@@ -1065,7 +1144,7 @@ export default function ChatPage() {
                           </div>
 
                           <div className="chat-pick-block chat-pick-explain">
-                            <div className="chat-pick-block-label">説明</div>
+                            <div className="chat-pick-block-label">レース説明</div>
                             <p className="chat-pick-why">
                               {selected.why?.trim() ||
                                 whyFallback(split?.explainBlock || "", selected) ||
