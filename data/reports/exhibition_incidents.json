@@ -1,0 +1,79 @@
+{
+  "updated_at": "2026-11-13T06:59:44.430Z",
+  "incidents": [
+    {
+      "at": "2026-11-13T06:59:44.430Z",
+      "date": "20261113",
+      "stadium": 9,
+      "race": 12,
+      "kind": "stretch_slit",
+      "detail": "1号 スタート展示ST 0.05（伸び）",
+      "boats": [
+        1
+      ],
+      "source": "merged"
+    },
+    {
+      "at": "2026-11-13T06:59:44.430Z",
+      "date": "20261113",
+      "stadium": 9,
+      "race": 12,
+      "kind": "stretch_slit",
+      "detail": "3号 スタート展示ST 0.02（伸び）",
+      "boats": [
+        3
+      ],
+      "source": "merged"
+    },
+    {
+      "at": "2026-11-13T06:59:44.430Z",
+      "date": "20261113",
+      "stadium": 9,
+      "race": 12,
+      "kind": "stretch_slit",
+      "detail": "5号 スタート展示ST 0.03（伸び）",
+      "boats": [
+        5
+      ],
+      "source": "merged"
+    },
+    {
+      "at": "2026-11-13T06:59:44.430Z",
+      "date": "20261113",
+      "stadium": 9,
+      "race": 12,
+      "kind": "stretch_slit",
+      "detail": "6号 スタート展示ST 0.06（伸び）",
+      "boats": [
+        6
+      ],
+      "source": "merged"
+    },
+    {
+      "at": "2026-11-13T06:59:44.430Z",
+      "date": "20261113",
+      "stadium": 9,
+      "race": 12,
+      "kind": "fast_lap",
+      "detail": "4号 周回 6.69（中央より 0.04 速い）",
+      "boats": [
+        4
+      ],
+      "source": "merged"
+    },
+    {
+      "at": "2026-11-13T06:59:44.430Z",
+      "date": "20261113",
+      "stadium": 9,
+      "race": 12,
+      "kind": "stream_check",
+      "detail": "映像フレームOCRは段階導入中。進入変更・スリット伸び・周回は直前CSVと展示値で即時判定。",
+      "source": "live_stream"
+    }
+  ],
+  "tallies": {
+    "9:stretch_slit": 4,
+    "9:fast_lap": 1,
+    "9:stream_check": 1
+  }
+}
