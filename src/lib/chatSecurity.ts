@@ -9,10 +9,20 @@ import { sql } from "@/lib/db";
 
 const MAINT_META = "chat_maint_at_ms";
 const MAINT_EVERY_MS = 60_000;
-const RACE_MIN_INTERVAL_MS = 20_000;
-const RACE_MAX_PER_HOUR = 8;
+/** 連打防止。1場12Rを順に見られるよう短め。 */
+const RACE_MIN_INTERVAL_MS = 8_000;
+/**
+ * 旧: 8件/時 → 8R以降が実質止まる原因だった。
+ * 3場×12R分を余裕込みで許可。同一レース再取得は別枠でカウントしない。
+ */
+const RACE_MAX_PER_HOUR = 36;
 
-type RaceBucket = { windowStart: number; count: number; lastAt: number };
+type RaceBucket = {
+  windowStart: number;
+  count: number;
+  lastAt: number;
+  seenRaces: Set<string>;
+};
 const raceBuckets = new Map<string, RaceBucket>();
 
 async function getMeta(key: string): Promise<string | null> {
@@ -80,59 +90,99 @@ export async function maybeRunChatMaintenance(): Promise<{ ran: boolean }> {
   return { ran: true };
 }
 
-/** 場名+レース予測の連打を抑止（プロセス内の最短間隔）。 */
-function allowRaceReplyLocal(bucketKey: string): {
-  ok: boolean;
-  error?: string;
-  retryAfterSec?: number;
-} {
+function getRaceBucket(bucketKey: string, now: number): RaceBucket {
   const key = bucketKey || "anon";
-  const now = Date.now();
   const hour = 60 * 60 * 1000;
   let bucket = raceBuckets.get(key);
   if (!bucket || now - bucket.windowStart >= hour) {
-    bucket = { windowStart: now, count: 0, lastAt: 0 };
+    bucket = { windowStart: now, count: 0, lastAt: 0, seenRaces: new Set() };
     raceBuckets.set(key, bucket);
   }
+  return bucket;
+}
+
+/**
+ * 場名+レース予測の連打を抑止（プロセス内）。
+ * raceKey 付きの再取得は上限カウントしない（間隔のみ）。
+ */
+function allowRaceReplyLocal(
+  bucketKey: string,
+  raceKey?: string,
+): {
+  ok: boolean;
+  error?: string;
+  retryAfterSec?: number;
+  /** 新規ユニークレースなら shared カウンタも消費する */
+  consumeShared: boolean;
+} {
+  const now = Date.now();
+  const hour = 60 * 60 * 1000;
+  const bucket = getRaceBucket(bucketKey, now);
+  const repeat = Boolean(raceKey && bucket.seenRaces.has(raceKey));
+
   if (bucket.lastAt && now - bucket.lastAt < RACE_MIN_INTERVAL_MS) {
     const retryAfterSec = Math.ceil((RACE_MIN_INTERVAL_MS - (now - bucket.lastAt)) / 1000);
     return {
       ok: false,
       retryAfterSec,
+      consumeShared: false,
       error: `予測の連続利用は少し間隔を空けてください（あと約${retryAfterSec}秒）`,
     };
   }
-  if (bucket.count >= RACE_MAX_PER_HOUR) {
+
+  if (!repeat && bucket.count >= RACE_MAX_PER_HOUR) {
     return {
       ok: false,
       retryAfterSec: Math.ceil((hour - (now - bucket.windowStart)) / 1000),
-      error: "予測の利用上限に達しました。しばらくしてから再度お試しください。",
+      consumeShared: false,
+      error: `予測の利用上限（1時間あたり${RACE_MAX_PER_HOUR}レース）に達しました。しばらくしてから再度お試しください。`,
     };
   }
-  bucket.count += 1;
+
+  // まだ確定していない。shared 成功後に commit する。
+  return { ok: true, consumeShared: !repeat };
+}
+
+function commitRaceReplyLocal(bucketKey: string, raceKey?: string): void {
+  const now = Date.now();
+  const bucket = getRaceBucket(bucketKey, now);
+  const repeat = Boolean(raceKey && bucket.seenRaces.has(raceKey));
+  if (!repeat) {
+    bucket.count += 1;
+    if (raceKey) bucket.seenRaces.add(raceKey);
+  }
   bucket.lastAt = now;
-  raceBuckets.set(key, bucket);
-  return { ok: true };
+  raceBuckets.set(bucketKey || "anon", bucket);
 }
 
 /** 予測の連打抑止。DB 共有カウンタ＋プロセス内最短間隔。 */
-export async function allowRaceReply(bucketKey: string): Promise<{
+export async function allowRaceReply(
+  bucketKey: string,
+  opts?: { raceKey?: string },
+): Promise<{
   ok: boolean;
   error?: string;
   retryAfterSec?: number;
 }> {
-  const local = allowRaceReplyLocal(bucketKey);
+  const raceKey = opts?.raceKey;
+  const local = allowRaceReplyLocal(bucketKey, raceKey);
   if (!local.ok) return local;
-  const shared = await allowAuthAttemptShared(`race-reply:${bucketKey || "anon"}`, {
-    limit: RACE_MAX_PER_HOUR,
-    windowMs: 60 * 60 * 1000,
-  });
-  if (!shared.ok) {
-    return {
-      ok: false,
-      retryAfterSec: shared.retryAfterSec,
-      error: "予測の利用上限に達しました。しばらくしてから再度お試しください。",
-    };
+
+  if (local.consumeShared) {
+    // v2: 旧 race-reply（上限8）のカウンタを引き継がない
+    const shared = await allowAuthAttemptShared(`race-reply-v2:${bucketKey || "anon"}`, {
+      limit: RACE_MAX_PER_HOUR,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!shared.ok) {
+      return {
+        ok: false,
+        retryAfterSec: shared.retryAfterSec,
+        error: `予測の利用上限（1時間あたり${RACE_MAX_PER_HOUR}レース）に達しました。しばらくしてから再度お試しください。`,
+      };
+    }
   }
+
+  commitRaceReplyLocal(bucketKey, raceKey);
   return { ok: true };
 }

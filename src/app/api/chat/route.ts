@@ -38,7 +38,7 @@ import {
   markWaitingPosted,
 } from "@/lib/chatHonmeiFlags";
 import { buildRaceChipsFromPicks, buildSingleRaceChip } from "@/lib/chatRaceUi";
-import { STADIUMS } from "@/lib/stadiums";
+import { STADIUMS, jstDateKey } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 import { enrichChatMessagesWithResults } from "@/lib/chatResultEnrich";
 
@@ -108,7 +108,9 @@ async function createAppRacePick(opts: {
   const bucket = hashBucket(
     `${opts.sessionId}:${opts.invite || ""}:${opts.forwardedFor || ""}`,
   );
-  const gate = await allowRaceReply(bucket);
+  // 同一場・同一Rの再取得は上限カウントしない（1〜12Rを通しで見られるように）
+  const raceKey = `${jstDateKey()}:${opts.placeNo}:${opts.raceNo}`;
+  const gate = await allowRaceReply(bucket, { raceKey });
   if (!gate.ok) {
     return {
       ok: false,
