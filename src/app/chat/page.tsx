@@ -921,6 +921,48 @@ export default function ChatPage() {
     }
   }
 
+  async function deleteOneMessage(messageId: string) {
+    const key = adminKey.trim();
+    if (!key) {
+      setError("メッセージ消去には管理人キーが必要です");
+      return;
+    }
+    if (!window.confirm("このメッセージを消去しますか？（管理人のみ）")) {
+      return;
+    }
+    setSending(true);
+    setError("");
+    setStatus("");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-admin": key,
+          "x-chat-operator": key,
+        },
+        body: JSON.stringify({ kind: "delete", messageId, adminKey: key }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.hint || json.error || "消去に失敗しました");
+        return;
+      }
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      setStatus("メッセージを消去しました");
+      await loadFeed(invite.trim(), {
+        quiet: true,
+        refresh: false,
+        name: displayName,
+      }).catch(() => null);
+    } catch {
+      setError("消去に失敗しました");
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function clearChatBulk() {
     const key = adminKey.trim();
     if (!key) {
@@ -1186,6 +1228,9 @@ export default function ChatPage() {
               </div>
               <p className="note">
                 Discordに来ないときは「Discordテスト通知」で確認（Secrets の DISCORD_MIRROR_ENABLED=1 と Webhook）。
+              </p>
+              <p className="note">
+                雑談は全員に見えます。各メッセージの「消去」と「一括消去」は管理人のみです。
               </p>
               <p className="note">友達のAI予想ログです。行を押すと本文と回収率を見られます。</p>
               {adminOversight ? (
@@ -1659,6 +1704,19 @@ export default function ChatPage() {
                         <span>{isAdmin ? `ユーザー: ${m.meta?.owner_name || "—"}` : "自分のみ"}</span>
                       ) : null}
                       <span>{formatJst(m.created_at)} JST</span>
+                      {isAdmin ? (
+                        <button
+                          type="button"
+                          className="btn ghost chat-msg-delete"
+                          disabled={sending}
+                          title="管理人のみ消去"
+                          onClick={() => {
+                            void deleteOneMessage(m.id);
+                          }}
+                        >
+                          消去
+                        </button>
+                      ) : null}
                     </div>
 
                     {hasRaceUi && selected ? (
@@ -2054,12 +2112,12 @@ export default function ChatPage() {
 
           <div className="chat-composer">
             <div className="field">
-              <label htmlFor="draft">雑談メッセージ</label>
+              <label htmlFor="draft">雑談メッセージ（全員に表示）</label>
               <textarea
                 id="draft"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="みんなに見える雑談を書く"
+                placeholder="みんなに見える雑談を書く（消去は管理人のみ）"
                 rows={3}
                 maxLength={1000}
                 className="chat-input chat-textarea"
@@ -2148,7 +2206,7 @@ export default function ChatPage() {
                     </button>
                   </div>
                   <p className="note">
-                    キーが正しければ、個人予想の一覧と一括消去が使えます。友達向け画面には出ません。
+                    キーが正しければ、個人予想の一覧・メッセージ消去・一括消去が使えます。友達向け画面には出ません。
                   </p>
                 </div>
               ) : null}

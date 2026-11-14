@@ -278,6 +278,17 @@ export async function clearChatMessages(): Promise<number> {
   return Number(before[0]?.count ?? 0);
 }
 
+/** 管理人のみの個別消去。存在しなければ 0。 */
+export async function deleteChatMessage(id: string): Promise<number> {
+  const target = String(id || "").trim();
+  if (!target) return 0;
+  const rows = await sql<{ id: string }>(
+    `delete from chat_messages where id = $1 returning id`,
+    [target],
+  ).catch(() => []);
+  return rows.length;
+}
+
 export async function appendChatMessage(
   message: Omit<ChatMessage, "id" | "created_at"> & { id?: string; created_at?: string },
 ): Promise<ChatMessage> {
