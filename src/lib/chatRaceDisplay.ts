@@ -4,6 +4,7 @@ export type ChatBandTicketView = {
   combo: string;
   role?: string;
   why?: string;
+  reasons?: string[];
   result?: "hit" | "miss";
   payout?: number;
 };
@@ -44,6 +45,7 @@ export function normalizeBandTickets(
           combo: String(item.combo || ""),
           role: item.role || "",
           why: item.why || "",
+          reasons: item.reasons?.length ? item.reasons : undefined,
           result: item.result,
           payout: item.payout,
         },

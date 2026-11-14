@@ -145,24 +145,24 @@ type RaceResponse = {
   seriesDay?: number | null;
   seriesDayLabel?: string;
   deepPicks?: {
-    tickets: Array<{ combo: string; rank: number; role: string; why: string }>;
+    tickets: Array<{ combo: string; rank: number; role: string; why: string; reasons?: string[] }>;
     count: number;
     axis: number;
     partners: number[];
     confidence: number;
     confidenceLabel?: string;
     commentary: string[];
-    sTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
+    sTickets?: Array<{ combo: string; rank: number; role: string; why: string; reasons?: string[] }>;
     sCount?: number;
-    sSingleTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
+    sSingleTickets?: Array<{ combo: string; rank: number; role: string; why: string; reasons?: string[] }>;
     sSingleCount?: number;
     sReady?: boolean;
     sLabel?: string;
-    oshiTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
+    oshiTickets?: Array<{ combo: string; rank: number; role: string; why: string; reasons?: string[] }>;
     oshiCount?: number;
     oshiAxis?: number | null;
     oshiCommentary?: string[];
-    anaTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
+    anaTickets?: Array<{ combo: string; rank: number; role: string; why: string; reasons?: string[] }>;
     anaCount?: number;
     anaAxis?: number | null;
     anaHitPct?: number;
@@ -243,6 +243,9 @@ type Research = {
     note?: string;
     ops_status?: string | null;
     rolling_roi?: number | null;
+    last_learn_at?: string | null;
+    auto?: boolean;
+    cadence?: string;
     best?: { name?: string; roi?: number; n?: number };
     baseline?: { roi?: number; n?: number };
   };
@@ -269,6 +272,12 @@ type BoardPick = {
   status?: string;
   why?: string;
   skip_reason?: string | null;
+  label?: string;
+  band?: string;
+  points?: number;
+  reasons?: string[];
+  stake_per_ticket?: number;
+  validated_roi?: number | null;
 };
 
 type PicksBoard = {
@@ -332,6 +341,8 @@ export default function Home() {
   const [exhibitionCheckedAt, setExhibitionCheckedAt] = useState("");
   /** 買い目カードを押すと理由を開く */
   const [openTicketKey, setOpenTicketKey] = useState("");
+  /** 本日ボードの買い目理由 */
+  const [openBoardPickKey, setOpenBoardPickKey] = useState("");
   /** none=出さない / board=本日の本命 / race=表示中レース予想 */
   const [chatShareMode, setChatShareMode] = useState<"none" | "board" | "race">("none");
 
@@ -380,12 +391,18 @@ export default function Home() {
     }
 
     void bootstrap();
-    fetch("/api/research")
-      .then((r) => r.json())
-      .then((json) => {
-        if (!cancelled) setResearch(json);
-      })
-      .catch(() => undefined);
+    const loadResearch = () =>
+      fetch("/api/research")
+        .then((r) => r.json())
+        .then((json) => {
+          if (!cancelled) setResearch(json);
+        })
+        .catch(() => undefined);
+    void loadResearch();
+    // 最新の学習・更新状態を定期取得（自動学習の反映をUIに載せる）
+    const researchTimer = window.setInterval(() => {
+      void loadResearch();
+    }, 5 * 60 * 1000);
     fetch("/api/live")
       .then((r) => r.json())
       .then((json) => {
@@ -399,6 +416,7 @@ export default function Home() {
 
     return () => {
       cancelled = true;
+      window.clearInterval(researchTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -505,7 +523,8 @@ export default function Home() {
         </p>
         {research?.update || research?.learning ? (
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
-            <span className="badge">毎日自動更新</span>
+            <span className="badge">最新データ自動取得</span>
+            <span className="badge">回収率自動学習</span>
             {research.update?.last_success_date ? (
               <span className="badge">更新 {research.update.last_success_date}</span>
             ) : (
@@ -520,7 +539,23 @@ export default function Home() {
             {research.learning?.ops_status ? (
               <span className="badge">{String(research.learning.ops_status)}</span>
             ) : null}
+            {research.learning?.last_learn_at ? (
+              <span className="badge">
+                学習{" "}
+                {String(research.learning.last_learn_at).slice(0, 16).replace("T", " ")}
+              </span>
+            ) : null}
           </div>
+        ) : null}
+        {research?.learning?.note || research?.update?.cadence || research?.learning?.cadence ? (
+          <p className="note" style={{ marginTop: "-0.35rem", marginBottom: "0.85rem" }}>
+            {String(
+              research?.learning?.cadence ||
+                research?.update?.cadence ||
+                "毎日自動（最新データ→買い目→展示確認→的中再計算→回収率学習）",
+            )}
+            {research?.learning?.note ? ` / ${String(research.learning.note)}` : ""}
+          </p>
         ) : null}
         <div className="cta-row">
           <button
@@ -730,26 +765,58 @@ export default function Home() {
           </p>
         ) : null}
         {buyablePicks.length ? (
-          <div className="cta-row" style={{ marginTop: "0.75rem" }}>
+          <div className="board-pick-stack" style={{ marginTop: "0.75rem" }}>
             {buyablePicks.map((p) => {
               const sid = Number(p.stadium || 0);
               const rid = Number(p.race || 0);
+              const pickKey = `${sid}-${rid}-${p.label || p.band || ""}-${(p.tickets || []).join(",")}`;
               const active = place === sid && race === rid;
+              const reasonOpen = openBoardPickKey === pickKey;
               return (
-                <button
-                  key={`${sid}-${rid}`}
-                  type="button"
-                  className={`btn ${active ? "" : "ghost"}`}
-                  onClick={() => void load({ placeNo: sid, raceNo: rid })}
-                  disabled={loading || !sid || !rid}
-                >
-                  <span>
-                    {(p.stadium_name || `場${sid}`) + ` ${rid}R `}
-                    <span className="board-pick-tickets">
-                      {(p.tickets || ["1-2-3"]).join("/")}
-                    </span>
-                  </span>
-                </button>
+                <div key={pickKey} className={`board-pick-row ${active ? "active" : ""}`}>
+                  <div className="cta-row" style={{ margin: 0 }}>
+                    <button
+                      type="button"
+                      className={`btn ${active ? "" : "ghost"}`}
+                      onClick={() => void load({ placeNo: sid, raceNo: rid })}
+                      disabled={loading || !sid || !rid}
+                    >
+                      <span>
+                        {(p.stadium_name || `場${sid}`) + ` ${rid}R `}
+                        {p.label ? `· ${p.label} ` : ""}
+                        <span className="board-pick-tickets">
+                          {(p.tickets || ["1-2-3"]).join("/")}
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ghost ticket-reason-toggle ${reasonOpen ? "open" : ""}`}
+                      aria-expanded={reasonOpen}
+                      onClick={() =>
+                        setOpenBoardPickKey((prev) => (prev === pickKey ? "" : pickKey))
+                      }
+                    >
+                      買い目の理由
+                    </button>
+                  </div>
+                  {reasonOpen ? (
+                    <div className="ticket-reason-panel">
+                      <strong>買い目の理由 · {(p.tickets || []).join(" / ")}</strong>
+                      {p.why ? <p>{p.why}</p> : null}
+                      {(p.reasons || []).length ? (
+                        <ul>
+                          {p.reasons!.map((r) => (
+                            <li key={r}>{r}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {p.validated_roi != null ? (
+                        <p className="note">検証ROI目安 約{Number(p.validated_roi).toFixed(1)}%</p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               );
             })}
           </div>
@@ -758,11 +825,6 @@ export default function Home() {
             本日の本命ボード該当はありません。下でレースを選ぶと押し目・穴は出ます。
           </p>
         )}
-        {buyablePicks[0]?.why ? (
-          <p className="note" style={{ marginTop: "0.75rem" }}>
-            {buyablePicks[0].why}
-          </p>
-        ) : null}
       </section>
 
       <section className="panel">
@@ -1069,7 +1131,7 @@ export default function Home() {
                       <strong>
                         {section.title}
                         <span className="note" style={{ marginLeft: "0.45rem" }}>
-                          押すと理由
+                          「買い目の理由」で詳細
                         </span>
                       </strong>
                       <div className="band-grid" style={{ marginTop: "0.45rem" }}>
@@ -1077,31 +1139,41 @@ export default function Home() {
                           const ticketKey = `${section.key}-${t.combo}`;
                           const open = openTicketKey === ticketKey;
                           return (
-                            <button
-                              key={ticketKey}
-                              type="button"
-                              className={`side-card on ticket-why-card ${open ? "open" : ""}`}
-                              aria-expanded={open}
-                              onClick={() =>
-                                setOpenTicketKey((prev) =>
-                                  prev === ticketKey ? "" : ticketKey,
-                                )
-                              }
-                            >
-                              <span>
-                                {t.rank}. {t.role}
-                              </span>
-                              <strong>{t.combo}</strong>
+                            <div key={ticketKey} className={`ticket-reason-card ${open ? "open" : ""}`}>
+                              <button
+                                type="button"
+                                className="side-card on ticket-why-card"
+                                aria-expanded={open}
+                                onClick={() =>
+                                  setOpenTicketKey((prev) =>
+                                    prev === ticketKey ? "" : ticketKey,
+                                  )
+                                }
+                              >
+                                <span>
+                                  {t.rank}. {t.role}
+                                </span>
+                                <strong>{t.combo}</strong>
+                                <div className="note" style={{ margin: "0.35rem 0 0" }}>
+                                  {open ? "理由を閉じる" : "買い目の理由"}
+                                </div>
+                              </button>
                               {open ? (
-                                <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                                  {t.why || "理由データなし"}
+                                <div className="ticket-reason-panel">
+                                  <strong>買い目の理由 · {t.combo}</strong>
+                                  {t.why ? <p>{t.why}</p> : null}
+                                  {(t.reasons || []).length ? (
+                                    <ul>
+                                      {t.reasons!.map((r) => (
+                                        <li key={r}>{r}</li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <p className="note">理由データなし</p>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                                  理由を見る
-                                </div>
-                              )}
-                            </button>
+                              ) : null}
+                            </div>
                           );
                         })}
                       </div>

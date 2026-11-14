@@ -19,6 +19,7 @@ export type ChatBandTicket = {
   combo: string;
   role: string;
   why: string;
+  reasons?: string[];
 };
 
 export type ChatPickBands = {
@@ -65,6 +66,7 @@ function asBandTickets(list: DeepTicket[], limit?: number): ChatBandTicket[] {
     combo: t.combo,
     role: t.role,
     why: t.why || "",
+    reasons: t.reasons?.length ? t.reasons : undefined,
   }));
 }
 
@@ -187,7 +189,7 @@ export async function buildChatRaceReply(
   lines.push("", "【説明】");
   if (why) lines.push(why);
   else lines.push("詳細コメントなし");
-  lines.push("※買い目を押すと理由が表示されます。");
+  lines.push("※買い目を押すと「買い目の理由」詳細が表示されます。");
 
   lines.push(
     "",

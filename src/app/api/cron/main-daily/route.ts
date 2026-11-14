@@ -9,15 +9,30 @@ import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+type Mode = "nightly" | "confirm" | "learn";
+
 function authorized(req: NextRequest): boolean {
   const cron = process.env.CRON_SECRET?.trim();
   if (!cron) return false;
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  return Boolean(bearer && bearer === cron);
+  if (bearer && bearer === cron) return true;
+  // Vercel Cron は Authorization: Bearer CRON_SECRET を付ける
+  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
+  return Boolean(isVercelCron && bearer && bearer === cron);
 }
 
-/** 本体アプリの日次更新。CRON_SECRET（Bearer）必須。運営キーでは起動しない。 */
-export async function POST(req: NextRequest) {
+function parseMode(raw: unknown): Mode {
+  if (raw === "confirm" || raw === "learn" || raw === "nightly") return raw;
+  return "nightly";
+}
+
+async function runMode(mode: Mode) {
+  if (mode === "confirm") return runMainAppExhibitionConfirm();
+  if (mode === "learn") return runMainAppRoiLearn();
+  return runMainAppNightlyUpdate();
+}
+
+async function handle(req: NextRequest) {
   if (!authorized(req)) {
     return NextResponse.json(
       { ok: false, error: "unauthorized", hint: "Authorization: Bearer CRON_SECRET が必要です" },
@@ -26,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
   const ip = req.headers.get("x-forwarded-for") || "cron";
   const gate = await allowAuthAttemptShared(`cron-main-daily:${ip}`, {
-    limit: 6,
+    limit: 24,
     windowMs: 60 * 60 * 1000,
   });
   if (!gate.ok) {
@@ -39,34 +54,36 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let mode: "nightly" | "confirm" | "learn" = "nightly";
-  try {
-    const body = (await req.json()) as { mode?: string };
-    if (body.mode === "confirm" || body.mode === "learn" || body.mode === "nightly") {
-      mode = body.mode;
+  let mode: Mode = parseMode(req.nextUrl.searchParams.get("mode"));
+  if (req.method === "POST") {
+    try {
+      const body = (await req.json()) as { mode?: string };
+      mode = parseMode(body.mode ?? mode);
+    } catch {
+      // keep query/default
     }
-  } catch {
-    mode = "nightly";
   }
 
   try {
-    if (mode === "confirm") {
-      const result = await runMainAppExhibitionConfirm();
-      return NextResponse.json(result);
-    }
-    if (mode === "learn") {
-      const result = await runMainAppRoiLearn();
-      return NextResponse.json(result);
-    }
-    const result = await runMainAppNightlyUpdate();
-    return NextResponse.json(result);
+    const result = await runMode(mode);
+    return NextResponse.json({ ...result, mode });
   } catch (error) {
     return NextResponse.json(
       {
         ok: false,
+        mode,
         error: error instanceof Error ? error.message : "main daily failed",
       },
       { status: 500 },
     );
   }
+}
+
+/** 本体アプリの日次更新。CRON_SECRET（Bearer）必須。Vercel Cron / POST 両対応。 */
+export async function GET(req: NextRequest) {
+  return handle(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handle(req);
 }

@@ -78,7 +78,10 @@ export type DeepTicket = {
     | "押し抑え"
     | "穴本線"
     | "穴抑え";
+  /** 一行要約（リスト用） */
   why: string;
+  /** 買い目の理由（詳細・箇条書き） */
+  reasons: string[];
 };
 
 /** 信頼度は 1（弱い）〜 5（強い）。穴見送りは 0。 */
@@ -258,12 +261,15 @@ function buildHonmeiTickets(
       `${axis}-${fb[1]}-${fb[2]}`,
     ]).slice(0, want);
   }
-  const tickets: DeepTicket[] = list.slice(0, want).map((combo, i) => ({
-    combo,
-    rank: i + 1,
-    role: i === 0 ? "本線" : i < 3 ? "抑え" : "相手拡張",
-    why: ticketWhy(combo, byCourse),
-  }));
+  const tickets: DeepTicket[] = list.slice(0, want).map((combo, i) =>
+    ticketWithReason(
+      combo,
+      i + 1,
+      i === 0 ? "本線" : i < 3 ? "抑え" : "相手拡張",
+      byCourse,
+      { bandNote: "通常本命帯（検証ロック点数）" },
+    ),
+  );
   return { tickets, axis, partners: partners.slice(0, 4) };
 }
 
@@ -323,12 +329,11 @@ function buildOshiTickets(
     ]).filter((t) => !exclude.has(t));
   }
   list = list.slice(0, want);
-  const tickets: DeepTicket[] = list.map((combo, i) => ({
-    combo,
-    rank: i + 1,
-    role: i === 0 ? "押し本線" : "押し抑え",
-    why: ticketWhy(combo, byCourse),
-  }));
+  const tickets: DeepTicket[] = list.map((combo, i) =>
+    ticketWithReason(combo, i + 1, i === 0 ? "押し本線" : "押し抑え", byCourse, {
+      bandNote: "押し目帯（参考・本線では見送り）",
+    }),
+  );
   commentary.push(
     `【押し軸】${axisView.course}号 ${axisView.name}（${axisView.className}）。全国${axisView.nationalWin.toFixed(2)} / ST${axisView.avgStart.toFixed(2)} / モーター${axisView.motorTop2.toFixed(0)}% / 評価${axisView.score.toFixed(1)}。`,
   );
@@ -384,16 +389,84 @@ function uniqueTickets(list: string[]): string[] {
   return out;
 }
 
+function boatBrief(v: DeepRacerView | undefined, course: number, seat: "軸" | "相手" | "三着"): string {
+  if (!v) return `${course}号${seat}: データ薄`;
+  const bits = [
+    `${course}号${seat} ${v.name}（${v.className}）`,
+    `全国${v.nationalWin.toFixed(2)} / 直近${v.recentWin.toFixed(2)} / 当地${v.localWin.toFixed(2)}`,
+    `ST ${v.avgStart.toFixed(2)} / モーター2連対 ${v.motorTop2.toFixed(0)}% / ボート ${v.boatTop2.toFixed(0)}%`,
+  ];
+  if (v.seriesPoints != null) bits.push(`今節得点率 ${v.seriesPoints.toFixed(2)}`);
+  if (v.abilityIndex != null) bits.push(`能力指数 ${v.abilityIndex}`);
+  if (v.exhibitionSlit != null) bits.push(`展示スリット ${v.exhibitionSlit.toFixed(2)}`);
+  if (v.exhibitionLap != null) bits.push(`周回 ${v.exhibitionLap.toFixed(2)}`);
+  return bits.join(" · ");
+}
+
+function buildTicketReason(input: {
+  combo: string;
+  role: DeepTicket["role"];
+  byCourse: Map<number, DeepRacerView>;
+  bandNote?: string;
+  gateReasons?: string[];
+  confidence?: number;
+}): { why: string; reasons: string[] } {
+  const [a, b, c] = input.combo.split("-").map(Number);
+  const A = input.byCourse.get(a);
+  const B = input.byCourse.get(b);
+  const C = input.byCourse.get(c);
+  const reasons: string[] = [];
+  reasons.push(`買い目 ${input.combo}（役割: ${input.role}）`);
+  if (input.bandNote) reasons.push(input.bandNote);
+  if (input.confidence != null) {
+    reasons.push(`レース信頼度 ${input.confidence}/5`);
+  }
+  reasons.push(boatBrief(A, a, "軸"));
+  reasons.push(boatBrief(B, b, "相手"));
+  reasons.push(boatBrief(C, c, "三着"));
+  if (A && B) {
+    const gap = A.score - B.score;
+    reasons.push(
+      `評価差 ${gap.toFixed(1)}点（${a}号 ${A.score.toFixed(1)} vs ${b}号 ${B.score.toFixed(1)}）`,
+    );
+  }
+  if (A?.reasons?.length) {
+    reasons.push(`軸の評価根拠: ${A.reasons.slice(0, 3).join(" / ")}`);
+  }
+  for (const g of input.gateReasons || []) {
+    if (g) reasons.push(g);
+  }
+  const why = [
+    `${input.role} ${input.combo}`,
+    A ? `${a}号${A.name}軸（${A.className}・勝率${A.nationalWin.toFixed(2)}・ST${A.avgStart.toFixed(2)}）` : null,
+    B ? `${b}号${B.name}相手（モーター${B.motorTop2.toFixed(0)}%）` : null,
+    C ? `${c}号${C.name}三着` : null,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+  return { why, reasons };
+}
+
 function ticketWhy(combo: string, byCourse: Map<number, DeepRacerView>): string {
-  const [a, b, c] = combo.split("-").map(Number);
-  const A = byCourse.get(a);
-  const B = byCourse.get(b);
-  const C = byCourse.get(c);
-  const bits: string[] = [];
-  if (A) bits.push(`${a}号軸（${A.className}・勝率${A.nationalWin.toFixed(2)}）`);
-  if (B) bits.push(`${b}号相手（モーター${B.motorTop2.toFixed(0)}%）`);
-  if (C) bits.push(`${c}号三着`);
-  return bits.join(" / ");
+  return buildTicketReason({ combo, role: "本線", byCourse }).why;
+}
+
+function ticketWithReason(
+  combo: string,
+  rank: number,
+  role: DeepTicket["role"],
+  byCourse: Map<number, DeepRacerView>,
+  extra?: { bandNote?: string; gateReasons?: string[]; confidence?: number },
+): DeepTicket {
+  const detail = buildTicketReason({
+    combo,
+    role,
+    byCourse,
+    bandNote: extra?.bandNote,
+    gateReasons: extra?.gateReasons,
+    confidence: extra?.confidence,
+  });
+  return { combo, rank, role, why: detail.why, reasons: detail.reasons };
 }
 
 export function buildRaceDeepPicks(input: {
@@ -561,55 +634,65 @@ export function buildRaceDeepPicks(input: {
   });
   const alloc = allocForConfidence(confidence, { strong, axis });
 
+  const honmeiBandNote =
+    alloc.mode === "strong_123"
+      ? `強イン逃げ条件の本命（2026検証ROI約${AI_LOGIC_2026.testRoi}%）`
+      : alloc.mode === "axis1_conf45_stream"
+        ? "1号軸・信頼度高めの参考流し"
+        : "条件外の参考1点（スコア上位3連単）";
+
   // 2026検証ロジックで本命を組み立て
   let deepTickets: DeepTicket[] = [];
   if (alloc.mode === "strong_123") {
-    deepTickets = uniqueTickets(AI_LOGIC_2026.primaryTickets).map((combo, i) => ({
-      combo,
-      rank: i + 1,
-      role: i === 0 ? "本線" : "抑え",
-      why: ticketWhy(combo, byCourse),
-    }));
+    deepTickets = uniqueTickets(AI_LOGIC_2026.primaryTickets).map((combo, i) =>
+      ticketWithReason(combo, i + 1, i === 0 ? "本線" : "抑え", byCourse, {
+        bandNote: honmeiBandNote,
+        confidence,
+      }),
+    );
   } else if (alloc.mode === "axis1_conf45_stream") {
-    deepTickets = uniqueTickets(AI_LOGIC_2026.fallbackAxis1).map((combo, i) => ({
-      combo,
-      rank: i + 1,
-      role: i === 0 ? "本線" : i < 3 ? "抑え" : "相手拡張",
-      why: ticketWhy(combo, byCourse),
-    }));
+    deepTickets = uniqueTickets(AI_LOGIC_2026.fallbackAxis1).map((combo, i) =>
+      ticketWithReason(
+        combo,
+        i + 1,
+        i === 0 ? "本線" : i < 3 ? "抑え" : "相手拡張",
+        byCourse,
+        { bandNote: honmeiBandNote, confidence },
+      ),
+    );
   } else {
     const a = ranked[0]?.course ?? 1;
     const b = ranked[1]?.course ?? 2;
     const c = ranked[2]?.course ?? 3;
-    deepTickets = uniqueTickets([`${a}-${b}-${c}`]).map((combo, i) => ({
-      combo,
-      rank: i + 1,
-      role: "本線",
-      why: ticketWhy(combo, byCourse),
-    }));
+    deepTickets = uniqueTickets([`${a}-${b}-${c}`]).map((combo, i) =>
+      ticketWithReason(combo, i + 1, "本線", byCourse, {
+        bandNote: honmeiBandNote,
+        confidence,
+      }),
+    );
   }
 
   // 本命S: 単点と条件付き5点を両方出す（5点は locked mainline）
   const sCombos = mainlineGate.ok
     ? uniqueTickets(mainlineGate.tickets).slice(0, MAINLINE_RULE.tickets.length)
     : [];
-  const sTickets: DeepTicket[] = sCombos.map((combo, i) => ({
-    combo,
-    rank: i + 1,
-    role: "本命S5点",
-    why: ticketWhy(combo, byCourse),
-  }));
+  const sGateNote = `本命Sゲート通過 · 検証回収約${MAINLINE_RULE.validated_all_roi}%（年次下限約${MAINLINE_RULE.validated_all_min_year_roi}%）`;
+  const sTickets: DeepTicket[] = sCombos.map((combo, i) =>
+    ticketWithReason(combo, i + 1, "本命S5点", byCourse, {
+      bandNote: `条件付き5点の本命S（${sGateNote}）`,
+      gateReasons: mainlineGate.reasons,
+      confidence,
+    }),
+  );
   const sSingleTickets: DeepTicket[] = mainlineGate.ok
     ? [
-        {
-          combo: "1-2-3",
-          rank: 1,
-          role: "本命S単点",
-          why: ticketWhy("1-2-3", byCourse),
-        },
+        ticketWithReason("1-2-3", 1, "本命S単点", byCourse, {
+          bandNote: `本命S単点（5点と併記 · ${sGateNote}）`,
+          gateReasons: mainlineGate.reasons,
+          confidence,
+        }),
       ]
-    : [];
-  const sReady = sTickets.length > 0 || sSingleTickets.length > 0;
+    : [];  const sReady = sTickets.length > 0 || sSingleTickets.length > 0;
   const sLabel = sReady
     ? `本命S · 単点1点 + 条件付き${sTickets.length}点 · 検証回収約${MAINLINE_RULE.validated_all_roi}%（年次下限約${MAINLINE_RULE.validated_all_min_year_roi}%）`
     : "本命Sなし（回収100%超条件外）";
