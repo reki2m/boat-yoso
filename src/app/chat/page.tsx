@@ -55,6 +55,7 @@ type ChatLiveTarget = {
   status: string;
   skip_detail: string | null;
   why: string | null;
+  reasons?: string[];
   live: {
     mediaTop: string;
     beforeInfo: string;
@@ -312,6 +313,8 @@ export default function ChatPage() {
   const [showBodyByMessage, setShowBodyByMessage] = useState<Record<string, boolean>>({});
   /** messageId → "band:combo" で買い目理由を開く */
   const [openTicketByMessage, setOpenTicketByMessage] = useState<Record<string, string>>({});
+  /** 本日の本命対象チップを開く（stadium-race） */
+  const [openTargetKey, setOpenTargetKey] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -891,44 +894,95 @@ export default function ChatPage() {
             </div>
             {targets.length > 0 ? (
               <div className="chat-honmei-targets">
-                <span className="chat-honmei-targets-label">本日の本命対象</span>
-                <div className="chat-race-chips chat-target-chips">
+                <span className="chat-honmei-targets-label">
+                  本日の本命対象
+                  <em className="chat-pick-hint">押すと買い目・理由</em>
+                </span>
+                <div className="chat-target-stack">
                   {[...new Map(targets.map((t) => [`${t.stadium}-${t.race}`, t])).values()]
                     .slice(0, 8)
                     .map((t) => {
+                    const key = `${t.stadium}-${t.race}`;
+                    const open = openTargetKey === key;
                     const badge = targetBadge(t.status);
+                    const single = t.tickets_single || [];
+                    const five = t.tickets_five || [];
                     const ticketHint = [
-                      t.tickets_single?.length
-                        ? `単点 ${t.tickets_single.join("/")}`
-                        : null,
-                      t.tickets_five?.length
-                        ? `5点 ${t.tickets_five.join("/")}`
-                        : null,
+                      single.length ? `単点 ${single.join("/")}` : null,
+                      five.length ? `5点 ${five.join("/")}` : null,
                     ]
                       .filter(Boolean)
                       .join(" ／ ");
+                    const ticketFallback =
+                      ticketHint ||
+                      (t.tickets?.length ? t.tickets.join(" / ") : "—");
                     return (
-                      <button
-                        key={`${t.stadium}-${t.race}`}
-                        type="button"
-                        className={`chat-race-chip ${targetToneClass(t.status)}`}
-                        title={
-                          [t.label, ticketHint, t.skip_detail || t.why]
-                            .filter(Boolean)
-                            .join(" · ") || undefined
-                        }
-                        onClick={() => {
-                          setPickStadium(t.stadium);
-                          setPickRace(t.race);
-                        }}
+                      <div
+                        key={key}
+                        className={`chat-target-item ${open ? "open" : ""} ${targetToneClass(t.status)}`}
                       >
-                        <span className="chat-race-chip-label">
-                          {t.stadium_name}
-                          {t.race}R
-                          {ticketHint ? ` · ${ticketHint}` : ""}
-                        </span>
-                        {badge ? <em>{badge}</em> : null}
-                      </button>
+                        <button
+                          type="button"
+                          className={`chat-race-chip ${open ? "active" : ""} ${targetToneClass(t.status)}`}
+                          aria-expanded={open}
+                          title="買い目と理由を表示"
+                          onClick={() => {
+                            setPickStadium(t.stadium);
+                            setPickRace(t.race);
+                            setOpenTargetKey((prev) => (prev === key ? "" : key));
+                          }}
+                        >
+                          <span className="chat-race-chip-label">
+                            {t.stadium_name}
+                            {t.race}R
+                            {t.label ? ` · ${t.label}` : ""}
+                          </span>
+                          {badge ? <em>{badge}</em> : null}
+                        </button>
+                        {open ? (
+                          <div className="chat-target-detail">
+                            <strong>
+                              {t.stadium_name}
+                              {t.race}R の買い目
+                              {t.label ? `（${t.label}）` : ""}
+                            </strong>
+                            {single.length || five.length ? (
+                              <ul className="chat-target-tickets">
+                                {single.length ? (
+                                  <li>
+                                    <span>本命S・単点</span>
+                                    <strong>{single.join(" · ")}</strong>
+                                  </li>
+                                ) : null}
+                                {five.length ? (
+                                  <li>
+                                    <span>本命S・5点</span>
+                                    <strong>{five.join(" · ")}</strong>
+                                  </li>
+                                ) : null}
+                              </ul>
+                            ) : (
+                              <p className="chat-target-ticket-line">{ticketFallback}</p>
+                            )}
+                            <div className="chat-target-why">
+                              <strong>買い目の理由</strong>
+                              {t.why ? <p>{t.why}</p> : null}
+                              {(t.reasons || []).length ? (
+                                <ul>
+                                  {t.reasons!.map((r) => (
+                                    <li key={r}>{r}</li>
+                                  ))}
+                                </ul>
+                              ) : !t.why ? (
+                                <p className="note">理由データなし</p>
+                              ) : null}
+                              {t.skip_detail ? (
+                                <p className="note">スルー: {t.skip_detail}</p>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
                     );
                   })}
                 </div>

@@ -22,6 +22,7 @@ export type ChatLiveTarget = {
   status: string;
   skip_detail: string | null;
   why: string | null;
+  reasons?: string[];
   live: ReturnType<typeof liveBroadcastUrls>;
 };
 
@@ -42,6 +43,9 @@ function mapBoardPicks(
     label: typeof p.label === "string" ? p.label : undefined,
     status: typeof p.status === "string" ? p.status : "provisional",
     why: typeof p.why === "string" ? p.why : undefined,
+    reasons: Array.isArray(p.reasons)
+      ? (p.reasons as unknown[]).map((r) => String(r)).filter(Boolean)
+      : undefined,
     skip_reason: typeof p.skip_reason === "string" ? p.skip_reason : null,
     skip_detail: typeof p.skip_detail === "string" ? p.skip_detail : null,
   }));
@@ -83,6 +87,7 @@ function dedupeRacePicks(picks: LivePickRow[]): LivePickRow[] {
           ? "本命S・単点+5点"
           : p.label || prev.label || "本命S",
       why: [prev.why, p.why].filter(Boolean).join(" / ") || prev.why,
+      reasons: [...new Set([...(prev.reasons || []), ...(p.reasons || [])])],
     });
   }
   return [...byKey.values()];
@@ -152,6 +157,7 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
         status,
         skip_detail,
         why: status === "skipped" ? phrase : p.why || null,
+        reasons: p.reasons?.length ? p.reasons : undefined,
         live: liveBroadcastUrls(stadium, date, race),
       };
     });
