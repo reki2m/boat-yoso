@@ -72,6 +72,8 @@ export type DeepTicket = {
     | "抑え"
     | "相手拡張"
     | "本命S"
+    | "本命S単点"
+    | "本命S5点"
     | "押し本線"
     | "押し抑え"
     | "穴本線"
@@ -92,9 +94,12 @@ export type RaceDeepPicks = {
   confidence: ConfidenceScore;
   confidenceLabel: string;
   commentary: string[];
-  /** 本命S（回収100%超の検証ゲート通過時のみ。別枠） */
+  /** 本命S・5点（回収100%超の検証ゲート通過時のみ。別枠） */
   sTickets: DeepTicket[];
   sCount: number;
+  /** 本命S・単点（5点ゲート通過時は併記） */
+  sSingleTickets: DeepTicket[];
+  sSingleCount: number;
   sReady: boolean;
   sLabel: string;
   /** 押し目（本線採用時は出さない） */
@@ -584,19 +589,29 @@ export function buildRaceDeepPicks(input: {
     }));
   }
 
-  // 本命S: 条件付き5点（locked mainline）。通常本命枠とは別枠。
+  // 本命S: 単点と条件付き5点を両方出す（5点は locked mainline）
   const sCombos = mainlineGate.ok
     ? uniqueTickets(mainlineGate.tickets).slice(0, MAINLINE_RULE.tickets.length)
     : [];
   const sTickets: DeepTicket[] = sCombos.map((combo, i) => ({
     combo,
     rank: i + 1,
-    role: "本命S",
+    role: "本命S5点",
     why: ticketWhy(combo, byCourse),
   }));
-  const sReady = sTickets.length > 0;
+  const sSingleTickets: DeepTicket[] = mainlineGate.ok
+    ? [
+        {
+          combo: "1-2-3",
+          rank: 1,
+          role: "本命S単点",
+          why: ticketWhy("1-2-3", byCourse),
+        },
+      ]
+    : [];
+  const sReady = sTickets.length > 0 || sSingleTickets.length > 0;
   const sLabel = sReady
-    ? `本命S · 条件付き${sTickets.length}点 · 検証回収約${MAINLINE_RULE.validated_all_roi}%（年次下限約${MAINLINE_RULE.validated_all_min_year_roi}%）`
+    ? `本命S · 単点1点 + 条件付き${sTickets.length}点 · 検証回収約${MAINLINE_RULE.validated_all_roi}%（年次下限約${MAINLINE_RULE.validated_all_min_year_roi}%）`
     : "本命Sなし（回収100%超条件外）";
 
   const top = ranked[0];
@@ -634,7 +649,7 @@ export function buildRaceDeepPicks(input: {
   );
   if (sReady) {
     commentary.push(
-      `【本命S】条件付き${sTickets.length}点（${sTickets.map((t) => t.combo).join(" / ")}）。検証回収 約${MAINLINE_RULE.validated_all_roi}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi}%）。通常本命とは別枠。`,
+      `【本命S】単点 ${sSingleTickets.map((t) => t.combo).join(" / ") || "—"} ／ 条件付き${sTickets.length}点（${sTickets.map((t) => t.combo).join(" / ")}）。検証回収 約${MAINLINE_RULE.validated_all_roi}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi}%）。通常本命とは別枠。`,
     );
   } else {
     commentary.push(
@@ -662,6 +677,7 @@ export function buildRaceDeepPicks(input: {
     confidence,
     commentary,
     sTickets,
+    sSingleTickets,
     sReady,
     sLabel,
     oshiTickets,
@@ -683,6 +699,7 @@ function finishDeepPicks(input: {
   confidence: ConfidenceScore;
   commentary: string[];
   sTickets: DeepTicket[];
+  sSingleTickets: DeepTicket[];
   sReady: boolean;
   sLabel: string;
   oshiTickets: DeepTicket[];
@@ -718,6 +735,8 @@ function finishDeepPicks(input: {
     commentary: input.commentary,
     sTickets: input.sTickets,
     sCount: input.sTickets.length,
+    sSingleTickets: input.sSingleTickets,
+    sSingleCount: input.sSingleTickets.length,
     sReady: input.sReady,
     sLabel: input.sLabel,
     oshiTickets: oshi,
@@ -732,7 +751,7 @@ function finishDeepPicks(input: {
     anaConfidenceLabel: anaPctLabel(input.anaHitPct),
     anaCommentary: input.anaCommentary,
     racerViews: input.ranked,
-    method: `${modeNote}。押し・穴は本線で見送り。本命Sは条件内のみ印。的中保証なし。`,
+    method: `${modeNote}。押し・穴は本線で見送り。本命Sは単点と条件付き5点を条件内で併記。的中保証なし。`,
   };
 }
 

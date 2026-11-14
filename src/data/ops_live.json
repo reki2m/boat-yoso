@@ -1,8 +1,8 @@
 {
   "status": "live",
   "started_at_jst": "2026-11-10",
-  "mode": "mainline_s_five_point",
-  "system_name": "本命S条件付き5点（mainline）",
+  "mode": "mainline_s_dual",
+  "system_name": "本命S単点+条件付き5点（併記）",
   "buy": {
     "ticket": "trifecta_1_2_stream5",
     "tickets": [
@@ -14,6 +14,7 @@
     ],
     "points": 5,
     "stake_per_ticket": 100,
+    "also_single": "1-2-3",
     "expected_avg_per_day": 0.4,
     "soft_max_per_day": 2
   },
@@ -56,12 +57,6 @@
     "pause_if_roi_below": 90.0,
     "review_if_roi_below": 100.0,
     "keep_thresholds_fixed_until_pause": true,
-    "note": "本命Sは locked_mainline_rule の条件付き5点。検証ROI約140.7%/年次下限約102.2%。"
-  },
-  "validated": {
-    "period": "2021-2026",
-    "roi": 140.71,
-    "min_year_roi": 102.17,
-    "source": "locked_mainline_rule.json"
+    "note": "本命Sは単点と条件付き5点を両方表示。5点はlocked_mainline_rule（ROI約140.7%/年次下限約102.2%）。"
   }
 }

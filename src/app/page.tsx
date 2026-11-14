@@ -154,6 +154,8 @@ type RaceResponse = {
     commentary: string[];
     sTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
     sCount?: number;
+    sSingleTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
+    sSingleCount?: number;
     sReady?: boolean;
     sLabel?: string;
     oshiTickets?: Array<{ combo: string; rank: number; role: string; why: string }>;
@@ -499,7 +501,7 @@ export default function Home() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          本命は強イン逃げで1-2-3単点（2026検証）。本命Sは条件付き5点（検証ROI約140%）。押し・穴は本線で見送り。
+          本命は強イン逃げで1-2-3単点（2026検証）。本命Sは単点と条件付き5点を両方表示（5点検証ROI約140%）。押し・穴は本線で見送り。
         </p>
         {research?.update || research?.learning ? (
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
@@ -608,7 +610,10 @@ export default function Home() {
                                 : [
                                     `本命: ${(data?.deepPicks?.tickets || []).map((t) => t.combo).join(" / ") || "—"}`,
                                     data?.deepPicks?.sReady
-                                      ? `本命S: ${(data.deepPicks.sTickets || []).map((t) => t.combo).join(" / ")}`
+                                      ? [
+                                          `本命S単点: ${(data.deepPicks.sSingleTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
+                                          `本命S5点: ${(data.deepPicks.sTickets || []).map((t) => t.combo).join(" / ")}`,
+                                        ].join("\n")
                                       : "本命S: 条件外",
                                     `押し目: ${(data?.deepPicks?.oshiTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
                                     `穴: ${(data?.deepPicks?.anaTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
@@ -951,14 +956,28 @@ export default function Home() {
                         : undefined
                     }
                   >
-                    <span>本命S{data.deepPicks.sReady ? ` · ${data.deepPicks.sCount}点` : ""}</span>
+                    <span>
+                      本命S
+                      {data.deepPicks.sReady
+                        ? ` · 単点${data.deepPicks.sSingleCount || 0}+5点${data.deepPicks.sCount || 0}`
+                        : ""}
+                    </span>
                     <strong>
-                      {data.deepPicks.sReady && (data.deepPicks.sTickets || []).length
-                        ? data.deepPicks.sTickets!.map((t) => t.combo).join(" · ")
+                      {data.deepPicks.sReady
+                        ? [
+                            (data.deepPicks.sSingleTickets || []).length
+                              ? `単点 ${(data.deepPicks.sSingleTickets || []).map((t) => t.combo).join(" · ")}`
+                              : null,
+                            (data.deepPicks.sTickets || []).length
+                              ? `5点 ${(data.deepPicks.sTickets || []).map((t) => t.combo).join(" · ")}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" ／ ")
                         : "条件外"}
                     </strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                      {data.deepPicks.sLabel || "条件付き5点・回収100%超ゲートのみ"}
+                      {data.deepPicks.sLabel || "単点と条件付き5点を併記"}
                     </div>
                   </div>
                   <div
@@ -1010,7 +1029,15 @@ export default function Home() {
                   [
                     {
                       key: "s",
-                      title: "本命Sの内訳（条件付き5点）",
+                      title: "本命S・単点の内訳",
+                      show: Boolean(
+                        data.deepPicks.sReady && (data.deepPicks.sSingleTickets || []).length,
+                      ),
+                      list: data.deepPicks.sSingleTickets || [],
+                    },
+                    {
+                      key: "s5",
+                      title: "本命S・5点の内訳",
                       show: Boolean(
                         data.deepPicks.sReady && (data.deepPicks.sTickets || []).length,
                       ),
@@ -1165,8 +1192,17 @@ export default function Home() {
                     ? "進入変更または予期しない事態のため、このレースは買いません。"
                     : triple?.ticketsLocked
                       ? "進入状況・スリット・周回タイムの確定後に買い目を確定します。"
-                      : data.deepPicks?.sReady && data.deepPicks.sTickets?.length
-                        ? `本命S: ${data.deepPicks.sTickets.map((t) => t.combo).join(" · ")}`
+                      : data.deepPicks?.sReady
+                        ? [
+                            data.deepPicks.sSingleTickets?.length
+                              ? `本命S単点: ${data.deepPicks.sSingleTickets.map((t) => t.combo).join(" · ")}`
+                              : null,
+                            data.deepPicks.sTickets?.length
+                              ? `本命S5点: ${data.deepPicks.sTickets.map((t) => t.combo).join(" · ")}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" ／ ")
                         : data.deepPicks?.tickets?.length
                           ? `本命: ${data.deepPicks.tickets.map((t) => t.combo).join(" · ")}`
                           : "上の本命・押し目・穴を参照してください。"}
@@ -1176,8 +1212,11 @@ export default function Home() {
                     ? "SKIP"
                     : triple?.ticketsLocked
                       ? "WAIT"
-                      : (data.deepPicks?.sReady && data.deepPicks.sTickets?.length
-                          ? data.deepPicks.sTickets.map((t) => t.combo)
+                      : (data.deepPicks?.sReady
+                          ? [
+                              ...(data.deepPicks.sSingleTickets || []).map((t) => t.combo),
+                              ...(data.deepPicks.sTickets || []).map((t) => t.combo),
+                            ]
                           : data.deepPicks?.tickets?.length
                             ? data.deepPicks.tickets.map((t) => t.combo)
                             : data.deepPicks?.oshiTickets?.map((t) => t.combo) ?? ["—"]
@@ -1212,8 +1251,15 @@ export default function Home() {
                     },
                     {
                       band: "honmei-s",
-                      label: "本命S",
-                      ok: Boolean(data.deepPicks?.sReady),
+                      label: "本命S・単点",
+                      ok: Boolean(data.deepPicks?.sSingleTickets?.length),
+                      tickets: data.deepPicks?.sSingleTickets?.map((t) => t.combo) || [],
+                      note: "本命S単点（5点と併記）",
+                    },
+                    {
+                      band: "honmei-s5",
+                      label: "本命S・5点",
+                      ok: Boolean(data.deepPicks?.sTickets?.length),
                       tickets: data.deepPicks?.sTickets?.map((t) => t.combo) || [],
                       note: data.deepPicks?.sLabel || "条件付き5点（回収100%超ゲート）",
                     },

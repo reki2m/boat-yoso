@@ -22,6 +22,7 @@ export type ChatBandTicket = {
 export type ChatPickBands = {
   honmei?: ChatBandTicket[];
   honmeiS?: ChatBandTicket[];
+  honmeiSSingle?: ChatBandTicket[];
   oshi?: ChatBandTicket[];
   ana?: ChatBandTicket[];
 };

@@ -101,7 +101,40 @@
     "validated_test_hit_rate": null
   },
   "elite": {
-    "label": "本命S",
+    "label": "本命S・単点",
+    "ticket": "trifecta_123",
+    "tickets": [
+      "1-2-3"
+    ],
+    "points": 1,
+    "stake_per_ticket": 100,
+    "min_c1_nat": 6.8,
+    "max_c1_st": 0.15,
+    "min_inn": 0.5,
+    "max_c1_class": 1,
+    "min_motor2": 32,
+    "min_gap_c2": 1.0,
+    "require_leading_score": true,
+    "min_score_gap": 1.5,
+    "min_pick_score": 0,
+    "stadium_whitelist": [
+      8,
+      9,
+      12,
+      13,
+      15,
+      17,
+      18,
+      19
+    ],
+    "race_blacklist": [
+      1,
+      9
+    ],
+    "note": "本命S単点。条件付き5点（mainline）と併記する。"
+  },
+  "elite_five": {
+    "label": "本命S・5点",
     "ticket": "trifecta_1_2_stream5",
     "tickets": [
       "1-2-3",
@@ -135,13 +168,13 @@
     ],
     "validated_test_roi": 140.71,
     "validated_all_min_year_roi": 102.17,
-    "note": "locked_mainline_rule 条件付き5点。2021-2026検証ROI約140.7%/年次下限約102.2%。"
+    "note": "locked_mainline_rule 条件付き5点。単点と併記。"
   },
   "ops": {
     "status": "live",
     "started_at_jst": "2026-11-10",
-    "mode": "mainline_s_five_point",
-    "system_name": "本命S条件付き5点（mainline）",
+    "mode": "mainline_s_dual",
+    "system_name": "本命S単点+条件付き5点（併記）",
     "buy": {
       "ticket": "trifecta_1_2_stream5",
       "tickets": [
@@ -153,6 +186,7 @@
       ],
       "points": 5,
       "stake_per_ticket": 100,
+      "also_single": "1-2-3",
       "expected_avg_per_day": 0.4,
       "soft_max_per_day": 2
     },
@@ -195,7 +229,7 @@
       "pause_if_roi_below": 90.0,
       "review_if_roi_below": 100.0,
       "keep_thresholds_fixed_until_pause": true,
-      "note": "四半期ROIが90%未満なら一時停止。100%割れは見直し検討。閾値の継ぎ足し最適化はしない。"
+      "note": "本命Sは単点と条件付き5点を両方表示。5点はlocked_mainline_rule（ROI約140.7%/年次下限約102.2%）。"
     }
   },
   "stadium_whitelist": [

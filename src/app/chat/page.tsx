@@ -1039,8 +1039,13 @@ export default function ChatPage() {
                                       list: normalizeBandTickets(selected.bands?.honmei),
                                     },
                                     {
+                                      key: "honmeiSSingle",
+                                      label: "本命S・単点",
+                                      list: normalizeBandTickets(selected.bands?.honmeiSSingle),
+                                    },
+                                    {
                                       key: "honmeiS",
-                                      label: "本命S",
+                                      label: "本命S・5点",
                                       list: normalizeBandTickets(selected.bands?.honmeiS),
                                     },
                                     {
@@ -1126,7 +1131,9 @@ export default function ChatPage() {
                                       </ul>
                                     ) : (
                                       <p className="chat-pick-empty">
-                                        {band.key === "honmeiS" ? "条件外" : "—"}
+                                        {band.key === "honmeiS" || band.key === "honmeiSSingle"
+                                          ? "条件外"
+                                          : "—"}
                                       </p>
                                     )}
                                   </div>

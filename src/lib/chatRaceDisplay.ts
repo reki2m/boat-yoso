@@ -11,6 +11,7 @@ export type ChatBandTicketView = {
 export type ChatPickBandsView = {
   honmei?: Array<string | ChatBandTicketView>;
   honmeiS?: Array<string | ChatBandTicketView>;
+  honmeiSSingle?: Array<string | ChatBandTicketView>;
   oshi?: Array<string | ChatBandTicketView>;
   ana?: Array<string | ChatBandTicketView>;
 };
@@ -53,6 +54,7 @@ export function hasBandTickets(bands?: ChatPickBandsView | null): boolean {
   if (!bands) return false;
   return Boolean(
     normalizeBandTickets(bands.honmei).length ||
+      normalizeBandTickets(bands.honmeiSSingle).length ||
       normalizeBandTickets(bands.honmeiS).length ||
       normalizeBandTickets(bands.oshi).length ||
       normalizeBandTickets(bands.ana).length,

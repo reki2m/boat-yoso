@@ -40,6 +40,9 @@ type Cand = Record<string, unknown> & {
   score_gap: number;
   min_pick_score: number;
   elite?: boolean;
+  stadium?: number;
+  race?: number;
+  band?: string;
 };
 
 const CLASS_LABEL: Record<number, string> = { 1: "A1", 2: "A2", 3: "B1", 4: "B2" };
@@ -105,38 +108,46 @@ function passes(
   );
 }
 
+type STier = "honmei" | "s_single" | "s_five";
+
 function explain(
   place: number,
   e1: Entry,
   e2: Entry,
   inn: number,
   tickets: string[],
-  elite: boolean,
+  tier: STier,
   scoreGap: number,
   stake: number,
 ): { why: string; reasons: string[] } {
   const name = STADIUMS[place] || `場${place}`;
-  const tier = elite ? "本命S" : "本命";
+  const tierLabel =
+    tier === "s_five" ? "本命S・5点" : tier === "s_single" ? "本命S・単点" : "本命";
+  const ticketNote =
+    tier === "s_five"
+      ? `本命S条件付き${tickets.length}点 ${tickets.join(", ")}（1点${stake}円・検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）`
+      : tier === "s_single"
+        ? `本命S単点 ${tickets.join(", ")}（1点${stake}円）`
+        : `本命単点 ${tickets.join(", ")}（1点${stake}円）`;
   const reasons = [
     `${name}イン逃げ率 ${(inn * 100).toFixed(1)}%（本命向き）`,
     `1号 ${e1.name} ${classLabel(e1.class)} / 勝率 ${e1.nat.toFixed(2)} / ST ${e1.st.toFixed(2)}`,
     `モーター2連対 ${e1.motor2.toFixed(1)}% / 1号相対最強（差 ${scoreGap.toFixed(2)}）`,
-    elite
-      ? `本命S条件付き${tickets.length}点 ${tickets.join(", ")}（1点${stake}円・検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）`
-      : `本命単点 ${tickets.join(", ")}（1点${stake}円）`,
+    ticketNote,
     "朝時点: 展示・オッズは未確定（展示後に再判定）",
   ];
   void e2;
-  const why = elite
-    ? `${name}は条件付き5点の本命S形。1号の${e1.name}が相対最強` +
-      `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
-      `モーター${e1.motor2.toFixed(1)}%・差${scoreGap.toFixed(2)}）のため、` +
-      `3連単${tickets.length}点（${tickets.join(", ")}）を採用。` +
-      `検証回収 約${MAINLINE_RULE.validated_all_roi ?? "—"}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi ?? "—"}%）。`
-    : `${name}はボリューム単点の本命形。1号の${e1.name}が相対最強` +
-      `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
-      `モーター${e1.motor2.toFixed(1)}%）のため、` +
-      `${tier}として3連単${tickets.length}点（${tickets.join(", ")}）を採用。`;
+  const why =
+    tier === "s_five"
+      ? `${name}は条件付き5点の本命S形。1号の${e1.name}が相対最強` +
+        `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
+        `モーター${e1.motor2.toFixed(1)}%・差${scoreGap.toFixed(2)}）のため、` +
+        `3連単${tickets.length}点（${tickets.join(", ")}）を採用。` +
+        `検証回収 約${MAINLINE_RULE.validated_all_roi ?? "—"}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi ?? "—"}%）。`
+      : `${name}は${tierLabel}形。1号の${e1.name}が相対最強` +
+        `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
+        `モーター${e1.motor2.toFixed(1)}%）のため、` +
+        `3連単${tickets.length}点（${tickets.join(", ")}）を採用。`;
   return { why, reasons };
 }
 
@@ -174,14 +185,23 @@ async function fetchPrograms(dateKey: string): Promise<Record<string, unknown> |
 
 function selectPicks(cands: Cand[], softMax: number, minScore: number, minGap: number): Cand[] {
   const sorted = [...cands].sort((a, b) => b.score - a.score);
-  const out: Cand[] = [];
+  const raceKey = (p: Cand) => `${Number(p.stadium)}-${Number(p.race)}`;
+  const chosen = new Set<string>();
   for (const p of sorted) {
     if (p.score < Number(p.min_pick_score || minScore)) continue;
     if (Number(p.score_gap || 0) < minGap) continue;
-    out.push(p);
-    if (out.length >= softMax) break;
+    const key = raceKey(p);
+    if (chosen.has(key)) continue;
+    if (chosen.size >= softMax) continue;
+    chosen.add(key);
   }
-  return out;
+  // 同一レースの単点・5点は両方残す（レース枠だけ softMax）
+  return sorted.filter((p) => {
+    if (!chosen.has(raceKey(p))) return false;
+    if (p.score < Number(p.min_pick_score || minScore)) return false;
+    if (Number(p.score_gap || 0) < minGap) return false;
+    return true;
+  });
 }
 
 /**
@@ -203,9 +223,14 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
     standard?: Rule;
     elite?: Rule;
   };
-  // 本命S = locked mainline 条件付き5点を正とする
-  const elite: Rule = {
+  // 本命Sは単点・条件付き5点の両方を出す
+  const eliteSingle: Rule = {
     ...(rules.elite || {}),
+    label: "本命S・単点",
+    ticket: rules.elite?.ticket || "trifecta_123",
+    tickets: [...(rules.elite?.tickets || ["1-2-3"])],
+  };
+  const eliteFive: Rule = {
     ticket: MAINLINE_RULE.ticket,
     tickets: [...MAINLINE_RULE.tickets],
     stake_per_ticket: MAINLINE_RULE.stake_per_ticket,
@@ -220,7 +245,7 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
     race_blacklist: MAINLINE_RULE.race_blacklist,
     grades: MAINLINE_RULE.grades,
     validated_test_roi: MAINLINE_RULE.validated_all_roi,
-    label: "本命S",
+    label: "本命S・5点",
   };
   const standard = rules.standard || {};
   const blacklist = new Set(
@@ -284,18 +309,16 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
       const e1 = entries[1];
       const e2 = entries[2];
       const raceTitle = String(race.title || "");
-      const eliteOk =
-        passes(elite, place, e1, e2, inn, scoreGap, raceNo) &&
-        !(MAINLINE_RULE.exclude_finals && isFinalsRace(raceTitle));
-      const isElite = eliteOk;
+      const finalsBlocked = MAINLINE_RULE.exclude_finals && isFinalsRace(raceTitle);
+      const fiveOk = !finalsBlocked && passes(eliteFive, place, e1, e2, inn, scoreGap, raceNo);
+      // 5点ゲート通過時は単点も併記。未通過なら旧elite単点のみ。
+      const singleOk =
+        fiveOk || passes(eliteSingle, place, e1, e2, inn, scoreGap, raceNo);
       const isStandard = passes(standard, place, e1, e2, inn, scoreGap, raceNo);
-      if (!isElite && !isStandard) continue;
+      if (!fiveOk && !singleOk && !isStandard) continue;
 
-      const rule = isElite ? elite : standard;
-      const tickets = [...(rule.tickets || ["1-2-3"])];
-      const stake = Number(rule.stake_per_ticket || 100);
       const c1 = skillRates(e1.regno, 1);
-      const score =
+      const baseScore =
         e1.nat * 3 +
         (0.2 - e1.st) * 50 +
         e1.motor2 / 30 +
@@ -303,44 +326,55 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
         c1.win * 10 +
         (e1.nat - e2.nat) +
         c1.top2 * 5 +
-        Math.max(0, scoreGap) +
-        (isElite ? 40 : 0);
-      const minPickScore = Number(rule.min_pick_score || rules.selection?.min_score || 48);
-      if (score < minPickScore) continue;
+        Math.max(0, scoreGap);
 
-      const expl = explain(place, e1, e2, inn, tickets, isElite, scoreGap, stake);
-      cands.push({
-        date: dateKey,
-        stadium: place,
-        stadium_name: STADIUMS[place] || `場${place}`,
-        race: raceNo,
-        title: String(race.title || ""),
-        grade,
-        status: "provisional",
-        closed_at: race.closed_at || null,
-        mode: rules.mode || "honmei_2020_maxminy",
-        band: isElite ? "honmei_s" : "honmei",
-        label: rule.label || (isElite ? "本命S" : "本命"),
-        tickets,
-        ticket: rule.ticket || "trifecta_123",
-        points: tickets.length,
-        stake_per_ticket: stake,
-        stake_total: stake * tickets.length,
-        score,
-        score_gap: Math.round(scoreGap * 1000) / 1000,
-        min_pick_score: minPickScore,
-        elite: isElite,
-        validated_roi: rule.validated_test_roi ?? null,
-        innige: inn,
-        motor2: e1.motor2,
-        odds: {
-          source: "missing",
-          missing: true,
-          ok: null,
-          reason: "オッズ未取得（展示後に再判定）",
-        },
-        ...expl,
-      });
+      const pushCand = (rule: Rule, tier: STier, band: string, boost: number) => {
+        const tickets = [...(rule.tickets || ["1-2-3"])];
+        const stake = Number(rule.stake_per_ticket || 100);
+        const score = baseScore + boost;
+        const minPickScore = Number(rule.min_pick_score || rules.selection?.min_score || 48);
+        if (score < minPickScore) return;
+        const expl = explain(place, e1, e2, inn, tickets, tier, scoreGap, stake);
+        cands.push({
+          date: dateKey,
+          stadium: place,
+          stadium_name: STADIUMS[place] || `場${place}`,
+          race: raceNo,
+          title: raceTitle,
+          grade,
+          status: "provisional",
+          closed_at: race.closed_at || null,
+          mode: rules.mode || "honmei_2020_maxminy",
+          band,
+          label: rule.label || band,
+          tickets,
+          ticket: rule.ticket || "trifecta_123",
+          points: tickets.length,
+          stake_per_ticket: stake,
+          stake_total: stake * tickets.length,
+          score,
+          score_gap: Math.round(scoreGap * 1000) / 1000,
+          min_pick_score: minPickScore,
+          elite: tier !== "honmei",
+          validated_roi: rule.validated_test_roi ?? null,
+          innige: inn,
+          motor2: e1.motor2,
+          odds: {
+            source: "missing",
+            missing: true,
+            ok: null,
+            reason: "オッズ未取得（展示後に再判定）",
+          },
+          ...expl,
+        });
+      };
+
+      if (fiveOk) pushCand(eliteFive, "s_five", "honmei_s5", 45);
+      if (singleOk) pushCand(eliteSingle, "s_single", "honmei_s", 40);
+      // 本命Sが出ているレースは通常本命の重複行は出さない
+      if (isStandard && !singleOk && !fiveOk) {
+        pushCand(standard, "honmei", "honmei", 0);
+      }
     }
   }
 
@@ -365,6 +399,6 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
     disabled_systems: rules.disabled_systems || ["oshi", "ana"],
     note:
       rules.note ||
-      `朝7時自動投稿。展示・進入確定前のため展示待ち。本命は単点1-2-3、本命Sは条件付き5点（検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）。`,
+      `朝7時自動投稿。展示・進入確定前のため展示待ち。本命は単点1-2-3。本命Sは単点と条件付き5点の両方（5点検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）。`,
   };
 }

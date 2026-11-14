@@ -24,6 +24,8 @@ export type ChatBandTicket = {
 export type ChatPickBands = {
   honmei: ChatBandTicket[];
   honmeiS: ChatBandTicket[];
+  /** 本命S単点（5点と併記） */
+  honmeiSSingle?: ChatBandTicket[];
   oshi: ChatBandTicket[];
   ana: ChatBandTicket[];
 };
@@ -117,11 +119,13 @@ export async function buildChatRaceReply(
   const bands: ChatPickBands = {
     honmei: asBandTickets(deep.tickets),
     honmeiS: deep.sReady ? asBandTickets(deep.sTickets) : [],
+    honmeiSSingle: deep.sReady ? asBandTickets(deep.sSingleTickets || []) : [],
     oshi: asBandTickets(deep.oshiTickets, 4),
     ana: asBandTickets(deep.anaTickets, 4),
   };
 
   const tickets = uniq([
+    ...combosOf(bands.honmeiSSingle || []),
     ...combosOf(bands.honmeiS),
     ...combosOf(bands.honmei),
     ...combosOf(bands.oshi),
@@ -160,8 +164,17 @@ export async function buildChatRaceReply(
     `本命(${bands.honmei.length}): ${combosOf(bands.honmei).join(" / ") || "—"}`,
   );
   lines.push(
-    bands.honmeiS.length
-      ? `本命S(${bands.honmeiS.length}): ${combosOf(bands.honmeiS).join(" / ")}`
+    bands.honmeiSSingle?.length || bands.honmeiS.length
+      ? [
+          bands.honmeiSSingle?.length
+            ? `本命S単点(${bands.honmeiSSingle.length}): ${combosOf(bands.honmeiSSingle).join(" / ")}`
+            : null,
+          bands.honmeiS.length
+            ? `本命S5点(${bands.honmeiS.length}): ${combosOf(bands.honmeiS).join(" / ")}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
       : "本命S: 条件外",
   );
   lines.push(
