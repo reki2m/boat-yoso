@@ -389,26 +389,30 @@ export default function ChatPage() {
       return;
     }
     let cancelled = false;
+    const code = invite.trim();
     void (async () => {
       try {
-        // 本体ゲート不要のチャット用API（入場セッション必須）
+        // セッション Cookie ＋招待ヘッダ（どちらかで通る）
         const res = await fetch(`/api/chat/confidence-map?place=${pickStadium}`, {
           credentials: "include",
+          headers: {
+            ...(code ? { "x-chat-invite": code } : {}),
+          },
         });
         const json = await res.json().catch(() => ({}));
-        if (!cancelled && json?.ok && json?.confidences) {
+        if (cancelled) return;
+        if (json?.ok && json?.confidences && typeof json.confidences === "object") {
           setRaceConfidence(json.confidences as Record<string, number>);
-        } else if (!cancelled) {
-          setRaceConfidence({});
         }
+        // 失敗時は前の色を消さない（一時的な401/タイムアウト対策）
       } catch {
-        if (!cancelled) setRaceConfidence({});
+        // keep previous colors
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [unlocked, pickStadium]);
+  }, [unlocked, pickStadium, invite]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
