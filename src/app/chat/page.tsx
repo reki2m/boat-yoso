@@ -49,6 +49,9 @@ type ChatLiveTarget = {
   stadium_name: string;
   race: number;
   tickets: string[];
+  tickets_single?: string[];
+  tickets_five?: string[];
+  label?: string | null;
   status: string;
   skip_detail: string | null;
   why: string | null;
@@ -890,14 +893,30 @@ export default function ChatPage() {
               <div className="chat-honmei-targets">
                 <span className="chat-honmei-targets-label">本日の本命対象</span>
                 <div className="chat-race-chips chat-target-chips">
-                  {targets.slice(0, 8).map((t) => {
+                  {[...new Map(targets.map((t) => [`${t.stadium}-${t.race}`, t])).values()]
+                    .slice(0, 8)
+                    .map((t) => {
                     const badge = targetBadge(t.status);
+                    const ticketHint = [
+                      t.tickets_single?.length
+                        ? `単点 ${t.tickets_single.join("/")}`
+                        : null,
+                      t.tickets_five?.length
+                        ? `5点 ${t.tickets_five.join("/")}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" ／ ");
                     return (
                       <button
                         key={`${t.stadium}-${t.race}`}
                         type="button"
                         className={`chat-race-chip ${targetToneClass(t.status)}`}
-                        title={t.skip_detail || t.why || undefined}
+                        title={
+                          [t.label, ticketHint, t.skip_detail || t.why]
+                            .filter(Boolean)
+                            .join(" · ") || undefined
+                        }
                         onClick={() => {
                           setPickStadium(t.stadium);
                           setPickRace(t.race);
@@ -906,6 +925,7 @@ export default function ChatPage() {
                         <span className="chat-race-chip-label">
                           {t.stadium_name}
                           {t.race}R
+                          {ticketHint ? ` · ${ticketHint}` : ""}
                         </span>
                         {badge ? <em>{badge}</em> : null}
                       </button>

@@ -8,6 +8,9 @@ export type LivePickRow = {
   stadium_name?: string;
   race?: number;
   tickets?: string[];
+  tickets_single?: string[];
+  tickets_five?: string[];
+  label?: string;
   status?: string;
   why?: string;
   skip_reason?: string | null;

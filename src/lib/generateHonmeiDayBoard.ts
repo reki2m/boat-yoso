@@ -108,7 +108,7 @@ function passes(
   );
 }
 
-type STier = "honmei" | "s_single" | "s_five";
+type STier = "honmei" | "s_single" | "s_five" | "s_dual";
 
 function explain(
   place: number,
@@ -119,16 +119,19 @@ function explain(
   tier: STier,
   scoreGap: number,
   stake: number,
+  extra?: { singleTickets?: string[]; fiveTickets?: string[] },
 ): { why: string; reasons: string[] } {
   const name = STADIUMS[place] || `場${place}`;
-  const tierLabel =
-    tier === "s_five" ? "本命S・5点" : tier === "s_single" ? "本命S・単点" : "本命";
+  const single = extra?.singleTickets || [];
+  const five = extra?.fiveTickets || [];
   const ticketNote =
-    tier === "s_five"
-      ? `本命S条件付き${tickets.length}点 ${tickets.join(", ")}（1点${stake}円・検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）`
-      : tier === "s_single"
-        ? `本命S単点 ${tickets.join(", ")}（1点${stake}円）`
-        : `本命単点 ${tickets.join(", ")}（1点${stake}円）`;
+    tier === "s_dual"
+      ? `本命S単点 ${single.join(", ") || "—"} ／ 条件付き5点 ${five.join(", ") || "—"}（1点${stake}円・検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）`
+      : tier === "s_five"
+        ? `本命S条件付き${tickets.length}点 ${tickets.join(", ")}（1点${stake}円・検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）`
+        : tier === "s_single"
+          ? `本命S単点 ${tickets.join(", ")}（1点${stake}円）`
+          : `本命単点 ${tickets.join(", ")}（1点${stake}円）`;
   const reasons = [
     `${name}イン逃げ率 ${(inn * 100).toFixed(1)}%（本命向き）`,
     `1号 ${e1.name} ${classLabel(e1.class)} / 勝率 ${e1.nat.toFixed(2)} / ST ${e1.st.toFixed(2)}`,
@@ -138,19 +141,23 @@ function explain(
   ];
   void e2;
   const why =
-    tier === "s_five"
-      ? `${name}は条件付き5点の本命S形。1号の${e1.name}が相対最強` +
-        `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
-        `モーター${e1.motor2.toFixed(1)}%・差${scoreGap.toFixed(2)}）のため、` +
-        `3連単${tickets.length}点（${tickets.join(", ")}）を採用。` +
-        `検証回収 約${MAINLINE_RULE.validated_all_roi ?? "—"}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi ?? "—"}%）。`
-      : `${name}は${tierLabel}形。1号の${e1.name}が相対最強` +
-        `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
-        `モーター${e1.motor2.toFixed(1)}%）のため、` +
-        `3連単${tickets.length}点（${tickets.join(", ")}）を採用。`;
+    tier === "s_dual"
+      ? `${name}は本命S対象。単点 ${single.join(", ") || "—"} と条件付き5点 ${five.join(", ") || "—"} を同じレースで併記。` +
+        `1号の${e1.name}が相対最強（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
+        `モーター${e1.motor2.toFixed(1)}%・差${scoreGap.toFixed(2)}）。` +
+        `5点検証回収 約${MAINLINE_RULE.validated_all_roi ?? "—"}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi ?? "—"}%）。`
+      : tier === "s_five"
+        ? `${name}は条件付き5点の本命S形。1号の${e1.name}が相対最強` +
+          `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
+          `モーター${e1.motor2.toFixed(1)}%・差${scoreGap.toFixed(2)}）のため、` +
+          `3連単${tickets.length}点（${tickets.join(", ")}）を採用。` +
+          `検証回収 約${MAINLINE_RULE.validated_all_roi ?? "—"}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi ?? "—"}%）。`
+        : `${name}は${tier === "s_single" ? "本命S・単点" : "本命"}形。1号の${e1.name}が相対最強` +
+          `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
+          `モーター${e1.motor2.toFixed(1)}%）のため、` +
+          `3連単${tickets.length}点（${tickets.join(", ")}）を採用。`;
   return { why, reasons };
 }
-
 async function fetchPrograms(dateKey: string): Promise<Record<string, unknown> | null> {
   const year = dateKey.slice(0, 4);
   const urls = [
@@ -185,23 +192,18 @@ async function fetchPrograms(dateKey: string): Promise<Record<string, unknown> |
 
 function selectPicks(cands: Cand[], softMax: number, minScore: number, minGap: number): Cand[] {
   const sorted = [...cands].sort((a, b) => b.score - a.score);
-  const raceKey = (p: Cand) => `${Number(p.stadium)}-${Number(p.race)}`;
-  const chosen = new Set<string>();
+  const out: Cand[] = [];
+  const seenRace = new Set<string>();
   for (const p of sorted) {
     if (p.score < Number(p.min_pick_score || minScore)) continue;
     if (Number(p.score_gap || 0) < minGap) continue;
-    const key = raceKey(p);
-    if (chosen.has(key)) continue;
-    if (chosen.size >= softMax) continue;
-    chosen.add(key);
+    const key = `${Number(p.stadium)}-${Number(p.race)}`;
+    if (seenRace.has(key)) continue;
+    seenRace.add(key);
+    out.push(p);
+    if (out.length >= softMax) break;
   }
-  // 同一レースの単点・5点は両方残す（レース枠だけ softMax）
-  return sorted.filter((p) => {
-    if (!chosen.has(raceKey(p))) return false;
-    if (p.score < Number(p.min_pick_score || minScore)) return false;
-    if (Number(p.score_gap || 0) < minGap) return false;
-    return true;
-  });
+  return out;
 }
 
 /**
@@ -328,13 +330,35 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
         c1.top2 * 5 +
         Math.max(0, scoreGap);
 
-      const pushCand = (rule: Rule, tier: STier, band: string, boost: number) => {
-        const tickets = [...(rule.tickets || ["1-2-3"])];
-        const stake = Number(rule.stake_per_ticket || 100);
-        const score = baseScore + boost;
-        const minPickScore = Number(rule.min_pick_score || rules.selection?.min_score || 48);
+      const pushCand = (input: {
+        rule: Rule;
+        tier: STier;
+        band: string;
+        boost: number;
+        tickets: string[];
+        ticketsSingle?: string[];
+        ticketsFive?: string[];
+        label: string;
+      }) => {
+        const stake = Number(input.rule.stake_per_ticket || 100);
+        const score = baseScore + input.boost;
+        const minPickScore = Number(
+          input.rule.min_pick_score || rules.selection?.min_score || 48,
+        );
         if (score < minPickScore) return;
-        const expl = explain(place, e1, e2, inn, tickets, tier, scoreGap, stake);
+        const expl = explain(
+          place,
+          e1,
+          e2,
+          inn,
+          input.tickets,
+          input.tier,
+          scoreGap,
+          stake,
+          { singleTickets: input.ticketsSingle, fiveTickets: input.ticketsFive },
+        );
+        const single = input.ticketsSingle || [];
+        const five = input.ticketsFive || [];
         cands.push({
           date: dateKey,
           stadium: place,
@@ -345,18 +369,21 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
           status: "provisional",
           closed_at: race.closed_at || null,
           mode: rules.mode || "honmei_2020_maxminy",
-          band,
-          label: rule.label || band,
-          tickets,
-          ticket: rule.ticket || "trifecta_123",
-          points: tickets.length,
+          band: input.band,
+          label: input.label,
+          tickets: input.tickets,
+          tickets_single: single.length ? single : undefined,
+          tickets_five: five.length ? five : undefined,
+          ticket: input.rule.ticket || "trifecta_123",
+          points: input.tickets.length,
           stake_per_ticket: stake,
-          stake_total: stake * tickets.length,
+          stake_total:
+            stake * ((single.length || 0) + (five.length || input.tickets.length)),
           score,
           score_gap: Math.round(scoreGap * 1000) / 1000,
           min_pick_score: minPickScore,
-          elite: tier !== "honmei",
-          validated_roi: rule.validated_test_roi ?? null,
+          elite: input.tier !== "honmei",
+          validated_roi: input.rule.validated_test_roi ?? null,
           innige: inn,
           motor2: e1.motor2,
           odds: {
@@ -369,15 +396,33 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
         });
       };
 
-      if (fiveOk) pushCand(eliteFive, "s_five", "honmei_s5", 45);
-      if (singleOk) pushCand(eliteSingle, "s_single", "honmei_s", 40);
-      // 本命Sが出ているレースは通常本命の重複行は出さない
-      if (isStandard && !singleOk && !fiveOk) {
-        pushCand(standard, "honmei", "honmei", 0);
+      // 同一レースは1行。単点と5点は同じカード内に併記する（ダブ表示しない）
+      if (fiveOk || singleOk) {
+        const singleTickets = [...(eliteSingle.tickets || ["1-2-3"])];
+        const fiveTickets = fiveOk ? [...(eliteFive.tickets || [])] : [];
+        const dual = fiveOk && singleOk;
+        pushCand({
+          rule: fiveOk ? eliteFive : eliteSingle,
+          tier: dual ? "s_dual" : fiveOk ? "s_five" : "s_single",
+          band: dual || fiveOk ? "honmei_s" : "honmei_s",
+          boost: fiveOk ? 45 : 40,
+          tickets: fiveTickets.length ? fiveTickets : singleTickets,
+          ticketsSingle: singleOk || fiveOk ? singleTickets : undefined,
+          ticketsFive: fiveTickets.length ? fiveTickets : undefined,
+          label: dual ? "本命S・単点+5点" : fiveOk ? "本命S・5点" : "本命S・単点",
+        });
+      } else if (isStandard) {
+        pushCand({
+          rule: standard,
+          tier: "honmei",
+          band: "honmei",
+          boost: 0,
+          tickets: [...(standard.tickets || ["1-2-3"])],
+          label: standard.label || "本命",
+        });
       }
     }
   }
-
   const softMax = Number(rules.selection?.soft_max_per_day || rules.selection?.hard_max_per_day || 2);
   const picks = selectPicks(
     cands,
