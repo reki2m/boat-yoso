@@ -6,6 +6,9 @@ type PickRow = {
   stadium_name?: string;
   race?: number;
   tickets?: string[];
+  tickets_single?: string[];
+  tickets_five?: string[];
+  label?: string;
   status?: string;
   why?: string;
   skip_reason?: string | null;
@@ -57,9 +60,26 @@ export function buildPicksMessage(board: {
 
   if (buyable.length) {
     lines.push("【買い目】");
+    const seen = new Set<string>();
     for (const p of buyable) {
-      const tickets = formatTickets(p.tickets, "1-2-3");
-      lines.push(`・${pickName(p)} ${p.race}R  ${tickets}  ${pickStatusTag(p)}`.trimEnd());
+      const key = `${Number(p.stadium)}-${Number(p.race)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const single = p.tickets_single || [];
+      const five = p.tickets_five || [];
+      const tickets =
+        single.length || five.length
+          ? [
+              single.length ? `単点 ${single.join("/")}` : null,
+              five.length ? `5点 ${five.join("/")}` : null,
+            ]
+              .filter(Boolean)
+              .join(" ／ ")
+          : formatTickets(p.tickets, "1-2-3");
+      const label = p.label ? `（${p.label}）` : "";
+      lines.push(
+        `・${pickName(p)} ${p.race}R${label}  ${tickets}  ${pickStatusTag(p)}`.trimEnd(),
+      );
     }
     lines.push("");
   } else {

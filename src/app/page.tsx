@@ -269,6 +269,8 @@ type BoardPick = {
   stadium_name?: string;
   race?: number;
   tickets?: string[];
+  tickets_single?: string[];
+  tickets_five?: string[];
   status?: string;
   why?: string;
   skip_reason?: string | null;
@@ -508,7 +510,43 @@ export default function Home() {
   const liveUrls = triple?.liveUrls;
   const boardDate = board?.active_date || board?.date || "";
   const boardPicks = board?.picks || [];
-  const buyablePicks = boardPicks.filter((p) => p.status !== "skipped");
+  // 同一場×レースは1件（単点/5点の二重行を潰す）
+  const buyablePicks = (() => {
+    const rows = boardPicks.filter((p) => p.status !== "skipped");
+    const byKey = new Map<string, BoardPick>();
+    for (const p of rows) {
+      const key = `${Number(p.stadium || 0)}-${Number(p.race || 0)}`;
+      const prev = byKey.get(key);
+      if (!prev) {
+        byKey.set(key, { ...p });
+        continue;
+      }
+      const single = [
+        ...new Set([...(prev.tickets_single || []), ...(p.tickets_single || [])]),
+      ];
+      const five = [...new Set([...(prev.tickets_five || []), ...(p.tickets_five || [])])];
+      const prevT = prev.tickets || [];
+      const nextT = p.tickets || [];
+      if (prevT.length === 1) single.push(prevT[0]);
+      if (nextT.length === 1) single.push(nextT[0]);
+      if (prevT.length > 1) five.push(...prevT);
+      if (nextT.length > 1) five.push(...nextT);
+      const uniq = (xs: string[]) => [...new Set(xs.filter(Boolean))];
+      const s = uniq(single);
+      const f = uniq(five);
+      byKey.set(key, {
+        ...prev,
+        ...p,
+        tickets: f.length ? f : s.length ? s : prev.tickets,
+        tickets_single: s.length ? s : undefined,
+        tickets_five: f.length ? f : undefined,
+        label: f.length && s.length ? "本命S・単点+5点" : p.label || prev.label,
+        why: [prev.why, p.why].filter(Boolean).join(" / ") || prev.why,
+        reasons: [...new Set([...(prev.reasons || []), ...(p.reasons || [])])],
+      });
+    }
+    return [...byKey.values()];
+  })();
 
   return (
     <main className="shell">
@@ -769,9 +807,20 @@ export default function Home() {
             {buyablePicks.map((p) => {
               const sid = Number(p.stadium || 0);
               const rid = Number(p.race || 0);
-              const pickKey = `${sid}-${rid}-${p.label || p.band || ""}-${(p.tickets || []).join(",")}`;
+              const pickKey = `${sid}-${rid}`;
               const active = place === sid && race === rid;
               const reasonOpen = openBoardPickKey === pickKey;
+              const single = p.tickets_single || [];
+              const five = p.tickets_five || [];
+              const ticketLine =
+                single.length || five.length
+                  ? [
+                      single.length ? `単点 ${single.join("/")}` : null,
+                      five.length ? `5点 ${five.join("/")}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" ／ ")
+                  : (p.tickets || ["1-2-3"]).join("/");
               return (
                 <div key={pickKey} className={`board-pick-row ${active ? "active" : ""}`}>
                   <div className="cta-row" style={{ margin: 0 }}>
@@ -784,9 +833,7 @@ export default function Home() {
                       <span>
                         {(p.stadium_name || `場${sid}`) + ` ${rid}R `}
                         {p.label ? `· ${p.label} ` : ""}
-                        <span className="board-pick-tickets">
-                          {(p.tickets || ["1-2-3"]).join("/")}
-                        </span>
+                        <span className="board-pick-tickets">{ticketLine}</span>
                       </span>
                     </button>
                     <button
@@ -802,7 +849,7 @@ export default function Home() {
                   </div>
                   {reasonOpen ? (
                     <div className="ticket-reason-panel">
-                      <strong>買い目の理由 · {(p.tickets || []).join(" / ")}</strong>
+                      <strong>買い目の理由 · {ticketLine}</strong>
                       {p.why ? <p>{p.why}</p> : null}
                       {(p.reasons || []).length ? (
                         <ul>
@@ -820,8 +867,7 @@ export default function Home() {
               );
             })}
           </div>
-        ) : (
-          <p className="status" style={{ marginBottom: 0 }}>
+        ) : (          <p className="status" style={{ marginBottom: 0 }}>
             本日の本命ボード該当はありません。下でレースを選ぶと押し目・穴は出ます。
           </p>
         )}
