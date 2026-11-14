@@ -1,11 +1,20 @@
 import { toDiscordContent } from "@/lib/buildPicksMessage";
 
-/** Secrets で DISCORD_MIRROR_ENABLED=1 かつ WEBHOOK があるときだけ送る */
+/**
+ * Discord 連携は DISCORD_MIRROR_ENABLED=1 の明示オプトイン時のみ。
+ * 表示名を外部へ送るため、運用者は Webhook 先チャンネルの公開範囲に注意すること。
+ */
 export function isDiscordEnabled(): boolean {
   return (
     process.env.DISCORD_MIRROR_ENABLED?.trim() === "1" &&
     Boolean(process.env.DISCORD_WEBHOOK_URL?.trim())
   );
+}
+
+/** 表示名を短くする（全文をそのまま外部へ出さない） */
+export function discordDisplayName(name: string | null | undefined): string {
+  const n = String(name || "メンバー").replace(/\s+/g, " ").trim().slice(0, 20);
+  return n || "メンバー";
 }
 
 export async function sendDiscordMessage(
@@ -40,7 +49,7 @@ export function formatPurchaseSettleDiscord(opts: {
   userName: string;
   payoutYen: number;
 }): string {
-  const head = `${opts.placeName}${opts.raceNo}レース ${opts.userName}が買いました。`;
+  const head = `${opts.placeName}${opts.raceNo}レース ${discordDisplayName(opts.userName)}が買いました。`;
   if (opts.payoutYen > 0) {
     return `${head}払い戻しは¥${opts.payoutYen.toLocaleString("ja-JP")}です`;
   }

@@ -9,9 +9,12 @@ import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 
 export const dynamic = "force-dynamic";
 /** confirm は短め。nightly/learn も上限を抑えてリソース食いを防ぐ */
-export const maxDuration = 120;
+export const maxDuration = 90;
 
 type Mode = "nightly" | "confirm" | "learn";
+
+/** プロセス内の同時実行を拒否（複数インスタンスはレート制限で抑える） */
+let cronBusy = false;
 
 function safeEqualSecret(a: string, b: string): boolean {
   const ba = Buffer.from(a);
@@ -29,8 +32,6 @@ function authorized(req: NextRequest): boolean {
   if (!cron) return false;
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
   if (!bearer || !safeEqualSecret(bearer, cron)) return false;
-  // Vercel Cron は Authorization: Bearer CRON_SECRET を付ける。
-  // 手動呼び出しも同じ Bearer で可（共有秘密が必須）。
   return true;
 }
 
@@ -52,19 +53,28 @@ async function handle(req: NextRequest) {
       { status: 401 },
     );
   }
-  const ip = req.headers.get("x-forwarded-for") || "cron";
-  // 重い Python ジョブの連打を抑える
-  const gate = await allowAuthAttemptShared(`cron-main-daily:${ip}`, {
-    limit: 6,
+
+  // グローバル連打上限（IP横断）
+  const globalGate = await allowAuthAttemptShared("cron-main-daily:global", {
+    limit: 4,
     windowMs: 60 * 60 * 1000,
   });
-  if (!gate.ok) {
+  if (!globalGate.ok) {
     return NextResponse.json(
-      { ok: false, error: "rate_limited", retryAfterSec: gate.retryAfterSec },
+      { ok: false, error: "rate_limited", retryAfterSec: globalGate.retryAfterSec },
       {
         status: 429,
-        headers: gate.retryAfterSec ? { "retry-after": String(gate.retryAfterSec) } : undefined,
+        headers: globalGate.retryAfterSec
+          ? { "retry-after": String(globalGate.retryAfterSec) }
+          : undefined,
       },
+    );
+  }
+
+  if (cronBusy) {
+    return NextResponse.json(
+      { ok: false, error: "busy", hint: "別の日次ジョブが実行中です" },
+      { status: 409 },
     );
   }
 
@@ -78,6 +88,7 @@ async function handle(req: NextRequest) {
     }
   }
 
+  cronBusy = true;
   try {
     const result = await runMode(mode);
     return NextResponse.json({ ...result, mode });
@@ -90,6 +101,8 @@ async function handle(req: NextRequest) {
       },
       { status: 500 },
     );
+  } finally {
+    cronBusy = false;
   }
 }
 

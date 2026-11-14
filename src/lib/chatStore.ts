@@ -364,10 +364,11 @@ export function operatorKey(): string {
   return "shio-op";
 }
 
-/** 管理人キー。未設定時は運営キーと同じ。チャット消去など破壊操作専用。 */
+/** 管理人キー。本番は CHAT_ADMIN_KEY 必須（運営キーへのフォールバックなし）。 */
 export function adminKey(): string {
   const fromEnv = normalizeSecret(process.env.CHAT_ADMIN_KEY);
   if (fromEnv) return fromEnv;
+  if (process.env.NODE_ENV === "production") return "";
   return operatorKey();
 }
 

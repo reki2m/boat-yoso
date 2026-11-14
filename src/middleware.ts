@@ -31,9 +31,9 @@ function isPublicPath(pathname: string): boolean {
   return (
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
-    // チャットは招待コードで別認証（本体ゲート対象外）
+    // チャット API は本体ゲート外。各ルートで招待コード / セッション / 管理人鍵を検証する。
     pathname.startsWith("/api/chat") ||
-    // Vercel Cron / CRON_SECRET はルート側で検証
+    // Cron は本体ゲート外。各ルートで Bearer CRON_SECRET を必須にする。
     pathname.startsWith("/api/cron/") ||
     pathname.startsWith("/api/app-auth") ||
     pathname === "/login" ||

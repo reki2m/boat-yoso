@@ -4,22 +4,30 @@ import { inviteCode } from "@/lib/chatStore";
 export const CHAT_SESSION_COOKIE = "shioyomi_chat_sid";
 
 /**
- * 招待コードは共有されるため署名鍵に使わない。
- * CHAT_SESSION_SECRET（推奨）→ 管理人/運営キー → 開発用フォールバック。
+ * セッション署名鍵は CHAT_SESSION_SECRET 専用。
+ * 本番では管理人/運営キーへのフォールバックをしない（鍵共用の危険を避ける）。
  */
 function sessionSecret(): string {
-  return (
-    process.env.CHAT_SESSION_SECRET?.trim() ||
-    process.env.CHAT_ADMIN_KEY?.trim() ||
-    process.env.CHAT_OPERATOR_KEY?.trim() ||
-    (process.env.NODE_ENV === "production" ? "" : "shio-session-dev")
-  );
+  const dedicated = process.env.CHAT_SESSION_SECRET?.trim();
+  if (dedicated) return dedicated;
+  if (process.env.NODE_ENV === "production") return "";
+  return "shio-session-dev";
+}
+
+/** 招待コード指紋。コード変更で既存セッションを無効化する。 */
+function inviteFingerprint(): string {
+  const inv = inviteCode();
+  if (!inv) return "";
+  return createHash("sha256").update(`invite-v1:${inv}`).digest("hex").slice(0, 24);
 }
 
 function sign(sessionId: string): string {
   const secret = sessionSecret();
-  if (!secret) return "";
-  return createHmac("sha256", secret).update(`chat-sid-v1:${sessionId}`).digest("hex");
+  const invFp = inviteFingerprint();
+  if (!secret || !invFp) return "";
+  return createHmac("sha256", secret)
+    .update(`chat-sid-v2:${invFp}:${sessionId}`)
+    .digest("hex");
 }
 
 export function newChatSessionId(): string {
@@ -36,7 +44,7 @@ export function mintChatSessionCookieValue(sessionId: string): string {
 export function verifyChatSessionCookieValue(
   raw: string | null | undefined,
 ): string | null {
-  if (!sessionSecret()) return null;
+  if (!sessionSecret() || !inviteFingerprint()) return null;
   const text = (raw || "").trim();
   const i = text.lastIndexOf(".");
   if (i <= 0) return null;
@@ -53,8 +61,6 @@ export function verifyChatSessionCookieValue(
   } catch {
     return null;
   }
-  // 招待コードが無効なら入場自体を拒否（旧セッションも無効）
-  if (!inviteCode()) return null;
   return sessionId;
 }
 
