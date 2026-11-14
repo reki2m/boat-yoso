@@ -8,7 +8,7 @@ import {
   checkOperator,
   clearChatMessages,
   getChatMessageById,
-  getChatMetaValue,
+  listChatMetaByPrefix,
   patchChatMessageMeta,
   readChatFeed,
   sanitizeChatBody,
@@ -48,7 +48,12 @@ import {
   enrichChatMessagesWithResults,
   enrichWaitingWithExhibitionConfirmed,
 } from "@/lib/chatResultEnrich";
-import { todayDayPurchaseKey } from "@/lib/chatPurchase";
+import {
+  parsePurchaseLock,
+  todayTargetPurchaseKey,
+  todayTargetPurchasePrefix,
+  type PurchaseLockState,
+} from "@/lib/chatPurchase";
 import { discordDisplayName, sendDiscordMessage } from "@/lib/discordNotify";
 
 export const dynamic = "force-dynamic";
@@ -257,21 +262,28 @@ export async function GET(req: NextRequest) {
     }).catch(() => null);
   }
   await maybeRunChatMaintenance().catch(() => null);
-  const [feed, live, presence, adminOversight, dayPurchaseRaw] = await Promise.all([
+  const [feed, live, presence, adminOversight, targetPurchaseRows] = await Promise.all([
     readChatFeed({ sessionId, isAdmin }),
     getChatLiveTargets({ refresh }),
     listPresence(sessionId).catch(() => []),
     isAdmin ? listAdminPredictionOversight() : Promise.resolve(null),
     sessionId
-      ? getChatMetaValue(todayDayPurchaseKey(sessionId)).catch(() => null)
-      : Promise.resolve(null),
+      ? listChatMetaByPrefix(todayTargetPurchasePrefix(sessionId)).catch(() => [])
+      : Promise.resolve([]),
   ]);
   const withResults = await enrichChatMessagesWithResults(feed.messages).catch(
     () => feed.messages,
   );
   const messages = enrichWaitingWithExhibitionConfirmed(withResults, live.targets);
-  const dayPurchaseDecision =
-    dayPurchaseRaw === "yes" || dayPurchaseRaw === "no" ? dayPurchaseRaw : null;
+  const targetPurchases: Record<string, PurchaseLockState> = {};
+  const prefix = sessionId ? todayTargetPurchasePrefix(sessionId) : "";
+  for (const row of targetPurchaseRows) {
+    if (!prefix || !row.key.startsWith(prefix)) continue;
+    const rest = row.key.slice(prefix.length); // place:race
+    const lock = parsePurchaseLock(row.value);
+    // skip は解除扱い（通常表示）なので一覧に載せない
+    if (lock && lock !== "skip") targetPurchases[rest.replace(":", "-")] = lock;
+  }
   return NextResponse.json(
     {
       ok: true,
@@ -285,7 +297,7 @@ export async function GET(req: NextRequest) {
       // 管理人のみ。友達向けレスポンスには載せない
       adminOversight: isAdmin ? adminOversight : undefined,
       hasSession: Boolean(sessionId),
-      dayPurchaseDecision,
+      targetPurchases,
     },
     { headers: { "cache-control": "no-store" } },
   );
@@ -303,7 +315,7 @@ export async function POST(req: NextRequest) {
       | "predict"
       | "enter"
       | "purchase_confirm"
-      | "day_purchase_confirm";
+      | "target_purchase_confirm";
     note?: string;
     text?: string;
     title?: string;
@@ -313,7 +325,7 @@ export async function POST(req: NextRequest) {
     placeNo?: number;
     raceNo?: number;
     messageId?: string;
-    decision?: "yes" | "no" | string;
+    decision?: "yes" | "no" | "purchased" | "skip" | string;
     /** 運営がボードを明示指定する場合（未指定なら data/picks_board.json） */
     picksBoard?: {
       active_date?: string;
@@ -446,7 +458,7 @@ export async function POST(req: NextRequest) {
 
   await maybeRunChatMaintenance().catch(() => null);
 
-  // AI予想への「購入しますか？」Yes/No
+  // AI予想: 購入予定 YES/NO → 展示後 スルー/購入済み
   if (kind === "purchase_confirm") {
     if (!checkInvite(invite) && !isOperator) {
       return rejectBadInvite();
@@ -458,16 +470,19 @@ export async function POST(req: NextRequest) {
         { status: 401 },
       );
     }
-    const decision = body.decision === "yes" ? "yes" : body.decision === "no" ? "no" : null;
+    const decision = parsePurchaseLock(String(body.decision || ""));
     if (!decision) {
-      return NextResponse.json({ ok: false, error: "decision は yes/no です" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "decision は yes/no/purchased/skip です" },
+        { status: 400 },
+      );
     }
     const messageId = String(body.messageId || "").trim();
     if (!messageId) {
       return NextResponse.json({ ok: false, error: "messageId が必要です" }, { status: 400 });
     }
     const gate = await allowAuthAttemptShared(`chat-purchase:${sessionId}`, {
-      limit: 40,
+      limit: 60,
       windowMs: 10 * 60 * 1000,
     });
     if (!gate.ok) {
@@ -483,12 +498,15 @@ export async function POST(req: NextRequest) {
     if (target.meta?.owner_session_id !== sessionId) {
       return NextResponse.json({ ok: false, error: "本人の予想のみ回答できます" }, { status: 403 });
     }
-    if (target.meta?.purchaseDecision === "yes" || target.meta?.purchaseDecision === "no") {
-      return NextResponse.json({
-        ok: true,
-        already: true,
-        decision: target.meta.purchaseDecision,
-      });
+    const current = target.meta?.purchaseDecision;
+    if (current === "purchased" && decision !== "purchased") {
+      return NextResponse.json({ ok: true, already: true, decision: "purchased" });
+    }
+    if (
+      (decision === "yes" || decision === "no") &&
+      (current === "yes" || current === "purchased")
+    ) {
+      return NextResponse.json({ ok: true, already: true, decision: current });
     }
     const ownerName = sanitizeDisplayName(
       body.authorName || target.meta?.owner_name || "メンバー",
@@ -496,20 +514,37 @@ export async function POST(req: NextRequest) {
     const placeNo = Number(target.meta?.placeNo || 0);
     const raceNo = Number(target.meta?.raceNo || 0);
     const placeName = STADIUMS[placeNo] || `場${placeNo}`;
+    const chip = Array.isArray(target.meta?.races) ? target.meta!.races![0] : null;
+    const lockedExhibition =
+      chip?.exhibition === "after" || chip?.status === "confirmed" || chip?.status === "skipped"
+        ? "after"
+        : chip?.exhibition === "waiting" ||
+            chip?.status === "provisional" ||
+            chip?.status === "programs_unavailable"
+          ? "waiting"
+          : target.meta?.purchaseLockedExhibition || "unknown";
+
+    const nextDecision: PurchaseLockState = decision === "skip" ? "skip" : decision;
     await patchChatMessageMeta(messageId, {
-      purchaseDecision: decision,
+      purchaseDecision: nextDecision === "skip" ? undefined : nextDecision,
+      purchaseLockedExhibition: nextDecision === "yes" ? lockedExhibition : undefined,
       owner_name: ownerName,
     });
+
     let discordOk = false;
     if (decision === "yes") {
       const mirrored = await mirrorDiscord(
-        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が買いました。`,
+        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が購入予定でロックしました。`,
       );
       discordOk = mirrored.ok;
       await appendChatMessage({
         kind: "note",
-        title: "購入確認",
-        body: `${placeName}${raceNo}R を購入しました（結果が出たら払戻をDiscordへ通知します）。`,
+        title: "ロック中",
+        body: `${placeName}${raceNo}R を購入予定でロックしました。${
+          lockedExhibition === "waiting"
+            ? "展示後に「スルー推奨 / 購入済み」を選べます。"
+            : ""
+        }`,
         author_name: "律丸ボート部",
         author_role: "operator",
         meta: {
@@ -521,14 +556,56 @@ export async function POST(req: NextRequest) {
           owner_session_id: sessionId,
           owner_name: ownerName,
           purchaseDecision: "yes",
+          purchaseLockedExhibition: lockedExhibition,
           discord: discordOk,
+        },
+      });
+    } else if (decision === "purchased") {
+      const mirrored = await mirrorDiscord(
+        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が買いました。`,
+      );
+      discordOk = mirrored.ok;
+      await appendChatMessage({
+        kind: "note",
+        title: "購入済み",
+        body: `${placeName}${raceNo}R を購入済みで固定しました（結果が出たら払戻をDiscordへ通知）。`,
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: target.meta?.date || jstDateKey(),
+          mode: "purchase_ack",
+          placeNo,
+          raceNo,
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "purchased",
+          discord: discordOk,
+        },
+      });
+    } else if (decision === "skip") {
+      await appendChatMessage({
+        kind: "note",
+        title: "スルー",
+        body: `${placeName}${raceNo}R のロックを解除しました（通常表示に戻します）。`,
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: target.meta?.date || jstDateKey(),
+          mode: "purchase_ack",
+          placeNo,
+          raceNo,
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "skip",
         },
       });
     } else {
       await appendChatMessage({
         kind: "note",
-        title: "購入確認",
-        body: `${placeName}${raceNo}R は見送りました。`,
+        title: "見送り",
+        body: `${placeName}${raceNo}R は購入予定なしにしました。`,
         author_name: "律丸ボート部",
         author_role: "operator",
         meta: {
@@ -543,11 +620,15 @@ export async function POST(req: NextRequest) {
         },
       });
     }
-    return NextResponse.json({ ok: true, decision, discord: { ok: discordOk } });
+    return NextResponse.json({
+      ok: true,
+      decision: nextDecision === "skip" ? null : nextDecision,
+      discord: { ok: discordOk },
+    });
   }
 
-  // 本日の本命買い目「購入しましたか？」
-  if (kind === "day_purchase_confirm") {
+  // 本命対象レースごと: 購入予定 YES/NO → 展示後 スルー/購入済み
+  if (kind === "target_purchase_confirm") {
     if (!checkInvite(invite) && !isOperator) {
       return rejectBadInvite();
     }
@@ -558,12 +639,20 @@ export async function POST(req: NextRequest) {
         { status: 401 },
       );
     }
-    const decision = body.decision === "yes" ? "yes" : body.decision === "no" ? "no" : null;
+    const decision = parsePurchaseLock(String(body.decision || ""));
     if (!decision) {
-      return NextResponse.json({ ok: false, error: "decision は yes/no です" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "decision は yes/no/purchased/skip です" },
+        { status: 400 },
+      );
     }
-    const gate = await allowAuthAttemptShared(`chat-day-purchase:${sessionId}`, {
-      limit: 20,
+    const placeNo = Number(body.placeNo || 0);
+    const raceNo = Number(body.raceNo || 0);
+    if (!Number.isInteger(placeNo) || placeNo < 1 || placeNo > 24 || raceNo < 1 || raceNo > 12) {
+      return NextResponse.json({ ok: false, error: "場またはレースが不正です" }, { status: 400 });
+    }
+    const gate = await allowAuthAttemptShared(`chat-target-purchase:${sessionId}`, {
+      limit: 60,
       windowMs: 10 * 60 * 1000,
     });
     if (!gate.ok) {
@@ -572,51 +661,98 @@ export async function POST(req: NextRequest) {
         gate.retryAfterSec,
       );
     }
-    const metaKey = todayDayPurchaseKey(sessionId);
-    const existing = await getChatMetaValue(metaKey);
-    if (existing === "yes" || existing === "no") {
-      return NextResponse.json({ ok: true, already: true, decision: existing });
-    }
+    const metaKey = todayTargetPurchaseKey(sessionId, placeNo, raceNo);
     const ownerName = sanitizeDisplayName(body.authorName || "メンバー");
-    await setChatMetaValue(metaKey, decision);
-    let discordOk = false;
-    if (decision === "yes") {
-      const live = await getChatLiveTargets({ refresh: false }).catch(() => null);
-      const labels =
-        live?.targets
-          ?.slice(0, 8)
-          .map((t) => `${t.stadium_name}${t.race}R`)
-          .join(" / ") || "本日の本命対象";
-      const mirrored = await mirrorDiscord(
-        `本日の本命買い目を ${discordDisplayName(ownerName)} が購入しました。（${labels}）`,
-      );
-      discordOk = mirrored.ok;
+    const placeName = STADIUMS[placeNo] || `場${placeNo}`;
+    const live = await getChatLiveTargets({ refresh: false }).catch(() => null);
+    const target = live?.targets?.find((t) => t.stadium === placeNo && t.race === raceNo);
+    const exhibitDone = target?.status === "confirmed" || target?.status === "skipped";
+
+    if (decision === "skip") {
+      await setChatMetaValue(metaKey, "skip");
       await appendChatMessage({
         kind: "note",
-        title: "本日の買い目",
-        body: `本日の本命買い目を購入しました。\n${labels}`,
+        title: "スルー",
+        body: `${placeName}${raceNo}R（本命対象）のロックを解除しました。`,
         author_name: "律丸ボート部",
         author_role: "operator",
         meta: {
           date: jstDateKey(),
-          mode: "day_purchase_ack",
+          mode: "target_purchase_ack",
+          placeNo,
+          raceNo,
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "skip",
+        },
+      });
+      return NextResponse.json({ ok: true, decision: null, key: `${placeNo}-${raceNo}` });
+    }
+
+    await setChatMetaValue(metaKey, decision);
+    let discordOk = false;
+    if (decision === "yes") {
+      const mirrored = await mirrorDiscord(
+        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が本命対象を購入予定でロックしました。`,
+      );
+      discordOk = mirrored.ok;
+      await appendChatMessage({
+        kind: "note",
+        title: "ロック中",
+        body: `${placeName}${raceNo}R（本命対象）を購入予定でロックしました。${
+          exhibitDone ? "" : "展示後に「スルー推奨 / 購入済み」を選べます。"
+        }`,
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: jstDateKey(),
+          mode: "target_purchase_ack",
+          placeNo,
+          raceNo,
           visibility: "private",
           owner_session_id: sessionId,
           owner_name: ownerName,
           purchaseDecision: "yes",
+          purchaseLockedExhibition: exhibitDone ? "after" : "waiting",
+          discord: discordOk,
+        },
+      });
+    } else if (decision === "purchased") {
+      const mirrored = await mirrorDiscord(
+        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が本命対象を買いました。`,
+      );
+      discordOk = mirrored.ok;
+      await appendChatMessage({
+        kind: "note",
+        title: "購入済み",
+        body: `${placeName}${raceNo}R（本命対象）を購入済みで固定しました。`,
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: jstDateKey(),
+          mode: "target_purchase_ack",
+          placeNo,
+          raceNo,
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "purchased",
           discord: discordOk,
         },
       });
     } else {
       await appendChatMessage({
         kind: "note",
-        title: "本日の買い目",
-        body: "本日の本命買い目は見送りました。",
+        title: "見送り",
+        body: `${placeName}${raceNo}R（本命対象）は購入予定なしにしました。`,
         author_name: "律丸ボート部",
         author_role: "operator",
         meta: {
           date: jstDateKey(),
-          mode: "day_purchase_ack",
+          mode: "target_purchase_ack",
+          placeNo,
+          raceNo,
           visibility: "private",
           owner_session_id: sessionId,
           owner_name: ownerName,
@@ -624,7 +760,12 @@ export async function POST(req: NextRequest) {
         },
       });
     }
-    return NextResponse.json({ ok: true, decision, discord: { ok: discordOk } });
+    return NextResponse.json({
+      ok: true,
+      decision,
+      key: `${placeNo}-${raceNo}`,
+      discord: { ok: discordOk },
+    });
   }
 
   // レース詳細のアプリ予想: 本文は本人だけ。共有チャットの本命配信とは別。

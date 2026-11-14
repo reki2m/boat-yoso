@@ -1897,8 +1897,72 @@ th {
   min-width: 5.5rem;
 }
 
+.chat-purchase-skip {
+  min-width: 6.5rem;
+}
+
+.chat-purchase-bought {
+  min-width: 6.5rem;
+  border-color: rgba(255, 196, 72, 0.65) !important;
+  background: rgba(72, 48, 8, 0.92) !important;
+  color: #ffe6a8 !important;
+}
+
 .chat-purchase-ask-done {
   margin: 0;
   font-size: 0.85rem;
   color: #9fd0ea;
+}
+
+.chat-purchase-ask.purchase-locked,
+.chat-target-detail.purchase-locked,
+.chat-race-chip.purchase-locked {
+  border-color: rgba(255, 176, 64, 0.55);
+  background: linear-gradient(160deg, rgba(64, 40, 8, 0.95), rgba(28, 16, 4, 0.9));
+  box-shadow: inset 0 0 0 1px rgba(255, 180, 64, 0.18);
+}
+
+.chat-purchase-ask.purchase-locked .chat-purchase-ask-done,
+.chat-race-chip.purchase-locked em {
+  color: #ffd48a;
+}
+
+.chat-purchase-ask.purchase-bought,
+.chat-target-detail.purchase-bought,
+.chat-race-chip.purchase-bought {
+  border-color: rgba(72, 210, 140, 0.55);
+  background: linear-gradient(160deg, rgba(10, 52, 36, 0.95), rgba(4, 28, 18, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(90, 230, 160, 0.2);
+}
+
+.chat-purchase-ask.purchase-bought .chat-purchase-ask-done,
+.chat-race-chip.purchase-bought em {
+  color: #b8ffd4;
+  font-weight: 700;
+}
+
+.chat-purchase-ask.purchase-passed,
+.chat-target-detail.purchase-passed,
+.chat-race-chip.purchase-passed {
+  border-color: rgba(140, 160, 180, 0.35);
+  opacity: 0.82;
+}
+
+.chat-target-item.purchase-locked .chat-race-chip,
+.chat-target-item.purchase-bought .chat-race-chip {
+  font-weight: 700;
+}
+
+.chat-bubble.purchase-locked {
+  border-color: rgba(255, 176, 64, 0.45);
+  background: linear-gradient(165deg, rgba(48, 30, 8, 0.55), rgba(12, 18, 28, 0.4));
+}
+
+.chat-bubble.purchase-bought {
+  border-color: rgba(72, 210, 140, 0.5);
+  background: linear-gradient(165deg, rgba(8, 44, 30, 0.55), rgba(12, 18, 28, 0.4));
+}
+
+.chat-bubble.purchase-passed {
+  opacity: 0.85;
 }

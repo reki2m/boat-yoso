@@ -67,8 +67,10 @@ export type ChatMessageMeta = {
   /** チャット欄レースUI（〇〇場 〇〇R） */
   races?: ChatRaceChip[];
   race_label?: string;
-  /** 予想後の購入意思（Yes/No） */
-  purchaseDecision?: "yes" | "no";
+  /** 予想後の購入ロック: yes=予定ロック / purchased=購入確定 / no=見送り / skip=スルーで解除 */
+  purchaseDecision?: "yes" | "no" | "purchased" | "skip";
+  /** YESロック時の展示状態 */
+  purchaseLockedExhibition?: "waiting" | "after" | "unknown";
   /** 結果を Discord に送済みなら true */
   purchaseResultDiscord?: boolean;
 };
@@ -350,6 +352,20 @@ export async function setChatMetaValue(key: string, value: string): Promise<void
      on conflict (key) do update set value = excluded.value, updated_at = now()`,
     [key, value],
   );
+}
+
+/** 接頭辞に一致する meta を取得（本命対象の購入ロック一覧など） */
+export async function listChatMetaByPrefix(
+  prefix: string,
+): Promise<Array<{ key: string; value: string }>> {
+  try {
+    return await sql<{ key: string; value: string }>(
+      `select key, value from chat_meta where key like $1 || '%' order by key asc limit 200`,
+      [prefix],
+    );
+  } catch {
+    return [];
+  }
 }
 
 export function inviteCode(): string {

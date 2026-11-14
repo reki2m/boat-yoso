@@ -52,7 +52,7 @@ export async function computePurchaseUserStats(opts?: {
     `select id, meta
      from chat_messages
      where coalesce(meta->>'mode','') = 'app_race_pick'
-       and coalesce(meta->>'purchaseDecision','') = 'yes'
+       and coalesce(meta->>'purchaseDecision','') in ('yes','purchased')
      order by created_at asc
      limit 500`,
   ).catch(() => []);
