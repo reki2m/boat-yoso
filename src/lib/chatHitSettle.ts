@@ -9,6 +9,11 @@ import {
   formatPurchaseSettleDiscord,
   sendDiscordMessage,
 } from "@/lib/discordNotify";
+import {
+  computePurchaseUserStats,
+  formatAllUserStatsDiscord,
+  formatUserStatsDiscordLine,
+} from "@/lib/chatUserStats";
 import { fetchDayResults, hasRaceResult, resultKey } from "@/lib/raceResults";
 import { STADIUMS } from "@/lib/stadiums";
 
@@ -98,6 +103,7 @@ export async function settleChatPredictionHits(): Promise<number> {
   // アプリ予想（依頼者 private）も含めて精算する
   const messages = await readAllChatMessagesForJobs();
   let posted = 0;
+  let purchaseSettles = 0;
 
   for (const m of messages) {
     const info = raceMeta(m);
@@ -165,10 +171,11 @@ export async function settleChatPredictionHits(): Promise<number> {
       },
     });
 
-    // Discord: 購入Yes → 払戻付き定型文。未回答の予想結果も通知。見送りは送らない。
+    // Discord: 購入Yes → 払戻付き定型文＋通算。未回答の予想結果も通知。見送りは送らない。
     if (!m.meta?.purchaseResultDiscord && m.meta?.purchaseDecision !== "no") {
       const userName = m.meta?.owner_name || "メンバー";
-      const discordBody =
+      const ownerSessionId = m.meta?.owner_session_id || "";
+      let discordBody =
         m.meta?.purchaseDecision === "yes"
           ? formatPurchaseSettleDiscord({
               placeName,
@@ -179,6 +186,18 @@ export async function settleChatPredictionHits(): Promise<number> {
           : hits.length
             ? `結果 ${placeName}${info.race}レース（${userName}の予想）的中 払戻目安 ${yen(payoutYen)}`
             : `結果 ${placeName}${info.race}レース（${userName}の予想）的中なし`;
+
+      if (m.meta?.purchaseDecision === "yes" && ownerSessionId) {
+        purchaseSettles += 1;
+        const stats = await computePurchaseUserStats({
+          ownerSessionId,
+        }).catch(() => []);
+        const mine = stats[0];
+        if (mine) {
+          discordBody = `${discordBody}\n${formatUserStatsDiscordLine(mine)}`;
+        }
+      }
+
       const mirrored = await sendDiscordMessage(discordBody);
       if (mirrored.ok) {
         await patchChatMessageMeta(m.id, { purchaseResultDiscord: true }).catch(() => null);
@@ -186,6 +205,14 @@ export async function settleChatPredictionHits(): Promise<number> {
     }
 
     posted += 1;
+  }
+
+  // 購入精算があった回は、ユーザーごとの通算一覧も Discord へ
+  if (purchaseSettles > 0) {
+    const allStats = await computePurchaseUserStats().catch(() => []);
+    if (allStats.length) {
+      await sendDiscordMessage(formatAllUserStatsDiscord(allStats)).catch(() => null);
+    }
   }
 
   return posted;
