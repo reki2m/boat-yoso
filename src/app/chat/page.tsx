@@ -305,6 +305,7 @@ export default function ChatPage() {
   const [races, setRaces] = useState<number[]>(Array.from({ length: 12 }, (_, i) => i + 1));
   const [pickStadium, setPickStadium] = useState<number>(0);
   const [pickRace, setPickRace] = useState<number>(1);
+  const [raceConfidence, setRaceConfidence] = useState<Record<string, number>>({});
   const [pending, startTransition] = useTransition();
   const [sending, setSending] = useState(false);
   const [predicting, setPredicting] = useState(false);
@@ -375,6 +376,29 @@ export default function ChatPage() {
       window.clearInterval(liveTimer);
     };
   }, [unlocked, invite, displayName, adminKey, isAdmin]);
+
+  // 場を変えたら各Rの信頼度を取得して色分け（本体アプリと同じ）
+  useEffect(() => {
+    if (!unlocked || !pickStadium) {
+      setRaceConfidence({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/confidence-map?place=${pickStadium}`);
+        const json = await res.json();
+        if (!cancelled && json?.confidences) {
+          setRaceConfidence(json.confidences as Record<string, number>);
+        }
+      } catch {
+        if (!cancelled) setRaceConfidence({});
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [unlocked, pickStadium]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -867,20 +891,6 @@ export default function ChatPage() {
                   ))}
                 </select>
               </label>
-              <label className="field">
-                <span>レース</span>
-                <select
-                  value={pickRace}
-                  onChange={(e) => setPickRace(Number(e.target.value))}
-                  className="chat-input"
-                >
-                  {races.map((r) => (
-                    <option key={r} value={r}>
-                      {r}R
-                    </option>
-                  ))}
-                </select>
-              </label>
               <button
                 type="button"
                 className="btn"
@@ -891,6 +901,36 @@ export default function ChatPage() {
               >
                 {predicting ? "取得中…" : "AI予想"}
               </button>
+            </div>
+            <div className="field" style={{ marginTop: "0.55rem" }}>
+              <span>レース（信頼度4=橙 / 5=赤）</span>
+              <div className="race-pick-grid chat-race-pick-grid" style={{ marginTop: "0.35rem" }}>
+                {(races.length ? races : Array.from({ length: 12 }, (_, i) => i + 1)).map(
+                  (n) => {
+                    const conf = Number(raceConfidence[String(n)] || 0);
+                    const tone =
+                      conf >= 5
+                        ? "conf5"
+                        : conf >= 4
+                          ? "conf4"
+                          : conf > 0
+                            ? "conf-mid"
+                            : "";
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`race-pick-btn ${tone} ${pickRace === n ? "active" : ""}`}
+                        disabled={!pickStadium || predicting}
+                        onClick={() => setPickRace(n)}
+                      >
+                        {n}R
+                        {conf > 0 ? <em>{conf}/5</em> : null}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
             </div>
             {targets.length > 0 ? (
               <div className="chat-honmei-targets">
