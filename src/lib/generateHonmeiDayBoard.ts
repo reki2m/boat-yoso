@@ -3,6 +3,7 @@ import honmeiRules from "@/data/honmei_rules.json";
 import stadiumRates from "@/data/stadium_innige_rates.json";
 import { STADIUMS } from "@/lib/stadiums";
 import type { PicksBoardDoc } from "@/lib/loadPicksBoard";
+import { isFinalsRace, MAINLINE_RULE } from "@/lib/mainlineRule";
 
 type Rule = {
   label?: string;
@@ -120,15 +121,22 @@ function explain(
     `${name}イン逃げ率 ${(inn * 100).toFixed(1)}%（本命向き）`,
     `1号 ${e1.name} ${classLabel(e1.class)} / 勝率 ${e1.nat.toFixed(2)} / ST ${e1.st.toFixed(2)}`,
     `モーター2連対 ${e1.motor2.toFixed(1)}% / 1号相対最強（差 ${scoreGap.toFixed(2)}）`,
-    `ボリューム単点 ${tickets.join(", ")}（1点${stake}円）`,
+    elite
+      ? `本命S条件付き${tickets.length}点 ${tickets.join(", ")}（1点${stake}円・検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）`
+      : `本命単点 ${tickets.join(", ")}（1点${stake}円）`,
     "朝時点: 展示・オッズは未確定（展示後に再判定）",
   ];
   void e2;
-  const why =
-    `${name}はボリューム単点の本命形。1号の${e1.name}が相対最強` +
-    `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
-    `モーター${e1.motor2.toFixed(1)}%）のため、` +
-    `${tier}として3連単${tickets.length}点（${tickets.join(", ")}）を採用。`;
+  const why = elite
+    ? `${name}は条件付き5点の本命S形。1号の${e1.name}が相対最強` +
+      `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
+      `モーター${e1.motor2.toFixed(1)}%・差${scoreGap.toFixed(2)}）のため、` +
+      `3連単${tickets.length}点（${tickets.join(", ")}）を採用。` +
+      `検証回収 約${MAINLINE_RULE.validated_all_roi ?? "—"}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi ?? "—"}%）。`
+    : `${name}はボリューム単点の本命形。1号の${e1.name}が相対最強` +
+      `（${classLabel(e1.class)}・勝率${e1.nat.toFixed(2)}・ST${e1.st.toFixed(2)}・` +
+      `モーター${e1.motor2.toFixed(1)}%）のため、` +
+      `${tier}として3連単${tickets.length}点（${tickets.join(", ")}）を採用。`;
   return { why, reasons };
 }
 
@@ -195,9 +203,32 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
     standard?: Rule;
     elite?: Rule;
   };
-  const elite = rules.elite || {};
+  // 本命S = locked mainline 条件付き5点を正とする
+  const elite: Rule = {
+    ...(rules.elite || {}),
+    ticket: MAINLINE_RULE.ticket,
+    tickets: [...MAINLINE_RULE.tickets],
+    stake_per_ticket: MAINLINE_RULE.stake_per_ticket,
+    min_c1_nat: MAINLINE_RULE.min_c1_nat,
+    max_c1_st: MAINLINE_RULE.max_c1_st,
+    min_motor2: MAINLINE_RULE.min_motor2,
+    min_gap_c2: MAINLINE_RULE.min_nat_gap_c2,
+    max_c1_class: MAINLINE_RULE.max_c1_class,
+    min_score_gap: MAINLINE_RULE.min_score_gap,
+    min_inn: 0,
+    stadium_whitelist: MAINLINE_RULE.stadium_whitelist ?? undefined,
+    race_blacklist: MAINLINE_RULE.race_blacklist,
+    grades: MAINLINE_RULE.grades,
+    validated_test_roi: MAINLINE_RULE.validated_all_roi,
+    label: "本命S",
+  };
   const standard = rules.standard || {};
-  const blacklist = new Set((rules.stadium_blacklist || []).map(Number));
+  const blacklist = new Set(
+    [
+      ...(rules.stadium_blacklist || []),
+      ...(MAINLINE_RULE.stadium_blacklist || []),
+    ].map(Number),
+  );
   const innige = innigeMap();
   const programs = await fetchPrograms(dateKey);
   if (!programs) {
@@ -252,7 +283,11 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
         strengths[1] - Math.max(...Object.entries(strengths).filter(([e]) => Number(e) !== 1).map(([, v]) => v));
       const e1 = entries[1];
       const e2 = entries[2];
-      const isElite = passes(elite, place, e1, e2, inn, scoreGap, raceNo);
+      const raceTitle = String(race.title || "");
+      const eliteOk =
+        passes(elite, place, e1, e2, inn, scoreGap, raceNo) &&
+        !(MAINLINE_RULE.exclude_finals && isFinalsRace(raceTitle));
+      const isElite = eliteOk;
       const isStandard = passes(standard, place, e1, e2, inn, scoreGap, raceNo);
       if (!isElite && !isStandard) continue;
 
@@ -330,6 +365,6 @@ export async function generateHonmeiDayBoard(dateKey: string): Promise<PicksBoar
     disabled_systems: rules.disabled_systems || ["oshi", "ana"],
     note:
       rules.note ||
-      "朝7時自動投稿。展示・進入確定前のため展示待ち。本命ボリューム単点（1-2-3）。",
+      `朝7時自動投稿。展示・進入確定前のため展示待ち。本命は単点1-2-3、本命Sは条件付き5点（検証ROI約${MAINLINE_RULE.validated_all_roi ?? "—"}%）。`,
   };
 }

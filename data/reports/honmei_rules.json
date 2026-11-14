@@ -102,26 +102,28 @@
   },
   "elite": {
     "label": "本命S",
-    "ticket": "trifecta_123",
+    "ticket": "trifecta_1_2_stream5",
     "tickets": [
-      "1-2-3"
+      "1-2-3",
+      "1-2-4",
+      "1-2-5",
+      "1-2-6",
+      "1-3-2"
     ],
-    "points": 1,
+    "points": 5,
     "stake_per_ticket": 100,
-    "min_c1_nat": 6.8,
-    "max_c1_st": 0.15,
-    "min_inn": 0.5,
+    "min_c1_nat": 7.0,
+    "max_c1_st": 0.14,
+    "min_inn": 0,
     "max_c1_class": 1,
-    "min_motor2": 32,
+    "min_motor2": 35,
     "min_gap_c2": 1.0,
     "require_leading_score": true,
-    "min_score_gap": 1.5,
+    "min_score_gap": 8,
     "min_pick_score": 0,
     "stadium_whitelist": [
       8,
-      9,
       12,
-      13,
       15,
       17,
       18,
@@ -131,40 +133,51 @@
       1,
       9
     ],
-    "note": "表示用。standardと同閾値。"
+    "validated_test_roi": 140.71,
+    "validated_all_min_year_roi": 102.17,
+    "note": "locked_mainline_rule 条件付き5点。2021-2026検証ROI約140.7%/年次下限約102.2%。"
   },
   "ops": {
     "status": "live",
     "started_at_jst": "2026-11-10",
-    "mode": "honmei_fix_race_filter",
-    "system_name": "本命FIX場+レース除外",
+    "mode": "mainline_s_five_point",
+    "system_name": "本命S条件付き5点（mainline）",
     "buy": {
-      "ticket": "1-2-3",
-      "points": 1,
+      "ticket": "trifecta_1_2_stream5",
+      "tickets": [
+        "1-2-3",
+        "1-2-4",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2"
+      ],
+      "points": 5,
       "stake_per_ticket": 100,
-      "expected_avg_per_day": 1.1,
-      "soft_max_per_day": 4
+      "expected_avg_per_day": 0.4,
+      "soft_max_per_day": 2
     },
     "filters": {
       "stadium_whitelist": [
         8,
-        9,
         12,
-        13,
         15,
         17,
         18,
         19
       ],
+      "stadium_blacklist": [
+        9,
+        13
+      ],
       "race_blacklist": [
         1,
         9
       ],
-      "min_c1_nat": 6.8,
-      "max_c1_st": 0.15,
-      "min_motor2": 32,
+      "min_c1_nat": 7.0,
+      "max_c1_st": 0.14,
+      "min_motor2": 35,
       "min_gap_c2": 1.0,
-      "min_score_gap": 1.5,
+      "min_score_gap": 8,
       "max_c1_class": 1
     },
     "gates": {
@@ -173,7 +186,7 @@
     },
     "do_not": [
       "条件緩和で5R狙い",
-      "1-2-4など点数追加",
+      "本命S以外での安易な点数追加",
       "押し・穴の併売",
       "場の安易な追加"
     ],

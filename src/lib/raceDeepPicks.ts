@@ -584,9 +584,9 @@ export function buildRaceDeepPicks(input: {
     }));
   }
 
-  // 本命S: 回収100%超の検証ゲート通過時のみ（印。点数は本命枠を超えない）
+  // 本命S: 条件付き5点（locked mainline）。通常本命枠とは別枠。
   const sCombos = mainlineGate.ok
-    ? uniqueTickets(mainlineGate.tickets).slice(0, Math.max(1, alloc.honmei))
+    ? uniqueTickets(mainlineGate.tickets).slice(0, MAINLINE_RULE.tickets.length)
     : [];
   const sTickets: DeepTicket[] = sCombos.map((combo, i) => ({
     combo,
@@ -596,7 +596,7 @@ export function buildRaceDeepPicks(input: {
   }));
   const sReady = sTickets.length > 0;
   const sLabel = sReady
-    ? `本命S · 検証回収約${MAINLINE_RULE.validated_all_roi}%（年次下限約${MAINLINE_RULE.validated_all_min_year_roi}%）`
+    ? `本命S · 条件付き${sTickets.length}点 · 検証回収約${MAINLINE_RULE.validated_all_roi}%（年次下限約${MAINLINE_RULE.validated_all_min_year_roi}%）`
     : "本命Sなし（回収100%超条件外）";
 
   const top = ranked[0];
@@ -634,7 +634,7 @@ export function buildRaceDeepPicks(input: {
   );
   if (sReady) {
     commentary.push(
-      `【本命S】本命枠内 ${sTickets.length}点（${sTickets.map((t) => t.combo).join(" / ")}）。検証回収 約${MAINLINE_RULE.validated_all_roi}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi}%）。`,
+      `【本命S】条件付き${sTickets.length}点（${sTickets.map((t) => t.combo).join(" / ")}）。検証回収 約${MAINLINE_RULE.validated_all_roi}%（年次下限 約${MAINLINE_RULE.validated_all_min_year_roi}%）。通常本命とは別枠。`,
     );
   } else {
     commentary.push(
@@ -716,8 +716,8 @@ function finishDeepPicks(input: {
     confidence: input.confidence,
     confidenceLabel: confidenceLabelOf(input.confidence),
     commentary: input.commentary,
-    sTickets: input.sTickets.slice(0, Math.max(1, input.alloc.honmei)),
-    sCount: Math.min(Math.max(1, input.alloc.honmei), input.sTickets.length),
+    sTickets: input.sTickets,
+    sCount: input.sTickets.length,
     sReady: input.sReady,
     sLabel: input.sLabel,
     oshiTickets: oshi,

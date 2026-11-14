@@ -499,7 +499,7 @@ export default function Home() {
           <i /><i /><i /><i /><i /><i />
         </div>
         <p className="lede">
-          強イン逃げ条件では本命1-2-3単点（2026検証）。条件外は参考1点。押し・穴は本線で見送り。
+          本命は強イン逃げで1-2-3単点（2026検証）。本命Sは条件付き5点（検証ROI約140%）。押し・穴は本線で見送り。
         </p>
         {research?.update || research?.learning ? (
           <div className="meta" style={{ marginBottom: "0.85rem" }}>
@@ -958,7 +958,7 @@ export default function Home() {
                         : "条件外"}
                     </strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
-                      {data.deepPicks.sLabel || "回収100%超の検証ゲートのみ"}
+                      {data.deepPicks.sLabel || "条件付き5点・回収100%超ゲートのみ"}
                     </div>
                   </div>
                   <div
@@ -1010,7 +1010,7 @@ export default function Home() {
                   [
                     {
                       key: "s",
-                      title: "本命Sの内訳（回収100%超）",
+                      title: "本命Sの内訳（条件付き5点）",
                       show: Boolean(
                         data.deepPicks.sReady && (data.deepPicks.sTickets || []).length,
                       ),
@@ -1215,7 +1215,7 @@ export default function Home() {
                       label: "本命S",
                       ok: Boolean(data.deepPicks?.sReady),
                       tickets: data.deepPicks?.sTickets?.map((t) => t.combo) || [],
-                      note: data.deepPicks?.sLabel || "回収100%超のみ（本命枠内）",
+                      note: data.deepPicks?.sLabel || "条件付き5点（回収100%超ゲート）",
                     },
                     {
                       band: "oshi",
