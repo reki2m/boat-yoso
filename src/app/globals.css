@@ -1248,6 +1248,21 @@ th {
   border-style: dashed;
 }
 
+.chat-race-chip.waiting.buyok em,
+.chat-status-pill.waiting.buyok {
+  color: #ffe7a8;
+  font-weight: 800;
+}
+
+.chat-bubble.admin-log {
+  border-color: rgba(255, 196, 90, 0.35);
+  background: rgba(36, 28, 8, 0.55);
+}
+
+.chat-bubble.admin-speech {
+  border-color: rgba(90, 200, 255, 0.45);
+}
+
 .chat-race-chip.waiting {
   border-color: rgba(255, 196, 80, 0.45);
   background: rgba(60, 40, 8, 0.55);

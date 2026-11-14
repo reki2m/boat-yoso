@@ -150,8 +150,14 @@ function kindLabel(m: ChatMessage): string {
   if (m.meta?.mode === "admin_predict_log" || m.meta?.visibility === "admin") {
     return "管理人ログ";
   }
-  if (m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private") {
+  if (m.meta?.mode === "purchase_ack" || m.meta?.mode === "day_purchase_ack") {
+    return "購入確認";
+  }
+  if (m.meta?.mode === "app_race_pick") {
     return "AI予想（自分のみ）";
+  }
+  if (m.meta?.visibility === "private") {
+    return "自分のみ";
   }
   if (m.meta?.mode === "honmei_result") return "結果・払戻";
   if (m.meta?.mode === "chat_hit" || m.title.includes("的中")) return "的中";
@@ -165,14 +171,14 @@ function kindLabel(m: ChatMessage): string {
 
 function targetToneClass(status: string): string {
   if (status === "skipped") return "skipped";
-  if (status === "confirmed") return "after";
+  if (status === "confirmed") return "waiting buyok";
   if (status === "provisional" || status === "programs_unavailable") return "waiting";
   return "";
 }
 
 function targetBadge(status: string): string {
   if (status === "skipped") return "スルー";
-  if (status === "confirmed") return "確定";
+  if (status === "confirmed") return "展示確認済み購入OK";
   if (status === "provisional" || status === "programs_unavailable") return "展示待ち";
   return "";
 }
@@ -228,13 +234,12 @@ function racePhase(m: ChatMessage, chip: RaceChipView): RacePhase {
 }
 
 function isPrivateAiPick(m: ChatMessage): boolean {
-  return m.meta?.mode === "app_race_pick" || m.meta?.visibility === "private";
+  return m.meta?.mode === "app_race_pick";
 }
 
 /**
- * 同じレースの展示待ち/確定が複数メッセージに出ないよう、新しい方を残す。
- * 個人のAI予想（app_race_pick）は本命ボードと別枠なので重複排除しない。
- * 戻り値: messageId → 表示する races（空ならメッセージ自体を隠す対象）
+ * 同じレースの展示待ち/確定チップは新しい方を優先。
+ * メッセージ本文自体は消さない（履歴を残す）。チップだけ間引く。
  */
 function dedupeRaceUi(
   messages: ChatMessage[],
@@ -280,6 +285,7 @@ function dedupeRaceUi(
         kept.push(chip);
       }
     }
+    // チップが全部間引かれても空配列を入れ、呼び出し側で本文は残す
     out.set(m.id, kept);
   }
   return out;
@@ -1176,22 +1182,31 @@ export default function ChatPage() {
           </div>
 
           <div className="chat-stream" ref={listRef}>
-            {messages.filter((m) => m.meta?.visibility !== "admin").length === 0 ? (
+            {messages.length === 0 ? (
               <p className="status">まだ雑談がありません。下からメッセージを送れます。</p>
             ) : (
               (() => {
-                const visible = messages.filter((m) => m.meta?.visibility !== "admin");
+                // 管理人は全員のアクション（admin/private）もチャット欄に表示。
+                // 一般は admin ログを隠す（自分の private と公開のみ）。
+                const visible = isAdmin
+                  ? messages
+                  : messages.filter((m) => m.meta?.visibility !== "admin");
                 const raceUiById = dedupeRaceUi(visible);
                 return visible.map((m) => {
                 const isPrivate = m.meta?.visibility === "private";
+                const isAdminLog =
+                  m.meta?.visibility === "admin" || m.meta?.mode === "admin_predict_log";
                 const isOp =
                   m.author_role === "operator" || m.kind === "picks" || m.kind === "note";
+                const isAdminSpeech =
+                  isOp &&
+                  m.meta?.visibility !== "admin" &&
+                  m.meta?.visibility !== "private" &&
+                  (m.kind === "chat" || m.meta?.mode === "casual" || !m.meta?.mode);
                 const isMine =
                   m.kind === "chat" && m.author_name === displayName.trim() && !isOp;
-                const originalRaces = messageRaces(m);
                 const races = raceUiById.get(m.id) || [];
-                // 同じレースの重複投稿は新しい方だけ残す
-                if (originalRaces.length > 0 && races.length === 0) return null;
+                // チップ重複で空でも本文は残す（レース選択で履歴が消えない）
                 const hasRaceUi = races.length > 0;
                 const isExhibition = m.meta?.mode === "exhibition_after_honmei";
                 const isResult = m.meta?.mode === "honmei_result";
@@ -1206,6 +1221,8 @@ export default function ChatPage() {
                     key={m.id}
                     className={`chat-bubble ${isOp ? "op" : "member"} ${isMine ? "mine" : ""} ${
                       isPrivate ? "private" : ""
+                    } ${isAdminLog ? "admin-log" : ""} ${
+                      isAdminSpeech ? "admin-speech" : ""
                     } ${hasRaceUi ? "has-race-ui" : ""} ${isExhibition ? "exhibition-after" : ""} ${
                       isResult ? "honmei-result" : ""
                     }`}
@@ -1217,7 +1234,10 @@ export default function ChatPage() {
                           : m.author_name || m.title || (isOp ? "運営" : "メンバー")}
                       </strong>
                       <span>{kindLabel(m)}</span>
-                      {isPrivate ? <span>自分のみ</span> : null}
+                      {isAdminLog ? <span>管理人のみ</span> : null}
+                      {isPrivate && !isAdminLog ? (
+                        <span>{isAdmin ? `ユーザー: ${m.meta?.owner_name || "—"}` : "自分のみ"}</span>
+                      ) : null}
                       <span>{formatJst(m.created_at)} JST</span>
                     </div>
 
