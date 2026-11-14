@@ -189,7 +189,7 @@ export async function buildChatRaceReply(
   lines.push("", "【説明】");
   if (why) lines.push(why);
   else lines.push("詳細コメントなし");
-  lines.push("※買い目を押すと「買い目の理由」詳細が表示されます。");
+  lines.push("※上の「買い目」ボタンを押すと、各組の理由が開きます。");
 
   lines.push(
     "",
