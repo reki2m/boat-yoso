@@ -1025,7 +1025,7 @@ export default function ChatPage() {
                           <div className="chat-pick-block">
                             <div className="chat-pick-block-label">
                               買い目
-                              <em className="chat-pick-hint">押すと理由</em>
+                              <em className="chat-pick-hint">押すと買い目の理由</em>
                             </div>
                             {selected.status === "skipped" ? (
                               <p className="chat-pick-empty">スルーのため買い目なし</p>
@@ -1039,8 +1039,13 @@ export default function ChatPage() {
                                       list: normalizeBandTickets(selected.bands?.honmei),
                                     },
                                     {
+                                      key: "honmeiSSingle",
+                                      label: "本命S・単点",
+                                      list: normalizeBandTickets(selected.bands?.honmeiSSingle),
+                                    },
+                                    {
                                       key: "honmeiS",
-                                      label: "本命S",
+                                      label: "本命S・5点",
                                       list: normalizeBandTickets(selected.bands?.honmeiS),
                                     },
                                     {
@@ -1103,14 +1108,20 @@ export default function ChatPage() {
                                               </button>
                                               {open ? (
                                                 <div className="chat-ticket-why">
-                                                  {t.role ? (
-                                                    <strong>{t.role}</strong>
-                                                  ) : null}
+                                                  <strong>買い目の理由 · {t.combo}</strong>
+                                                  {t.role ? <p className="chat-ticket-role">{t.role}</p> : null}
                                                   <p>
                                                     {t.why?.trim() ||
                                                       selected.why?.trim() ||
                                                       "理由データなし"}
                                                   </p>
+                                                  {(t.reasons || []).length ? (
+                                                    <ul className="chat-ticket-reasons">
+                                                      {t.reasons!.map((r) => (
+                                                        <li key={r}>{r}</li>
+                                                      ))}
+                                                    </ul>
+                                                  ) : null}
                                                   {settled ? (
                                                     <p>
                                                       {t.result === "hit"
@@ -1126,7 +1137,9 @@ export default function ChatPage() {
                                       </ul>
                                     ) : (
                                       <p className="chat-pick-empty">
-                                        {band.key === "honmeiS" ? "条件外" : "—"}
+                                        {band.key === "honmeiS" || band.key === "honmeiSSingle"
+                                          ? "条件外"
+                                          : "—"}
                                       </p>
                                     )}
                                   </div>

@@ -69,6 +69,9 @@ export async function GET() {
         opsLive.rolling_roi ??
         (learningState.baseline as { roi?: number } | undefined)?.roi ??
         null,
+      last_learn_at: updateState.last_learn_at || learningState.learned_at || null,
+      auto: true,
+      cadence: "毎日（最新結果→的中再計算→回収率学習→閾値監視）",
     },
     lockedHonmei: {
       ...locked,

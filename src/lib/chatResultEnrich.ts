@@ -26,6 +26,9 @@ function enrichChip(
   const bands = chip.bands
     ? {
         honmei: (chip.bands.honmei || []).map((t) => withTicketResult(t, trifecta)),
+        honmeiSSingle: (chip.bands.honmeiSSingle || []).map((t) =>
+          withTicketResult(t, trifecta),
+        ),
         honmeiS: (chip.bands.honmeiS || []).map((t) => withTicketResult(t, trifecta)),
         oshi: (chip.bands.oshi || []).map((t) => withTicketResult(t, trifecta)),
         ana: (chip.bands.ana || []).map((t) => withTicketResult(t, trifecta)),
@@ -34,6 +37,7 @@ function enrichChip(
 
   const fromBands = [
     ...(bands?.honmei || []),
+    ...(bands?.honmeiSSingle || []),
     ...(bands?.honmeiS || []),
     ...(bands?.oshi || []),
     ...(bands?.ana || []),
@@ -133,6 +137,9 @@ export async function enrichChatMessagesWithResults(
     const bands = m.meta?.bands
       ? {
           honmei: (m.meta.bands.honmei || []).map((t) => withTicketResult(t, res.trifecta)),
+          honmeiSSingle: (m.meta.bands.honmeiSSingle || []).map((t) =>
+            withTicketResult(t, res.trifecta),
+          ),
           honmeiS: (m.meta.bands.honmeiS || []).map((t) => withTicketResult(t, res.trifecta)),
           oshi: (m.meta.bands.oshi || []).map((t) => withTicketResult(t, res.trifecta)),
           ana: (m.meta.bands.ana || []).map((t) => withTicketResult(t, res.trifecta)),

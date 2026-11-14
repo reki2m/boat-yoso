@@ -4,6 +4,7 @@ export type ChatBandTicketView = {
   combo: string;
   role?: string;
   why?: string;
+  reasons?: string[];
   result?: "hit" | "miss";
   payout?: number;
 };
@@ -11,6 +12,7 @@ export type ChatBandTicketView = {
 export type ChatPickBandsView = {
   honmei?: Array<string | ChatBandTicketView>;
   honmeiS?: Array<string | ChatBandTicketView>;
+  honmeiSSingle?: Array<string | ChatBandTicketView>;
   oshi?: Array<string | ChatBandTicketView>;
   ana?: Array<string | ChatBandTicketView>;
 };
@@ -43,6 +45,7 @@ export function normalizeBandTickets(
           combo: String(item.combo || ""),
           role: item.role || "",
           why: item.why || "",
+          reasons: item.reasons?.length ? item.reasons : undefined,
           result: item.result,
           payout: item.payout,
         },
@@ -53,6 +56,7 @@ export function hasBandTickets(bands?: ChatPickBandsView | null): boolean {
   if (!bands) return false;
   return Boolean(
     normalizeBandTickets(bands.honmei).length ||
+      normalizeBandTickets(bands.honmeiSSingle).length ||
       normalizeBandTickets(bands.honmeiS).length ||
       normalizeBandTickets(bands.oshi).length ||
       normalizeBandTickets(bands.ana).length,

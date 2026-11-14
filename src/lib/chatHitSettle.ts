@@ -40,7 +40,7 @@ function ticketsFromMessage(m: ChatMessage): string[] {
   }
   const bands = meta?.bands;
   if (bands) {
-    for (const list of [bands.honmei, bands.honmeiS, bands.oshi, bands.ana]) {
+    for (const list of [bands.honmei, bands.honmeiSSingle, bands.honmeiS, bands.oshi, bands.ana]) {
       for (const t of list || []) push(t.combo);
     }
   }
@@ -48,7 +48,7 @@ function ticketsFromMessage(m: ChatMessage): string[] {
     for (const t of race.tickets || []) push(String(t));
     const rb = race.bands;
     if (rb) {
-      for (const list of [rb.honmei, rb.honmeiS, rb.oshi, rb.ana]) {
+      for (const list of [rb.honmei, rb.honmeiSSingle, rb.honmeiS, rb.oshi, rb.ana]) {
         for (const t of list || []) push(t.combo);
       }
     }

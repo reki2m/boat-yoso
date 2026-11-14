@@ -1,5 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "regions": ["hnd1"]
+  "regions": ["hnd1"],
+  "crons": [
+    {
+      "path": "/api/cron/main-daily?mode=nightly",
+      "schedule": "15 17 * * *"
+    },
+    {
+      "path": "/api/cron/main-daily?mode=confirm",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

@@ -12,6 +12,8 @@ export type ChatBandTicket = {
   combo: string;
   role?: string;
   why?: string;
+  /** 買い目の理由（詳細箇条書き） */
+  reasons?: string[];
   /** レース終了後の的中判定（配信時に結果を重ねる） */
   result?: "hit" | "miss";
   /** 100円あたり払戻（的中時） */
@@ -22,6 +24,7 @@ export type ChatBandTicket = {
 export type ChatPickBands = {
   honmei?: ChatBandTicket[];
   honmeiS?: ChatBandTicket[];
+  honmeiSSingle?: ChatBandTicket[];
   oshi?: ChatBandTicket[];
   ana?: ChatBandTicket[];
 };
