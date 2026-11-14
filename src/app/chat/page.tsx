@@ -366,6 +366,8 @@ export default function ChatPage() {
   const [openTicketByMessage, setOpenTicketByMessage] = useState<Record<string, string>>({});
   /** 本日の本命対象チップを開く（stadium-race） */
   const [openTargetKey, setOpenTargetKey] = useState("");
+  /** 本命対象内の買い目（stadium-race:band:combo）を開く */
+  const [openTargetTicketKey, setOpenTargetTicketKey] = useState("");
   /** 本命対象レースごとの購入ロック stadium-race → state */
   const [targetPurchases, setTargetPurchases] = useState<Record<string, PurchaseLockState>>({});
   const [purchaseBusyId, setPurchaseBusyId] = useState("");
@@ -613,6 +615,8 @@ export default function ChatPage() {
     setSelectedAdminPickId("");
     setIsAdmin(false);
     setTargetPurchases({});
+    setOpenTargetKey("");
+    setOpenTargetTicketKey("");
   }
 
   async function confirmPurchase(messageId: string, decision: PurchaseLockState) {
@@ -1155,7 +1159,11 @@ export default function ChatPage() {
                           onClick={() => {
                             setPickStadium(t.stadium);
                             setPickRace(t.race);
-                            setOpenTargetKey((prev) => (prev === key ? "" : key));
+                            setOpenTargetKey((prev) => {
+                              const next = prev === key ? "" : key;
+                              if (next !== key) setOpenTargetTicketKey("");
+                              return next;
+                            });
                           }}
                         >
                           <span className="chat-race-chip-label">
@@ -1171,41 +1179,115 @@ export default function ChatPage() {
                               {t.stadium_name}
                               {t.race}R の買い目
                               {t.label ? `（${t.label}）` : ""}
+                              <em className="chat-pick-hint">押すと買い目の理由</em>
                             </strong>
                             {single.length || five.length ? (
-                              <ul className="chat-target-tickets">
-                                {single.length ? (
-                                  <li>
-                                    <span>本命S・単点</span>
-                                    <strong>{single.join(" · ")}</strong>
-                                  </li>
-                                ) : null}
-                                {five.length ? (
-                                  <li>
-                                    <span>本命S・5点</span>
-                                    <strong>{five.join(" · ")}</strong>
-                                  </li>
-                                ) : null}
+                              <div className="chat-band-stack">
+                                {(
+                                  [
+                                    { key: "single", label: "本命S・単点", list: single },
+                                    { key: "five", label: "本命S・5点", list: five },
+                                  ] as const
+                                )
+                                  .filter((band) => band.list.length)
+                                  .map((band) => (
+                                    <div key={band.key} className="chat-band-row">
+                                      <span className="chat-band-label">
+                                        {band.label}
+                                        {` · ${band.list.length}`}
+                                      </span>
+                                      <ul className="chat-ticket-list">
+                                        {band.list.map((combo) => {
+                                          const ticketKey = `${key}:${band.key}:${combo}`;
+                                          const ticketOpen = openTargetTicketKey === ticketKey;
+                                          return (
+                                            <li key={ticketKey}>
+                                              <button
+                                                type="button"
+                                                className={`chat-ticket-btn ${ticketOpen ? "open" : ""}`}
+                                                aria-expanded={ticketOpen}
+                                                onClick={() =>
+                                                  setOpenTargetTicketKey((prev) =>
+                                                    prev === ticketKey ? "" : ticketKey,
+                                                  )
+                                                }
+                                              >
+                                                <span className="chat-ticket-combo">{combo}</span>
+                                              </button>
+                                              {ticketOpen ? (
+                                                <div className="chat-ticket-why">
+                                                  <strong>買い目の理由 · {combo}</strong>
+                                                  <p>
+                                                    {t.why?.trim() ||
+                                                      (t.status === "skipped"
+                                                        ? t.skip_detail || "スルー"
+                                                        : "") ||
+                                                      "理由データなし"}
+                                                  </p>
+                                                  {(t.reasons || []).length ? (
+                                                    <ul className="chat-ticket-reasons">
+                                                      {t.reasons!.map((r) => (
+                                                        <li key={r}>{r}</li>
+                                                      ))}
+                                                    </ul>
+                                                  ) : null}
+                                                  {t.skip_detail && t.status === "skipped" ? (
+                                                    <p className="note">スルー: {t.skip_detail}</p>
+                                                  ) : null}
+                                                </div>
+                                              ) : null}
+                                            </li>
+                                          );
+                                        })}
+                                      </ul>
+                                    </div>
+                                  ))}
+                              </div>
+                            ) : t.tickets?.length ? (
+                              <ul className="chat-ticket-list">
+                                {t.tickets.map((combo) => {
+                                  const ticketKey = `${key}:flat:${combo}`;
+                                  const ticketOpen = openTargetTicketKey === ticketKey;
+                                  return (
+                                    <li key={ticketKey}>
+                                      <button
+                                        type="button"
+                                        className={`chat-ticket-btn ${ticketOpen ? "open" : ""}`}
+                                        aria-expanded={ticketOpen}
+                                        onClick={() =>
+                                          setOpenTargetTicketKey((prev) =>
+                                            prev === ticketKey ? "" : ticketKey,
+                                          )
+                                        }
+                                      >
+                                        <span className="chat-ticket-combo">{combo}</span>
+                                      </button>
+                                      {ticketOpen ? (
+                                        <div className="chat-ticket-why">
+                                          <strong>買い目の理由 · {combo}</strong>
+                                          <p>
+                                            {t.why?.trim() ||
+                                              (t.status === "skipped"
+                                                ? t.skip_detail || "スルー"
+                                                : "") ||
+                                              "理由データなし"}
+                                          </p>
+                                          {(t.reasons || []).length ? (
+                                            <ul className="chat-ticket-reasons">
+                                              {t.reasons!.map((r) => (
+                                                <li key={r}>{r}</li>
+                                              ))}
+                                            </ul>
+                                          ) : null}
+                                        </div>
+                                      ) : null}
+                                    </li>
+                                  );
+                                })}
                               </ul>
                             ) : (
-                              <p className="chat-target-ticket-line">{ticketFallback}</p>
+                              <p className="chat-pick-empty">{ticketFallback}</p>
                             )}
-                            <div className="chat-target-why">
-                              <strong>買い目の理由</strong>
-                              {t.why ? <p>{t.why}</p> : null}
-                              {(t.reasons || []).length ? (
-                                <ul>
-                                  {t.reasons!.map((r) => (
-                                    <li key={r}>{r}</li>
-                                  ))}
-                                </ul>
-                              ) : !t.why ? (
-                                <p className="note">理由データなし</p>
-                              ) : null}
-                              {t.skip_detail ? (
-                                <p className="note">スルー: {t.skip_detail}</p>
-                              ) : null}
-                            </div>
                             <div className={`chat-purchase-ask ${lockTone}`}>
                               {lock === "purchased" ? (
                                 <p className="chat-purchase-ask-done">購入済み（チャットに固定）</p>
