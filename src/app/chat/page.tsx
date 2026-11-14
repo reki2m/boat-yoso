@@ -40,6 +40,7 @@ type ChatMessage = {
     owner_name?: string;
     race_label?: string;
     races?: RaceChipView[];
+    purchaseDecision?: "yes" | "no";
   };
 };
 
@@ -316,6 +317,10 @@ export default function ChatPage() {
   const [openTicketByMessage, setOpenTicketByMessage] = useState<Record<string, string>>({});
   /** 本日の本命対象チップを開く（stadium-race） */
   const [openTargetKey, setOpenTargetKey] = useState("");
+  /** 本日の本命買い目の購入確認（セッション×日付） */
+  const [dayPurchaseDecision, setDayPurchaseDecision] = useState<"yes" | "no" | null>(null);
+  const [purchaseBusyId, setPurchaseBusyId] = useState("");
+  const [dayPurchaseBusy, setDayPurchaseBusy] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -502,6 +507,7 @@ export default function ChatPage() {
         setAdminOversight(null);
         setSelectedAdminPickId("");
         setIsAdmin(false);
+        setDayPurchaseDecision(null);
         if (!opts.quiet) {
           setError(json.error || "入場できません");
           window.localStorage.removeItem(INVITE_KEY);
@@ -515,6 +521,11 @@ export default function ChatPage() {
       setPresence(Array.isArray(json.presence) ? json.presence : []);
       setLiveDate(json.liveDate || "");
       setIsAdmin(Boolean(json.isAdmin));
+      setDayPurchaseDecision(
+        json.dayPurchaseDecision === "yes" || json.dayPurchaseDecision === "no"
+          ? json.dayPurchaseDecision
+          : null,
+      );
       setAdminOversight(
         json.isAdmin && json.adminOversight ? (json.adminOversight as AdminPredictionOversight) : null,
       );
@@ -548,6 +559,96 @@ export default function ChatPage() {
     setAdminOversight(null);
     setSelectedAdminPickId("");
     setIsAdmin(false);
+    setDayPurchaseDecision(null);
+  }
+
+  async function confirmPurchase(messageId: string, decision: "yes" | "no") {
+    const code = invite.trim();
+    const name = displayName.trim();
+    if (!code || !name || !messageId) return;
+    setPurchaseBusyId(messageId);
+    setError("");
+    setStatus("");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-invite": code,
+        },
+        body: JSON.stringify({
+          invite: code,
+          kind: "purchase_confirm",
+          messageId,
+          decision,
+          authorName: name,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "購入確認に失敗しました");
+        return;
+      }
+      setStatus(
+        decision === "yes"
+          ? "購入しました（結果はDiscordへ通知）"
+          : "見送りにしました",
+      );
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, meta: { ...m.meta, purchaseDecision: decision } }
+            : m,
+        ),
+      );
+      await loadFeed(code, { quiet: true, refresh: false, name });
+    } catch {
+      setError("購入確認に失敗しました");
+    } finally {
+      setPurchaseBusyId("");
+    }
+  }
+
+  async function confirmDayPurchase(decision: "yes" | "no") {
+    const code = invite.trim();
+    const name = displayName.trim();
+    if (!code || !name) return;
+    setDayPurchaseBusy(true);
+    setError("");
+    setStatus("");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-invite": code,
+        },
+        body: JSON.stringify({
+          invite: code,
+          kind: "day_purchase_confirm",
+          decision,
+          authorName: name,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "本日の買い目確認に失敗しました");
+        return;
+      }
+      setDayPurchaseDecision(decision);
+      setStatus(
+        decision === "yes"
+          ? "本日の買い目を購入として記録しました（Discord通知）"
+          : "本日の買い目は見送りにしました",
+      );
+      await loadFeed(code, { quiet: true, refresh: false, name });
+    } catch {
+      setError("本日の買い目確認に失敗しました");
+    } finally {
+      setDayPurchaseBusy(false);
+    }
   }
 
   async function clearChatBulk() {
@@ -1031,6 +1132,39 @@ export default function ChatPage() {
                     );
                   })}
                 </div>
+                <div className="chat-purchase-ask">
+                  <p className="chat-purchase-ask-label">本日の買い目も購入しましたか？</p>
+                  {dayPurchaseDecision ? (
+                    <p className="chat-purchase-ask-done">
+                      {dayPurchaseDecision === "yes"
+                        ? "回答済み: 購入した"
+                        : "回答済み: 見送った"}
+                    </p>
+                  ) : (
+                    <div className="chat-purchase-ask-actions">
+                      <button
+                        type="button"
+                        className="btn chat-purchase-yes"
+                        disabled={dayPurchaseBusy}
+                        onClick={() => {
+                          void confirmDayPurchase("yes");
+                        }}
+                      >
+                        イエス
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ghost chat-purchase-no"
+                        disabled={dayPurchaseBusy}
+                        onClick={() => {
+                          void confirmDayPurchase("no");
+                        }}
+                      >
+                        ノー
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <p className="note">いま対象レースはありません。</p>
@@ -1342,6 +1476,42 @@ export default function ChatPage() {
                                   : "—")}
                             </p>
                           </div>
+
+                          {m.meta?.mode === "app_race_pick" ? (
+                            <div className="chat-purchase-ask">
+                              <p className="chat-purchase-ask-label">購入しますか？</p>
+                              {m.meta.purchaseDecision ? (
+                                <p className="chat-purchase-ask-done">
+                                  {m.meta.purchaseDecision === "yes"
+                                    ? "回答済み: 購入する（結果はDiscord通知）"
+                                    : "回答済み: 見送る"}
+                                </p>
+                              ) : (
+                                <div className="chat-purchase-ask-actions">
+                                  <button
+                                    type="button"
+                                    className="btn chat-purchase-yes"
+                                    disabled={purchaseBusyId === m.id}
+                                    onClick={() => {
+                                      void confirmPurchase(m.id, "yes");
+                                    }}
+                                  >
+                                    イエス
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn ghost chat-purchase-no"
+                                    disabled={purchaseBusyId === m.id}
+                                    onClick={() => {
+                                      void confirmPurchase(m.id, "no");
+                                    }}
+                                  >
+                                    ノー
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
 
                         {split && (split.explainBlock || split.rest || m.body) ? (

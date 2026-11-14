@@ -67,8 +67,11 @@ export type ChatMessageMeta = {
   /** チャット欄レースUI（〇〇場 〇〇R） */
   races?: ChatRaceChip[];
   race_label?: string;
+  /** 予想後の購入意思（Yes/No） */
+  purchaseDecision?: "yes" | "no";
+  /** 結果を Discord に送済みなら true */
+  purchaseResultDiscord?: boolean;
 };
-
 export type ChatMessage = {
   id: string;
   created_at: string;
@@ -299,6 +302,52 @@ export async function appendChatMessage(
     ],
   );
   return row;
+}
+
+export async function getChatMessageById(id: string): Promise<ChatMessage | null> {
+  const rows = await sql<ChatRow>(
+    `select id, created_at, kind, title, body, author_name, author_role, meta
+     from chat_messages where id = $1 limit 1`,
+    [id],
+  );
+  const row = rows[0];
+  return row ? mapRow(row) : null;
+}
+
+/** meta をマージ更新（購入意思など） */
+export async function patchChatMessageMeta(
+  id: string,
+  patch: Partial<ChatMessageMeta>,
+): Promise<ChatMessage | null> {
+  const current = await getChatMessageById(id);
+  if (!current) return null;
+  const nextMeta: ChatMessageMeta = { ...(current.meta || {}), ...patch };
+  await sql(`update chat_messages set meta = $2::jsonb where id = $1`, [
+    id,
+    JSON.stringify(nextMeta),
+  ]);
+  return { ...current, meta: nextMeta };
+}
+
+export async function getChatMetaValue(key: string): Promise<string | null> {
+  try {
+    const rows = await sql<{ value: string }>(
+      `select value from chat_meta where key = $1 limit 1`,
+      [key],
+    );
+    return rows[0]?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setChatMetaValue(key: string, value: string): Promise<void> {
+  await sql(
+    `insert into chat_meta (key, value, updated_at)
+     values ($1, $2, now())
+     on conflict (key) do update set value = excluded.value, updated_at = now()`,
+    [key, value],
+  );
 }
 
 export function inviteCode(): string {
