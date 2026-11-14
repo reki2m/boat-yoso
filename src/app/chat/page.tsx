@@ -377,6 +377,16 @@ export default function ChatPage() {
   const [purchaseInlineErrorKey, setPurchaseInlineErrorKey] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  /** 古い loadFeed 応答でロックを消さないための連番 */
+  const feedSeqRef = useRef(0);
+  /** 直近の本命購入ロック（サーバ反映前のポーリング上書き防止） */
+  const pendingTargetLocksRef = useRef<
+    Record<string, { state: PurchaseLockState | null; until: number }>
+  >({});
+  /** 直近の AI予想購入ロック messageId → decision */
+  const pendingAiLocksRef = useRef<
+    Record<string, { state: PurchaseLockState | null; until: number }>
+  >({});
 
   useEffect(() => {
     try {
@@ -531,6 +541,80 @@ export default function ChatPage() {
     }
   }
 
+  function rememberTargetLock(key: string, state: PurchaseLockState | null) {
+    pendingTargetLocksRef.current[key] = {
+      state,
+      until: Date.now() + 20_000,
+    };
+  }
+
+  function rememberAiLock(messageId: string, state: PurchaseLockState | null) {
+    pendingAiLocksRef.current[messageId] = {
+      state,
+      until: Date.now() + 20_000,
+    };
+  }
+
+  function mergeTargetPurchasesFromServer(
+    server: Record<string, PurchaseLockState>,
+  ): Record<string, PurchaseLockState> {
+    const now = Date.now();
+    const next: Record<string, PurchaseLockState> = { ...server };
+    for (const [key, pending] of Object.entries(pendingTargetLocksRef.current)) {
+      if (pending.until < now) {
+        delete pendingTargetLocksRef.current[key];
+        continue;
+      }
+      if (pending.state === null || pending.state === "skip") {
+        delete next[key];
+      } else if (!(key in server)) {
+        // サーバ未反映のあいだはローカルロックを維持（ポーリングで消えない）
+        next[key] = pending.state;
+      } else {
+        delete pendingTargetLocksRef.current[key];
+      }
+    }
+    return next;
+  }
+
+  function mergeMessagesPurchaseLocks(messages: ChatMessage[]): ChatMessage[] {
+    const now = Date.now();
+    return messages.map((m) => {
+      const pending = pendingAiLocksRef.current[m.id];
+      if (!pending || pending.until < now) {
+        if (pending && pending.until < now) delete pendingAiLocksRef.current[m.id];
+        return m;
+      }
+      if (m.meta?.mode !== "app_race_pick") return m;
+      const serverDecision = m.meta?.purchaseDecision;
+      if (pending.state === null || pending.state === "skip") {
+        if (!serverDecision) delete pendingAiLocksRef.current[m.id];
+        return {
+          ...m,
+          meta: { ...m.meta, purchaseDecision: undefined },
+        };
+      }
+      if (serverDecision === pending.state) {
+        delete pendingAiLocksRef.current[m.id];
+        return m;
+      }
+      if (!serverDecision) {
+        return {
+          ...m,
+          meta: {
+            ...m.meta,
+            purchaseDecision: pending.state,
+            purchaseLockedExhibition:
+              pending.state === "yes"
+                ? m.meta?.purchaseLockedExhibition || "waiting"
+                : m.meta?.purchaseLockedExhibition,
+          },
+        };
+      }
+      return m;
+    });
+  }
+
   async function loadFeed(
     code: string,
     opts: {
@@ -540,6 +624,7 @@ export default function ChatPage() {
     },
   ) {
     if (!opts.quiet) setError("");
+    const seq = ++feedSeqRef.current;
     try {
       const name = (opts.name ?? displayName).trim();
       const q = new URLSearchParams();
@@ -556,17 +641,19 @@ export default function ChatPage() {
         headers,
         credentials: "include",
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
+      if (seq !== feedSeqRef.current) return;
       if (!res.ok) {
-        setUnlocked(false);
-        setMessages([]);
-        setTargets([]);
-        setPresence([]);
-        setAdminOversight(null);
-        setSelectedAdminPickId("");
-        setIsAdmin(false);
-        setTargetPurchases({});
+        // ポーリング失敗で入場解除・ロック消去しない（一瞬ロック→消える原因）
         if (!opts.quiet) {
+          setUnlocked(false);
+          setMessages([]);
+          setTargets([]);
+          setPresence([]);
+          setAdminOversight(null);
+          setSelectedAdminPickId("");
+          setIsAdmin(false);
+          setTargetPurchases({});
           setError(json.error || "入場できません");
           window.localStorage.removeItem(INVITE_KEY);
         }
@@ -574,16 +661,16 @@ export default function ChatPage() {
       }
       window.localStorage.setItem(INVITE_KEY, code);
       setUnlocked(true);
-      setMessages(json.messages || []);
+      const serverPurchases =
+        json.targetPurchases && typeof json.targetPurchases === "object"
+          ? (json.targetPurchases as Record<string, PurchaseLockState>)
+          : {};
+      setTargetPurchases(mergeTargetPurchasesFromServer(serverPurchases));
+      setMessages(mergeMessagesPurchaseLocks(json.messages || []));
       setTargets(json.targets || []);
       setPresence(Array.isArray(json.presence) ? json.presence : []);
       setLiveDate(json.liveDate || "");
       setIsAdmin(Boolean(json.isAdmin));
-      setTargetPurchases(
-        json.targetPurchases && typeof json.targetPurchases === "object"
-          ? (json.targetPurchases as Record<string, PurchaseLockState>)
-          : {},
-      );
       setAdminOversight(
         json.isAdmin && json.adminOversight ? (json.adminOversight as AdminPredictionOversight) : null,
       );
@@ -636,6 +723,7 @@ export default function ChatPage() {
     setPurchaseInlineError("");
     setError("");
     setStatus("");
+    rememberAiLock(messageId, decision === "skip" ? null : decision);
     // 楽観的にロック表示へ（Discord待ちで無反応に見えないように）
     if (decision === "yes" || decision === "purchased" || decision === "no") {
       setMessages((prev) =>
@@ -682,6 +770,7 @@ export default function ChatPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        delete pendingAiLocksRef.current[messageId];
         const msg = json.error || "購入ロックに失敗しました";
         setPurchaseInlineError(msg);
         setError(msg);
@@ -700,6 +789,7 @@ export default function ChatPage() {
       );
       await loadFeed(code, { quiet: true, refresh: false, name });
     } catch {
+      delete pendingAiLocksRef.current[messageId];
       const msg = "購入ロックに失敗しました（通信エラー）";
       setPurchaseInlineError(msg);
       setError(msg);
@@ -728,7 +818,8 @@ export default function ChatPage() {
     setPurchaseInlineError("");
     setError("");
     setStatus("");
-    // 楽観的更新：押した瞬間にロック色へ
+    rememberTargetLock(key, decision === "skip" ? null : decision);
+    // 楽観的更新：押した瞬間にロック色へ（ポーリングで消さない）
     setTargetPurchases((prev) => {
       const next = { ...prev };
       if (decision === "skip") delete next[key];
@@ -758,6 +849,7 @@ export default function ChatPage() {
       window.clearTimeout(timer);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        delete pendingTargetLocksRef.current[key];
         const msg = json.error || "本命対象の購入ロックに失敗しました";
         setPurchaseInlineError(msg);
         setError(msg);
@@ -776,6 +868,7 @@ export default function ChatPage() {
       );
       await loadFeed(code, { quiet: true, refresh: false, name });
     } catch (e) {
+      delete pendingTargetLocksRef.current[key];
       const aborted = e instanceof Error && e.name === "AbortError";
       const msg = aborted
         ? "応答が遅いです。再読み込みしてロック状態を確認してください"
