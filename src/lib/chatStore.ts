@@ -359,9 +359,10 @@ export async function listChatMetaByPrefix(
   prefix: string,
 ): Promise<Array<{ key: string; value: string }>> {
   try {
+    // pattern をアプリ側で組み立て（ドライバ差で `$1 || '%'` が効かないケース回避）
     return await sql<{ key: string; value: string }>(
-      `select key, value from chat_meta where key like $1 || '%' order by key asc limit 200`,
-      [prefix],
+      `select key, value from chat_meta where key like $1 order by key asc limit 200`,
+      [`${prefix}%`],
     );
   } catch {
     return [];
