@@ -1559,7 +1559,14 @@ export default function ChatPage() {
                   (m.kind === "chat" || m.meta?.mode === "casual" || !m.meta?.mode);
                 const isMine =
                   m.kind === "chat" && m.author_name === displayName.trim() && !isOp;
-                const races = raceUiById.get(m.id) || [];
+                // 重複間引きで空になった AI予想も、メッセージ内の買い目UIは残す
+                const racesDeduped = raceUiById.get(m.id) || [];
+                const races =
+                  racesDeduped.length > 0
+                    ? racesDeduped
+                    : isPrivateAiPick(m)
+                      ? messageRaces(m)
+                      : [];
                 // チップ重複で空でも本文は残す（レース選択で履歴が消えない）
                 const hasRaceUi = races.length > 0;
                 const isExhibition = m.meta?.mode === "exhibition_after_honmei";
@@ -1664,36 +1671,52 @@ export default function ChatPage() {
                               買い目
                               <em className="chat-pick-hint">押すと買い目の理由</em>
                             </div>
-                            {selected.status === "skipped" ? (
-                              <p className="chat-pick-empty">スルーのため買い目なし</p>
-                            ) : hasBandTickets(selected.bands) ? (
+                            {(() => {
+                              const isAiPick = m.meta?.mode === "app_race_pick";
+                              // AI予想は本命ボードのスルー表示で買い目を消さない
+                              const pickBands = hasBandTickets(selected.bands)
+                                ? selected.bands
+                                : m.meta?.bands;
+                              const pickTickets =
+                                selected.tickets?.length
+                                  ? selected.tickets
+                                  : m.meta?.tickets || [];
+                              const hideAsSkip =
+                                selected.status === "skipped" && !isAiPick;
+                              if (hideAsSkip) {
+                                return (
+                                  <p className="chat-pick-empty">スルーのため買い目なし</p>
+                                );
+                              }
+                              if (hasBandTickets(pickBands)) {
+                                return (
                               <div className="chat-band-stack">
                                 {(
                                   [
                                     {
                                       key: "honmei",
                                       label: "本命",
-                                      list: normalizeBandTickets(selected.bands?.honmei),
+                                      list: normalizeBandTickets(pickBands?.honmei),
                                     },
                                     {
                                       key: "honmeiSSingle",
                                       label: "本命S・単点",
-                                      list: normalizeBandTickets(selected.bands?.honmeiSSingle),
+                                      list: normalizeBandTickets(pickBands?.honmeiSSingle),
                                     },
                                     {
                                       key: "honmeiS",
                                       label: "本命S・5点",
-                                      list: normalizeBandTickets(selected.bands?.honmeiS),
+                                      list: normalizeBandTickets(pickBands?.honmeiS),
                                     },
                                     {
                                       key: "oshi",
                                       label: "押し目",
-                                      list: normalizeBandTickets(selected.bands?.oshi),
+                                      list: normalizeBandTickets(pickBands?.oshi),
                                     },
                                     {
                                       key: "ana",
                                       label: "穴",
-                                      list: normalizeBandTickets(selected.bands?.ana),
+                                      list: normalizeBandTickets(pickBands?.ana),
                                     },
                                   ] as const
                                 ).map((band) => (
@@ -1782,9 +1805,12 @@ export default function ChatPage() {
                                   </div>
                                 ))}
                               </div>
-                            ) : selected.tickets && selected.tickets.length ? (
+                                );
+                              }
+                              if (pickTickets.length) {
+                                return (
                               <ul className="chat-ticket-list">
-                                {selected.tickets.map((t) => {
+                                {pickTickets.map((t) => {
                                   const ticketKey = `flat:${t}`;
                                   const open = openTicketByMessage[m.id] === ticketKey;
                                   const settledRow = selected.ticketResults?.find(
@@ -1845,9 +1871,10 @@ export default function ChatPage() {
                                   );
                                 })}
                               </ul>
-                            ) : (
-                              <p className="chat-pick-empty">買い目なし</p>
-                            )}
+                                );
+                              }
+                              return <p className="chat-pick-empty">買い目なし</p>;
+                            })()}
                           </div>
 
                           <div className="chat-pick-block chat-pick-explain">

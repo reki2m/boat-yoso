@@ -209,6 +209,8 @@ export function enrichWaitingWithExhibitionConfirmed(
   if (!finals.size) return messages;
 
   return messages.map((m) => {
+    // AI予想は本命ボードの確定/スルーと混ぜない（スルー扱いで買い目UIが消えるのを防ぐ）
+    if (m.meta?.mode === "app_race_pick") return m;
     const races = m.meta?.races;
     if (!races?.length) return m;
     let changed = false;
