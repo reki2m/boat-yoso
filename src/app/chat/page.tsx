@@ -386,10 +386,15 @@ export default function ChatPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(`/api/confidence-map?place=${pickStadium}`);
-        const json = await res.json();
-        if (!cancelled && json?.confidences) {
+        // 本体ゲート不要のチャット用API（入場セッション必須）
+        const res = await fetch(`/api/chat/confidence-map?place=${pickStadium}`, {
+          credentials: "include",
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!cancelled && json?.ok && json?.confidences) {
           setRaceConfidence(json.confidences as Record<string, number>);
+        } else if (!cancelled) {
+          setRaceConfidence({});
         }
       } catch {
         if (!cancelled) setRaceConfidence({});

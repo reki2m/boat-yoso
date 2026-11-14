@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchKyoteiRaceBundle } from "@/lib/kyotei";
-import { scoreRace } from "@/lib/predict";
-import { confidenceFromRankings } from "@/lib/raceDeepPicks";
+import { allowAuthAttemptShared } from "@/lib/authRateLimit";
+import { buildRaceConfidenceMap } from "@/lib/raceConfidenceMap";
 import { jstDateKey } from "@/lib/stadiums";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /**
- * 指定場の各レース本線信頼度（1-5）を返す。
- * レース選択UIの色分け用。
+ * 本体アプリ向け: 指定場の各レース本線信頼度（1-5）。
+ * レース選択UIの色分け用。アプリ解錠ゲート必須（middleware）。
  */
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "app";
+  const gate = await allowAuthAttemptShared(`confidence-map:${ip}`, {
+    limit: 40,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!gate.ok) {
+    return NextResponse.json(
+      { ok: false, error: "rate_limited", retryAfterSec: gate.retryAfterSec },
+      {
+        status: 429,
+        headers: gate.retryAfterSec ? { "retry-after": String(gate.retryAfterSec) } : undefined,
+      },
+    );
+  }
+
   const place = Number(req.nextUrl.searchParams.get("place") ?? "0");
   const date = req.nextUrl.searchParams.get("date") ?? jstDateKey();
   if (!Number.isInteger(place) || place < 1 || place > 24) {
@@ -20,39 +35,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "invalid date" }, { status: 400 });
   }
 
-  const races = Array.from({ length: 12 }, (_, i) => i + 1);
-  const confidences: Record<string, number> = {};
-  const chunk = 4;
-  for (let i = 0; i < races.length; i += chunk) {
-    const slice = races.slice(i, i + chunk);
-    const rows = await Promise.all(
-      slice.map(async (race) => {
-        try {
-          const { payload } = await fetchKyoteiRaceBundle(place, race, date);
-          if (!payload.racers?.length) return { race, confidence: 0 };
-          const prediction = scoreRace(payload.racers);
-          return {
-            race,
-            confidence: confidenceFromRankings(prediction.rankings),
-          };
-        } catch {
-          return { race, confidence: 0 };
-        }
-      }),
+  try {
+    const map = await buildRaceConfidenceMap(place, date, { chunkSize: 3 });
+    return NextResponse.json(
+      {
+        ok: true,
+        ...map,
+      },
+      { headers: { "cache-control": "no-store" } },
     );
-    for (const row of rows) {
-      if (row.confidence > 0) confidences[String(row.race)] = row.confidence;
-    }
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "confidence map failed",
+      },
+      { status: 500 },
+    );
   }
-
-  return NextResponse.json(
-    {
-      ok: true,
-      place,
-      date,
-      confidences,
-      updated_at: new Date().toISOString(),
-    },
-    { headers: { "cache-control": "no-store" } },
-  );
 }
