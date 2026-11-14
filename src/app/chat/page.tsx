@@ -40,9 +40,12 @@ type ChatMessage = {
     owner_name?: string;
     race_label?: string;
     races?: RaceChipView[];
-    purchaseDecision?: "yes" | "no";
+    purchaseDecision?: "yes" | "no" | "purchased" | "skip";
+    purchaseLockedExhibition?: "waiting" | "after" | "unknown";
   };
 };
+
+type PurchaseLockState = "yes" | "no" | "purchased" | "skip";
 
 type ChatLiveTarget = {
   date: string;
@@ -150,8 +153,12 @@ function kindLabel(m: ChatMessage): string {
   if (m.meta?.mode === "admin_predict_log" || m.meta?.visibility === "admin") {
     return "管理人ログ";
   }
-  if (m.meta?.mode === "purchase_ack" || m.meta?.mode === "day_purchase_ack") {
-    return "購入確認";
+  if (
+    m.meta?.mode === "purchase_ack" ||
+    m.meta?.mode === "target_purchase_ack" ||
+    m.meta?.mode === "day_purchase_ack"
+  ) {
+    return "購入ロック";
   }
   if (m.meta?.mode === "app_race_pick") {
     return "AI予想（自分のみ）";
@@ -181,6 +188,42 @@ function targetBadge(status: string): string {
   if (status === "confirmed") return "展示確認済み購入OK";
   if (status === "provisional" || status === "programs_unavailable") return "展示待ち";
   return "";
+}
+
+function purchaseLockTone(lock: PurchaseLockState | null | undefined): string {
+  if (lock === "yes") return "purchase-locked";
+  if (lock === "purchased") return "purchase-bought";
+  if (lock === "no") return "purchase-passed";
+  return "";
+}
+
+function targetExhibitDone(status: string): boolean {
+  return status === "confirmed" || status === "skipped";
+}
+
+function aiExhibitDone(m: ChatMessage): boolean {
+  const locked = m.meta?.purchaseLockedExhibition;
+  if (locked === "after") return true;
+  if (locked === "waiting") {
+    const chip = Array.isArray(m.meta?.races) ? m.meta!.races![0] : null;
+    return Boolean(
+      chip &&
+        (chip.exhibition === "after" ||
+          chip.status === "confirmed" ||
+          chip.status === "skipped" ||
+          chip.status === "settled" ||
+          chip.settled),
+    );
+  }
+  const chip = Array.isArray(m.meta?.races) ? m.meta!.races![0] : null;
+  if (!chip) return false;
+  return (
+    chip.exhibition === "after" ||
+    chip.status === "confirmed" ||
+    chip.status === "skipped" ||
+    chip.status === "settled" ||
+    Boolean(chip.settled)
+  );
 }
 
 function raceKey(chip: Pick<RaceChipView, "placeNo" | "raceNo">): string {
@@ -323,10 +366,10 @@ export default function ChatPage() {
   const [openTicketByMessage, setOpenTicketByMessage] = useState<Record<string, string>>({});
   /** 本日の本命対象チップを開く（stadium-race） */
   const [openTargetKey, setOpenTargetKey] = useState("");
-  /** 本日の本命買い目の購入確認（セッション×日付） */
-  const [dayPurchaseDecision, setDayPurchaseDecision] = useState<"yes" | "no" | null>(null);
+  /** 本命対象レースごとの購入ロック stadium-race → state */
+  const [targetPurchases, setTargetPurchases] = useState<Record<string, PurchaseLockState>>({});
   const [purchaseBusyId, setPurchaseBusyId] = useState("");
-  const [dayPurchaseBusy, setDayPurchaseBusy] = useState(false);
+  const [targetPurchaseBusyKey, setTargetPurchaseBusyKey] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -517,7 +560,7 @@ export default function ChatPage() {
         setAdminOversight(null);
         setSelectedAdminPickId("");
         setIsAdmin(false);
-        setDayPurchaseDecision(null);
+        setTargetPurchases({});
         if (!opts.quiet) {
           setError(json.error || "入場できません");
           window.localStorage.removeItem(INVITE_KEY);
@@ -531,10 +574,10 @@ export default function ChatPage() {
       setPresence(Array.isArray(json.presence) ? json.presence : []);
       setLiveDate(json.liveDate || "");
       setIsAdmin(Boolean(json.isAdmin));
-      setDayPurchaseDecision(
-        json.dayPurchaseDecision === "yes" || json.dayPurchaseDecision === "no"
-          ? json.dayPurchaseDecision
-          : null,
+      setTargetPurchases(
+        json.targetPurchases && typeof json.targetPurchases === "object"
+          ? (json.targetPurchases as Record<string, PurchaseLockState>)
+          : {},
       );
       setAdminOversight(
         json.isAdmin && json.adminOversight ? (json.adminOversight as AdminPredictionOversight) : null,
@@ -569,10 +612,10 @@ export default function ChatPage() {
     setAdminOversight(null);
     setSelectedAdminPickId("");
     setIsAdmin(false);
-    setDayPurchaseDecision(null);
+    setTargetPurchases({});
   }
 
-  async function confirmPurchase(messageId: string, decision: "yes" | "no") {
+  async function confirmPurchase(messageId: string, decision: PurchaseLockState) {
     const code = invite.trim();
     const name = displayName.trim();
     if (!code || !name || !messageId) return;
@@ -597,34 +640,36 @@ export default function ChatPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "購入確認に失敗しました");
+        setError(json.error || "購入ロックに失敗しました");
         return;
       }
       setStatus(
         decision === "yes"
-          ? "購入しました（結果はDiscordへ通知）"
-          : "見送りにしました",
-      );
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId
-            ? { ...m, meta: { ...m.meta, purchaseDecision: decision } }
-            : m,
-        ),
+          ? "購入予定でロックしました"
+          : decision === "purchased"
+            ? "購入済みで固定しました"
+            : decision === "skip"
+              ? "スルー（通常表示に戻しました）"
+              : "見送りにしました",
       );
       await loadFeed(code, { quiet: true, refresh: false, name });
     } catch {
-      setError("購入確認に失敗しました");
+      setError("購入ロックに失敗しました");
     } finally {
       setPurchaseBusyId("");
     }
   }
 
-  async function confirmDayPurchase(decision: "yes" | "no") {
+  async function confirmTargetPurchase(
+    placeNo: number,
+    raceNo: number,
+    decision: PurchaseLockState,
+  ) {
     const code = invite.trim();
     const name = displayName.trim();
+    const key = `${placeNo}-${raceNo}`;
     if (!code || !name) return;
-    setDayPurchaseBusy(true);
+    setTargetPurchaseBusyKey(key);
     setError("");
     setStatus("");
     try {
@@ -637,27 +682,38 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           invite: code,
-          kind: "day_purchase_confirm",
+          kind: "target_purchase_confirm",
+          placeNo,
+          raceNo,
           decision,
           authorName: name,
         }),
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "本日の買い目確認に失敗しました");
+        setError(json.error || "本命対象の購入ロックに失敗しました");
         return;
       }
-      setDayPurchaseDecision(decision);
+      setTargetPurchases((prev) => {
+        const next = { ...prev };
+        if (decision === "skip") delete next[key];
+        else next[key] = decision;
+        return next;
+      });
       setStatus(
         decision === "yes"
-          ? "本日の買い目を購入として記録しました（Discord通知）"
-          : "本日の買い目は見送りにしました",
+          ? "本命対象を購入予定でロックしました"
+          : decision === "purchased"
+            ? "本命対象を購入済みで固定しました"
+            : decision === "skip"
+              ? "スルー（通常表示に戻しました）"
+              : "本命対象を見送りにしました",
       );
       await loadFeed(code, { quiet: true, refresh: false, name });
     } catch {
-      setError("本日の買い目確認に失敗しました");
+      setError("本命対象の購入ロックに失敗しました");
     } finally {
-      setDayPurchaseBusy(false);
+      setTargetPurchaseBusyKey("");
     }
   }
 
@@ -1072,14 +1128,28 @@ export default function ChatPage() {
                     const ticketFallback =
                       ticketHint ||
                       (t.tickets?.length ? t.tickets.join(" / ") : "—");
+                    const lock = targetPurchases[key];
+                    const lockTone = purchaseLockTone(lock);
+                    const lockBusy = targetPurchaseBusyKey === key;
+                    const exhibitDone = targetExhibitDone(t.status);
+                    const lockBadge =
+                      lock === "purchased"
+                        ? "購入済み"
+                        : lock === "yes"
+                          ? exhibitDone
+                            ? "展示後・選択待ち"
+                            : "ロック中"
+                          : lock === "no"
+                            ? "見送り"
+                            : "";
                     return (
                       <div
                         key={key}
-                        className={`chat-target-item ${open ? "open" : ""} ${targetToneClass(t.status)}`}
+                        className={`chat-target-item ${open ? "open" : ""} ${targetToneClass(t.status)} ${lockTone}`}
                       >
                         <button
                           type="button"
-                          className={`chat-race-chip ${open ? "active" : ""} ${targetToneClass(t.status)}`}
+                          className={`chat-race-chip ${open ? "active" : ""} ${targetToneClass(t.status)} ${lockTone}`}
                           aria-expanded={open}
                           title="買い目と理由を表示"
                           onClick={() => {
@@ -1093,10 +1163,10 @@ export default function ChatPage() {
                             {t.race}R
                             {t.label ? ` · ${t.label}` : ""}
                           </span>
-                          {badge ? <em>{badge}</em> : null}
+                          {lockBadge ? <em>{lockBadge}</em> : badge ? <em>{badge}</em> : null}
                         </button>
                         {open ? (
-                          <div className="chat-target-detail">
+                          <div className={`chat-target-detail ${lockTone}`}>
                             <strong>
                               {t.stadium_name}
                               {t.race}R の買い目
@@ -1136,44 +1206,80 @@ export default function ChatPage() {
                                 <p className="note">スルー: {t.skip_detail}</p>
                               ) : null}
                             </div>
+                            <div className={`chat-purchase-ask ${lockTone}`}>
+                              {lock === "purchased" ? (
+                                <p className="chat-purchase-ask-done">購入済み（チャットに固定）</p>
+                              ) : lock === "no" ? (
+                                <p className="chat-purchase-ask-done">見送り</p>
+                              ) : lock === "yes" && exhibitDone ? (
+                                <>
+                                  <p className="chat-purchase-ask-label">
+                                    展示後の情報です。スルー推奨か購入済みか選んでください
+                                  </p>
+                                  <div className="chat-purchase-ask-actions">
+                                    <button
+                                      type="button"
+                                      className="btn ghost chat-purchase-skip"
+                                      disabled={lockBusy}
+                                      onClick={() => {
+                                        void confirmTargetPurchase(t.stadium, t.race, "skip");
+                                      }}
+                                    >
+                                      スルー推奨
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn chat-purchase-bought"
+                                      disabled={lockBusy}
+                                      onClick={() => {
+                                        void confirmTargetPurchase(
+                                          t.stadium,
+                                          t.race,
+                                          "purchased",
+                                        );
+                                      }}
+                                    >
+                                      購入済み
+                                    </button>
+                                  </div>
+                                </>
+                              ) : lock === "yes" ? (
+                                <p className="chat-purchase-ask-done">
+                                  ロック中（購入予定）・展示後にスルー推奨／購入済みを選べます
+                                </p>
+                              ) : (
+                                <>
+                                  <p className="chat-purchase-ask-label">購入予定？</p>
+                                  <div className="chat-purchase-ask-actions">
+                                    <button
+                                      type="button"
+                                      className="btn chat-purchase-yes"
+                                      disabled={lockBusy}
+                                      onClick={() => {
+                                        void confirmTargetPurchase(t.stadium, t.race, "yes");
+                                      }}
+                                    >
+                                      YES
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn ghost chat-purchase-no"
+                                      disabled={lockBusy}
+                                      onClick={() => {
+                                        void confirmTargetPurchase(t.stadium, t.race, "no");
+                                      }}
+                                    >
+                                      NO
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         ) : null}
                       </div>
                     );
                   })}
-                </div>
-                <div className="chat-purchase-ask">
-                  <p className="chat-purchase-ask-label">本日の買い目も購入しましたか？</p>
-                  {dayPurchaseDecision ? (
-                    <p className="chat-purchase-ask-done">
-                      {dayPurchaseDecision === "yes"
-                        ? "回答済み: 購入した"
-                        : "回答済み: 見送った"}
-                    </p>
-                  ) : (
-                    <div className="chat-purchase-ask-actions">
-                      <button
-                        type="button"
-                        className="btn chat-purchase-yes"
-                        disabled={dayPurchaseBusy}
-                        onClick={() => {
-                          void confirmDayPurchase("yes");
-                        }}
-                      >
-                        YES
-                      </button>
-                      <button
-                        type="button"
-                        className="btn ghost chat-purchase-no"
-                        disabled={dayPurchaseBusy}
-                        onClick={() => {
-                          void confirmDayPurchase("no");
-                        }}
-                      >
-                        NO
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
@@ -1216,6 +1322,12 @@ export default function ChatPage() {
                   races.find((r) => raceKey(r) === openKey) || races[0] || null;
                 const split = hasRaceUi ? splitPickBody(m.body) : null;
                 const showRaw = Boolean(showBodyByMessage[m.id]);
+                const purchaseTone =
+                  m.meta?.mode === "app_race_pick"
+                    ? purchaseLockTone(m.meta.purchaseDecision)
+                    : m.meta?.mode === "purchase_ack" || m.meta?.mode === "target_purchase_ack"
+                      ? purchaseLockTone(m.meta.purchaseDecision)
+                      : "";
                 return (
                   <article
                     key={m.id}
@@ -1225,7 +1337,7 @@ export default function ChatPage() {
                       isAdminSpeech ? "admin-speech" : ""
                     } ${hasRaceUi ? "has-race-ui" : ""} ${isExhibition ? "exhibition-after" : ""} ${
                       isResult ? "honmei-result" : ""
-                    }`}
+                    } ${purchaseTone}`}
                   >
                     <div className="chat-bubble-meta">
                       <strong>
@@ -1502,37 +1614,74 @@ export default function ChatPage() {
                           </div>
 
                           {m.meta?.mode === "app_race_pick" ? (
-                            <div className="chat-purchase-ask">
-                              <p className="chat-purchase-ask-label">購入しますか？</p>
-                              {m.meta.purchaseDecision ? (
+                            <div
+                              className={`chat-purchase-ask ${purchaseLockTone(m.meta.purchaseDecision)}`}
+                            >
+                              {m.meta.purchaseDecision === "purchased" ? (
                                 <p className="chat-purchase-ask-done">
-                                  {m.meta.purchaseDecision === "yes"
-                                    ? "回答済み: 購入する（結果はDiscord通知）"
-                                    : "回答済み: 見送る"}
+                                  購入済み（チャットに固定・結果はDiscord通知）
+                                </p>
+                              ) : m.meta.purchaseDecision === "no" ? (
+                                <p className="chat-purchase-ask-done">見送り</p>
+                              ) : m.meta.purchaseDecision === "yes" &&
+                                aiExhibitDone(m) ? (
+                                <>
+                                  <p className="chat-purchase-ask-label">
+                                    展示後の情報です。スルー推奨か購入済みか選んでください
+                                  </p>
+                                  <div className="chat-purchase-ask-actions">
+                                    <button
+                                      type="button"
+                                      className="btn ghost chat-purchase-skip"
+                                      disabled={purchaseBusyId === m.id}
+                                      onClick={() => {
+                                        void confirmPurchase(m.id, "skip");
+                                      }}
+                                    >
+                                      スルー推奨
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn chat-purchase-bought"
+                                      disabled={purchaseBusyId === m.id}
+                                      onClick={() => {
+                                        void confirmPurchase(m.id, "purchased");
+                                      }}
+                                    >
+                                      購入済み
+                                    </button>
+                                  </div>
+                                </>
+                              ) : m.meta.purchaseDecision === "yes" ? (
+                                <p className="chat-purchase-ask-done">
+                                  ロック中（購入予定）・展示後にスルー推奨／購入済みを選べます
                                 </p>
                               ) : (
-                                <div className="chat-purchase-ask-actions">
-                                  <button
-                                    type="button"
-                                    className="btn chat-purchase-yes"
-                                    disabled={purchaseBusyId === m.id}
-                                    onClick={() => {
-                                      void confirmPurchase(m.id, "yes");
-                                    }}
-                                  >
-                                    YES
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn ghost chat-purchase-no"
-                                    disabled={purchaseBusyId === m.id}
-                                    onClick={() => {
-                                      void confirmPurchase(m.id, "no");
-                                    }}
-                                  >
-                                    NO
-                                  </button>
-                                </div>
+                                <>
+                                  <p className="chat-purchase-ask-label">購入予定？</p>
+                                  <div className="chat-purchase-ask-actions">
+                                    <button
+                                      type="button"
+                                      className="btn chat-purchase-yes"
+                                      disabled={purchaseBusyId === m.id}
+                                      onClick={() => {
+                                        void confirmPurchase(m.id, "yes");
+                                      }}
+                                    >
+                                      YES
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn ghost chat-purchase-no"
+                                      disabled={purchaseBusyId === m.id}
+                                      onClick={() => {
+                                        void confirmPurchase(m.id, "no");
+                                      }}
+                                    >
+                                      NO
+                                    </button>
+                                  </div>
+                                </>
                               )}
                             </div>
                           ) : null}

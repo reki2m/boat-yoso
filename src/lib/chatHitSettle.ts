@@ -172,23 +172,24 @@ export async function settleChatPredictionHits(): Promise<number> {
       },
     });
 
-    // Discord: 購入Yes → 払戻付き定型文＋通算。未回答の予想結果も通知。見送りは送らない。
+    // Discord: 購入予定/購入済み → 払戻付き定型文＋通算。未回答の予想結果も通知。見送りは送らない。
+    const purchaseCounted =
+      m.meta?.purchaseDecision === "yes" || m.meta?.purchaseDecision === "purchased";
     if (!m.meta?.purchaseResultDiscord && m.meta?.purchaseDecision !== "no") {
       const userName = discordDisplayName(m.meta?.owner_name || "メンバー");
       const ownerSessionId = m.meta?.owner_session_id || "";
-      let discordBody =
-        m.meta?.purchaseDecision === "yes"
-          ? formatPurchaseSettleDiscord({
-              placeName,
-              raceNo: info.race,
-              userName,
-              payoutYen,
-            })
-          : hits.length
-            ? `結果 ${placeName}${info.race}レース（${userName}の予想）的中 払戻目安 ${yen(payoutYen)}`
-            : `結果 ${placeName}${info.race}レース（${userName}の予想）的中なし`;
+      let discordBody = purchaseCounted
+        ? formatPurchaseSettleDiscord({
+            placeName,
+            raceNo: info.race,
+            userName,
+            payoutYen,
+          })
+        : hits.length
+          ? `結果 ${placeName}${info.race}レース（${userName}の予想）的中 払戻目安 ${yen(payoutYen)}`
+          : `結果 ${placeName}${info.race}レース（${userName}の予想）的中なし`;
 
-      if (m.meta?.purchaseDecision === "yes" && ownerSessionId) {
+      if (purchaseCounted && ownerSessionId) {
         purchaseSettles += 1;
         const stats = await computePurchaseUserStats({
           ownerSessionId,
