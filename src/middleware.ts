@@ -8,10 +8,10 @@ function gateSecret(): string {
       .normalize("NFKC")
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .trim();
+  // 運営キーでは本体解錠しない（APP_UNLOCK / 管理人キーのみ）
   const unlock = strip(process.env.APP_UNLOCK_KEY);
   const admin = strip(process.env.CHAT_ADMIN_KEY);
-  const op = strip(process.env.CHAT_OPERATOR_KEY);
-  return unlock || admin || op || (process.env.NODE_ENV === "production" ? "" : "shio-op");
+  return unlock || admin || (process.env.NODE_ENV === "production" ? "" : "shio-op");
 }
 
 async function expectedToken(secret: string): Promise<string> {
@@ -31,9 +31,10 @@ function isPublicPath(pathname: string): boolean {
   return (
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
+    // チャットは招待コードで別認証（本体ゲート対象外）
     pathname.startsWith("/api/chat") ||
-    // チャットの場選択用。本日開催場の公開一覧のみ（鍵不要）
-    pathname.startsWith("/api/schedule") ||
+    // Vercel Cron / CRON_SECRET はルート側で検証
+    pathname.startsWith("/api/cron/") ||
     pathname.startsWith("/api/app-auth") ||
     pathname === "/login" ||
     pathname.startsWith("/_next") ||

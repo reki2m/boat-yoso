@@ -1,14 +1,26 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { maybePostMorningHonmeiPicks } from "@/lib/chatMorningPicks";
 import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 
 export const dynamic = "force-dynamic";
 
+function safeEqualSecret(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  try {
+    return timingSafeEqual(ba, bb);
+  } catch {
+    return false;
+  }
+}
+
 function authorized(req: NextRequest): boolean {
   const cron = process.env.CRON_SECRET?.trim();
   if (!cron) return false;
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  return Boolean(bearer && bearer === cron);
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
+  return Boolean(bearer && safeEqualSecret(bearer, cron));
 }
 
 /** 朝の本命投稿。CRON_SECRET（Bearer）必須。 */

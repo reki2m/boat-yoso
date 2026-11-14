@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const place = Number(req.nextUrl.searchParams.get("place") ?? "2");
   const race = Number(req.nextUrl.searchParams.get("race") ?? "1");
   const date = req.nextUrl.searchParams.get("date") ?? jstDateKey();
-  const streamUrl = req.nextUrl.searchParams.get("stream") ?? undefined;
+  // 訪問者指定の stream URL は受け付けない（SSRF防止）。公式導線はサーバー側で組み立てる。
   const demoExhibition = req.nextUrl.searchParams.get("demoExhibition") === "1";
   const windParam = req.nextUrl.searchParams.get("wind");
 
@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
     raceNo: race,
     racers: payload.racers,
     trifectaOdds: odds,
-    streamUrl,
     windSpeed,
     exhibition,
   });
@@ -74,7 +73,6 @@ export async function GET(req: NextRequest) {
   });
 
   const liveExtra = await analyzeLiveWithStream({
-    streamUrl: streamUrl ?? undefined,
     placeNo: place,
     dateKey: date,
     raceNo: race,

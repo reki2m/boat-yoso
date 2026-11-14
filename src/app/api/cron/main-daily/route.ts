@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   runMainAppExhibitionConfirm,
@@ -7,18 +8,30 @@ import {
 import { allowAuthAttemptShared } from "@/lib/authRateLimit";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+/** confirm は短め。nightly/learn も上限を抑えてリソース食いを防ぐ */
+export const maxDuration = 120;
 
 type Mode = "nightly" | "confirm" | "learn";
+
+function safeEqualSecret(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  try {
+    return timingSafeEqual(ba, bb);
+  } catch {
+    return false;
+  }
+}
 
 function authorized(req: NextRequest): boolean {
   const cron = process.env.CRON_SECRET?.trim();
   if (!cron) return false;
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (bearer && bearer === cron) return true;
-  // Vercel Cron は Authorization: Bearer CRON_SECRET を付ける
-  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
-  return Boolean(isVercelCron && bearer && bearer === cron);
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
+  if (!bearer || !safeEqualSecret(bearer, cron)) return false;
+  // Vercel Cron は Authorization: Bearer CRON_SECRET を付ける。
+  // 手動呼び出しも同じ Bearer で可（共有秘密が必須）。
+  return true;
 }
 
 function parseMode(raw: unknown): Mode {
@@ -40,8 +53,9 @@ async function handle(req: NextRequest) {
     );
   }
   const ip = req.headers.get("x-forwarded-for") || "cron";
+  // 重い Python ジョブの連打を抑える
   const gate = await allowAuthAttemptShared(`cron-main-daily:${ip}`, {
-    limit: 24,
+    limit: 6,
     windowMs: 60 * 60 * 1000,
   });
   if (!gate.ok) {

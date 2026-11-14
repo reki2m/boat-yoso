@@ -1,4 +1,4 @@
-import { checkAdmin, checkOperator, adminKey, operatorKey } from "@/lib/chatStore";
+import { checkAdmin, adminKey } from "@/lib/chatStore";
 import { normalizeSecret, safeEqualText } from "@/lib/chatSecurity";
 
 export const APP_GATE_COOKIE = "shioyomi_app_gate";
@@ -9,11 +9,10 @@ export function appUnlockKey(): string {
 }
 
 function gateSecret(): string {
-  // middleware と同じシード順・同じ正規化
+  // middleware と同じシード順・同じ正規化（運営キーでは解錠しない）
   return (
     appUnlockKey() ||
     normalizeSecret(process.env.CHAT_ADMIN_KEY) ||
-    normalizeSecret(process.env.CHAT_OPERATOR_KEY) ||
     (process.env.NODE_ENV === "production" ? "" : "shio-op")
   );
 }
@@ -45,9 +44,9 @@ export async function checkAppGateToken(token: string | null | undefined): Promi
   return diff === 0;
 }
 
-/** 本番で鍵が Secrets に載っているか */
+/** 本番で鍵が Secrets に載っているか（解錠は unlock / admin のみ） */
 export function appUnlockKeysConfigured(): boolean {
-  return Boolean(appUnlockKey() || adminKey() || operatorKey());
+  return Boolean(appUnlockKey() || adminKey());
 }
 
 function checkAppUnlockOnly(key: string | null | undefined): boolean {
@@ -56,7 +55,7 @@ function checkAppUnlockOnly(key: string | null | undefined): boolean {
   return Boolean(expected && got && safeEqualText(got, expected));
 }
 
-/** アプリ解錠: APP_UNLOCK_KEY（優先） / 管理人キー / 運営キー */
+/** アプリ解錠: APP_UNLOCK_KEY（優先） / 管理人キー。運営キーは解錠不可。 */
 export function checkAppUnlockKey(key: string | null | undefined): boolean {
-  return checkAppUnlockOnly(key) || checkAdmin(key) || checkOperator(key);
+  return checkAppUnlockOnly(key) || checkAdmin(key);
 }
