@@ -6,6 +6,7 @@ import {
 } from "@/lib/chatStore";
 import { sql } from "@/lib/db";
 import {
+  discordDisplayName,
   formatPurchaseSettleDiscord,
   sendDiscordMessage,
 } from "@/lib/discordNotify";
@@ -173,7 +174,7 @@ export async function settleChatPredictionHits(): Promise<number> {
 
     // Discord: 購入Yes → 払戻付き定型文＋通算。未回答の予想結果も通知。見送りは送らない。
     if (!m.meta?.purchaseResultDiscord && m.meta?.purchaseDecision !== "no") {
-      const userName = m.meta?.owner_name || "メンバー";
+      const userName = discordDisplayName(m.meta?.owner_name || "メンバー");
       const ownerSessionId = m.meta?.owner_session_id || "";
       let discordBody =
         m.meta?.purchaseDecision === "yes"

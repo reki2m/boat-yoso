@@ -160,7 +160,8 @@ export function formatUserStatsDiscordLine(stat: ChatUserStat): string {
     stat.recoveryPct == null
       ? "回収率 —"
       : `回収率 ${stat.recoveryPct.toFixed(1)}%（払戻¥${stat.payoutYen.toLocaleString("ja-JP")} / 投資¥${stat.stakeYen.toLocaleString("ja-JP")}）`;
-  return `【${stat.owner_name} 通算】${hit} / ${rec}`;
+  const name = String(stat.owner_name || "メンバー").replace(/\s+/g, " ").trim().slice(0, 20) || "メンバー";
+  return `【${name} 通算】${hit} / ${rec}`;
 }
 
 /** 全ユーザー分の通算サマリー（Discord用） */

@@ -1150,7 +1150,7 @@ export default function ChatPage() {
                           void confirmDayPurchase("yes");
                         }}
                       >
-                        イエス
+                        YES
                       </button>
                       <button
                         type="button"
@@ -1160,7 +1160,7 @@ export default function ChatPage() {
                           void confirmDayPurchase("no");
                         }}
                       >
-                        ノー
+                        NO
                       </button>
                     </div>
                   )}
@@ -1496,7 +1496,7 @@ export default function ChatPage() {
                                       void confirmPurchase(m.id, "yes");
                                     }}
                                   >
-                                    イエス
+                                    YES
                                   </button>
                                   <button
                                     type="button"
@@ -1506,7 +1506,7 @@ export default function ChatPage() {
                                       void confirmPurchase(m.id, "no");
                                     }}
                                   >
-                                    ノー
+                                    NO
                                   </button>
                                 </div>
                               )}

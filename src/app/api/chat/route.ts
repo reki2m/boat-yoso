@@ -46,7 +46,7 @@ import { STADIUMS, jstDateKey } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 import { enrichChatMessagesWithResults } from "@/lib/chatResultEnrich";
 import { todayDayPurchaseKey } from "@/lib/chatPurchase";
-import { sendDiscordMessage } from "@/lib/discordNotify";
+import { discordDisplayName, sendDiscordMessage } from "@/lib/discordNotify";
 
 export const dynamic = "force-dynamic";
 
@@ -183,7 +183,7 @@ async function createAppRacePick(opts: {
     });
     // 予想ボタン押下を Discord 通知
     await mirrorDiscord(
-      `${placeName}${opts.raceNo}レース ${opts.ownerName}がAI予想を表示しました。`,
+      `${placeName}${opts.raceNo}レース ${discordDisplayName(opts.ownerName)}がAI予想を表示しました。`,
     ).catch(() => null);
     return { ok: true, reply, adminLog };
   } catch {
@@ -499,7 +499,7 @@ export async function POST(req: NextRequest) {
     let discordOk = false;
     if (decision === "yes") {
       const mirrored = await mirrorDiscord(
-        `${placeName}${raceNo}レース ${ownerName}が買いました。`,
+        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が買いました。`,
       );
       discordOk = mirrored.ok;
       await appendChatMessage({
@@ -584,7 +584,7 @@ export async function POST(req: NextRequest) {
           .map((t) => `${t.stadium_name}${t.race}R`)
           .join(" / ") || "本日の本命対象";
       const mirrored = await mirrorDiscord(
-        `本日の本命買い目を ${ownerName} が購入しました。（${labels}）`,
+        `本日の本命買い目を ${discordDisplayName(ownerName)} が購入しました。（${labels}）`,
       );
       discordOk = mirrored.ok;
       await appendChatMessage({
