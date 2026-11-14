@@ -44,7 +44,10 @@ import {
 import { buildRaceChipsFromPicks, buildSingleRaceChip } from "@/lib/chatRaceUi";
 import { STADIUMS, jstDateKey } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
-import { enrichChatMessagesWithResults } from "@/lib/chatResultEnrich";
+import {
+  enrichChatMessagesWithResults,
+  enrichWaitingWithExhibitionConfirmed,
+} from "@/lib/chatResultEnrich";
 import { todayDayPurchaseKey } from "@/lib/chatPurchase";
 import { discordDisplayName, sendDiscordMessage } from "@/lib/discordNotify";
 
@@ -263,9 +266,10 @@ export async function GET(req: NextRequest) {
       ? getChatMetaValue(todayDayPurchaseKey(sessionId)).catch(() => null)
       : Promise.resolve(null),
   ]);
-  const messages = await enrichChatMessagesWithResults(feed.messages).catch(
+  const withResults = await enrichChatMessagesWithResults(feed.messages).catch(
     () => feed.messages,
   );
+  const messages = enrichWaitingWithExhibitionConfirmed(withResults, live.targets);
   const dayPurchaseDecision =
     dayPurchaseRaw === "yes" || dayPurchaseRaw === "no" ? dayPurchaseRaw : null;
   return NextResponse.json(
@@ -681,13 +685,14 @@ export async function POST(req: NextRequest) {
     if (!text) {
       return NextResponse.json({ ok: false, error: "メッセージが空です" }, { status: 400 });
     }
-    const role: ChatRole = isOperator ? "operator" : "member";
+    const role: ChatRole = isAdmin || isOperator ? "operator" : "member";
     const authorName = sanitizeDisplayName(
-      body.authorName || (isOperator ? "運営" : "メンバー"),
+      body.authorName || (role === "operator" ? "管理人" : "メンバー"),
     );
+    // 管理人/運営の発言は全ユーザーのチャット欄に残す（公開）
     const message = await appendChatMessage({
       kind: "chat",
-      title: role === "operator" ? "運営" : authorName,
+      title: role === "operator" ? "管理人" : authorName,
       body: text,
       author_name: authorName,
       author_role: role,

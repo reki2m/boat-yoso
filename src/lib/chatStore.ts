@@ -172,8 +172,10 @@ export function canViewMessage(
 ): boolean {
   const vis = messageVisibility(m);
   if (vis === "public") return true;
-  if (vis === "admin") return Boolean(viewer.isAdmin);
-  // private: 依頼した本人のみ（管理人にも本文は出さない。管理人は admin ログを見る）
+  // 管理人は全員のアクション（private / admin ログ）を見られる
+  if (viewer.isAdmin) return true;
+  if (vis === "admin") return false;
+  // private: 本人のみ（他ユーザーには見えない）
   const owner = m.meta?.owner_session_id || "";
   return Boolean(viewer.sessionId && owner && owner === viewer.sessionId);
 }

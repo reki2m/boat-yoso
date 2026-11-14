@@ -175,3 +175,56 @@ export async function enrichChatMessagesWithResults(
     };
   });
 }
+
+function raceKeyOf(placeNo: number, raceNo: number): string {
+  return `${placeNo}:${raceNo}`;
+}
+
+/**
+ * 展示後に確定したレースは、朝の「展示待ち」チップも購入OK表示へ更新する。
+ * liveTargets（本日の本命対象）の status も反映する。
+ */
+export function enrichWaitingWithExhibitionConfirmed(
+  messages: ChatMessage[],
+  liveTargets?: Array<{ stadium: number; race: number; status: string }>,
+): ChatMessage[] {
+  const finals = new Map<string, "confirmed" | "skipped">();
+
+  for (const t of liveTargets || []) {
+    const key = raceKeyOf(t.stadium, t.race);
+    if (t.status === "skipped") finals.set(key, "skipped");
+    else if (t.status === "confirmed") finals.set(key, "confirmed");
+  }
+
+  for (const m of messages) {
+    for (const chip of m.meta?.races || []) {
+      const key = raceKeyOf(chip.placeNo, chip.raceNo);
+      if (chip.status === "skipped") finals.set(key, "skipped");
+      else if (chip.status === "confirmed" || chip.exhibition === "after") {
+        if (finals.get(key) !== "skipped") finals.set(key, "confirmed");
+      }
+    }
+  }
+
+  if (!finals.size) return messages;
+
+  return messages.map((m) => {
+    const races = m.meta?.races;
+    if (!races?.length) return m;
+    let changed = false;
+    const next = races.map((chip) => {
+      if (chip.settled || chip.status === "settled" || chip.finishCombo) return chip;
+      if (chip.status === "confirmed" || chip.status === "skipped") return chip;
+      const fin = finals.get(raceKeyOf(chip.placeNo, chip.raceNo));
+      if (!fin) return chip;
+      changed = true;
+      return {
+        ...chip,
+        status: fin,
+        exhibition: "after" as const,
+      };
+    });
+    if (!changed) return m;
+    return { ...m, meta: { ...m.meta, races: next } };
+  });
+}
