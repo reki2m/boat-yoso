@@ -75,7 +75,7 @@ function LoginForm() {
       {error ? <p className="status">{error}</p> : null}
       <p className="note" style={{ marginTop: "0.85rem" }}>
         ここに入れるのは招待コードではなく、Cursor Apps の Secrets にある APP_UNLOCK_KEY（未設定なら
-        CHAT_ADMIN_KEY / CHAT_OPERATOR_KEY）です。友達には /chat と招待コードだけ渡してください。
+        CHAT_ADMIN_KEY）です。運営キーでは解錠できません。友達には /chat と招待コードだけ渡してください。
       </p>
     </section>
   );

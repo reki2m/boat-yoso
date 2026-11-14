@@ -1,5 +1,6 @@
 import { liveBroadcastUrls } from "./liveBroadcast";
 import type { ExhibitionSignalSummary } from "./exhibition";
+import { safeGetReachability } from "./safeFetchUrl";
 
 export type LiveAnalysisInput = {
   streamUrl?: string;
@@ -116,46 +117,28 @@ export function analyzeLive(input: LiveAnalysisInput): LiveAnalysisResult {
   };
 }
 
-/** 配信URL到達確認付き（API/チャット向け） */
+/** 配信URL到達確認付き（API/チャット向け）。外部URLは許可ホストのみ。 */
 export async function analyzeLiveWithStream(
   input: LiveAnalysisInput,
 ): Promise<LiveAnalysisResult> {
   const base = analyzeLive(input);
+  // 呼び出し元の任意URLは使わず、場・日付・レースから公式導線のみ組み立てる
   const streamUrl =
-    input.streamUrl ||
-    (input.placeNo && input.dateKey
+    input.placeNo && input.dateKey
       ? liveBroadcastUrls(input.placeNo, input.dateKey, input.raceNo ?? 1).mediaTop
-      : undefined);
+      : undefined;
   if (!streamUrl) return base;
 
-  let detail = "配信未確認";
-  let ok = false;
-  try {
-    const res = await fetch(streamUrl, {
-      method: "GET",
-      headers: {
-        "user-agent": "Mozilla/5.0 (compatible; BoatYosoLive/1.0)",
-        accept: "text/html,application/xhtml+xml,*/*",
-      },
-      cache: "no-store",
-      redirect: "follow",
-      signal: AbortSignal.timeout(6000),
-    });
-    ok = res.ok || res.status === 301 || res.status === 302;
-    detail = `配信応答 ${res.status}`;
-  } catch (e) {
-    detail = `配信到達不可 (${e instanceof Error ? e.message : "error"})`;
-  }
-
-  const streamMessage = ok
-    ? `${detail}。数値展示を主、映像は補助確認。`
-    : `${detail}。映像なしでも直前CSVの進入・スリット・周回で判定継続。`;
+  const reach = await safeGetReachability(streamUrl);
+  const streamMessage = reach.ok
+    ? `${reach.detail}。数値展示を主、映像は補助確認。`
+    : `${reach.detail}。映像なしでも直前CSVの進入・スリット・周回で判定継続。`;
 
   return {
     ...base,
     stream: {
       url: streamUrl,
-      status: ok ? "reachable" : "unreachable",
+      status: reach.ok ? "reachable" : "unreachable",
       message: streamMessage,
     },
     aiSummary: [...new Set([...(base.aiSummary ?? []), streamMessage])].slice(0, 8),
