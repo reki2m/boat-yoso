@@ -951,6 +951,13 @@ th {
   font-size: 0.88rem;
 }
 
+.chat-bubble-meta .chat-msg-delete {
+  margin-left: auto;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  min-height: auto;
+}
+
 .chat-bubble-body {
   margin: 0;
   white-space: pre-wrap;

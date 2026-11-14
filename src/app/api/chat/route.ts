@@ -7,6 +7,7 @@ import {
   checkInvite,
   checkOperator,
   clearChatMessages,
+  deleteChatMessage,
   getChatMessageById,
   listChatMetaByPrefix,
   patchChatMessageMeta,
@@ -311,6 +312,7 @@ export async function POST(req: NextRequest) {
     kind?:
       | ChatKind
       | "clear"
+      | "delete"
       | "leave"
       | "predict"
       | "enter"
@@ -452,8 +454,35 @@ export async function POST(req: NextRequest) {
       body: "管理人がチャット履歴を一括消去しました。",
       author_name: "管理人",
       author_role: "operator",
+      meta: { visibility: "public", mode: "admin_clear" },
     });
     return NextResponse.json({ ok: true, deleted, message: notice });
+  }
+
+  // 個別消去: 管理人のみ（メンバー自身の削除は不可）
+  if (kind === "delete") {
+    if (!isAdmin) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "管理人権限が必要です",
+          hint: "メッセージの消去は管理人のみです",
+        },
+        { status: 403 },
+      );
+    }
+    const messageId = String(body.messageId || "").trim();
+    if (!messageId) {
+      return NextResponse.json({ ok: false, error: "messageId が必要です" }, { status: 400 });
+    }
+    const deleted = await deleteChatMessage(messageId);
+    if (!deleted) {
+      return NextResponse.json(
+        { ok: false, error: "メッセージが見つかりません" },
+        { status: 404 },
+      );
+    }
+    return NextResponse.json({ ok: true, deleted: 1, messageId });
   }
 
   await maybeRunChatMaintenance().catch(() => null);
