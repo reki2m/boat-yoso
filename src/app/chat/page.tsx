@@ -881,6 +881,46 @@ export default function ChatPage() {
     }
   }
 
+  async function sendDiscordTest() {
+    const key = adminKey.trim();
+    if (!key) {
+      setError("Discordテストには管理人キーが必要です");
+      return;
+    }
+    setSending(true);
+    setError("");
+    setStatus("");
+    try {
+      const res = await fetch("/api/discord/notify", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-chat-admin": key,
+          "x-chat-operator": key,
+        },
+        body: JSON.stringify({
+          test: true,
+          adminKey: key,
+          authorName: displayName.trim() || "管理人",
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(
+          [json.error, json.hint].filter(Boolean).join(" / ") ||
+            "Discordテスト通知に失敗しました",
+        );
+        return;
+      }
+      setStatus("Discordにテスト通知を送りました。チャンネルを確認してください。");
+    } catch {
+      setError("Discordテスト通知に失敗しました（通信エラー）");
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function clearChatBulk() {
     const key = adminKey.trim();
     if (!key) {
@@ -1125,6 +1165,16 @@ export default function ChatPage() {
                 <strong>管理人専用・回収率</strong>
                 <button
                   type="button"
+                  className="btn"
+                  disabled={sending || !adminKey.trim()}
+                  onClick={() => {
+                    void sendDiscordTest();
+                  }}
+                >
+                  Discordテスト通知
+                </button>
+                <button
+                  type="button"
                   className="btn ghost"
                   disabled={sending}
                   onClick={() => {
@@ -1134,6 +1184,9 @@ export default function ChatPage() {
                   一括消去
                 </button>
               </div>
+              <p className="note">
+                Discordに来ないときは「Discordテスト通知」で確認（Secrets の DISCORD_MIRROR_ENABLED=1 と Webhook）。
+              </p>
               <p className="note">友達のAI予想ログです。行を押すと本文と回収率を見られます。</p>
               {adminOversight ? (
                 <div className="admin-roi-summary">
