@@ -358,6 +358,10 @@ textarea {
   cursor: wait;
 }
 
+.chat-race-pick-grid {
+  max-width: 420px;
+}
+
 @media (max-width: 560px) {
   .race-pick-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
