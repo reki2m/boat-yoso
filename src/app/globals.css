@@ -1914,6 +1914,18 @@ th {
   color: #9fd0ea;
 }
 
+.chat-purchase-ask-busy {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  color: #ffe6a8;
+}
+
+.chat-purchase-ask-error {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  color: #ff9aa8;
+}
+
 .chat-purchase-ask.purchase-locked,
 .chat-target-detail.purchase-locked,
 .chat-race-chip.purchase-locked {

@@ -26,19 +26,25 @@ export async function sendDiscordMessage(
   const webhook = process.env.DISCORD_WEBHOOK_URL?.trim();
   if (!webhook) return { ok: false, detail: "DISCORD_WEBHOOK_URL 未設定" };
   try {
+    // Discord 不通・egress 待ちで購入ロックUIが固まらないよう短時間で打ち切る
     const res = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: toDiscordContent(body) }),
+      signal: AbortSignal.timeout(2500),
     });
     if (!res.ok) {
       return { ok: false, detail: `Discord HTTP ${res.status}` };
     }
     return { ok: true };
   } catch (e) {
+    const msg = e instanceof Error ? e.message : "Discord送信失敗";
+    const timedOut =
+      (e instanceof Error && e.name === "TimeoutError") ||
+      /aborted|timeout/i.test(msg);
     return {
       ok: false,
-      detail: e instanceof Error ? e.message : "Discord送信失敗",
+      detail: timedOut ? "Discord送信タイムアウト" : msg,
     };
   }
 }
