@@ -1,9 +1,14 @@
 import {
   appendChatMessage,
+  patchChatMessageMeta,
   readAllChatMessagesForJobs,
   type ChatMessage,
 } from "@/lib/chatStore";
 import { sql } from "@/lib/db";
+import {
+  formatPurchaseSettleDiscord,
+  sendDiscordMessage,
+} from "@/lib/discordNotify";
 import { fetchDayResults, hasRaceResult, resultKey } from "@/lib/raceResults";
 import { STADIUMS } from "@/lib/stadiums";
 
@@ -133,6 +138,7 @@ export async function settleChatPredictionHits(): Promise<number> {
       "※払戻は公式発表の100円あたり金額です。",
     ];
     const privateHit = m.meta?.visibility === "private";
+    const payoutYen = hits.reduce((s, h) => s + h.payout, 0);
     await appendChatMessage({
       kind: "note",
       title: hits.length
@@ -158,6 +164,27 @@ export async function settleChatPredictionHits(): Promise<number> {
           : { visibility: "public" as const }),
       },
     });
+
+    // Discord: 購入Yes → 払戻付き定型文。未回答の予想結果も通知。見送りは送らない。
+    if (!m.meta?.purchaseResultDiscord && m.meta?.purchaseDecision !== "no") {
+      const userName = m.meta?.owner_name || "メンバー";
+      const discordBody =
+        m.meta?.purchaseDecision === "yes"
+          ? formatPurchaseSettleDiscord({
+              placeName,
+              raceNo: info.race,
+              userName,
+              payoutYen,
+            })
+          : hits.length
+            ? `結果 ${placeName}${info.race}レース（${userName}の予想）的中 払戻目安 ${yen(payoutYen)}`
+            : `結果 ${placeName}${info.race}レース（${userName}の予想）的中なし`;
+      const mirrored = await sendDiscordMessage(discordBody);
+      if (mirrored.ok) {
+        await patchChatMessageMeta(m.id, { purchaseResultDiscord: true }).catch(() => null);
+      }
+    }
+
     posted += 1;
   }
 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import picksBoard from "@/data/picks_board.json";
-import { buildPicksMessage, toDiscordContent } from "@/lib/buildPicksMessage";
+import { buildPicksMessage } from "@/lib/buildPicksMessage";
 import { checkOperator } from "@/lib/chatStore";
 import { allowAuthAttemptShared } from "@/lib/authRateLimit";
+import { sendDiscordMessage } from "@/lib/discordNotify";
 
 export const dynamic = "force-dynamic";
 
@@ -72,18 +73,12 @@ export async function POST(req: NextRequest) {
       note?: string;
     },
   );
-  const content = toDiscordContent(built.body);
-  const res = await fetch(webhook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
+  const mirrored = await sendDiscordMessage(built.body);
+  if (!mirrored.ok) {
     return NextResponse.json(
-      { ok: false, error: `Discord HTTP ${res.status}`, detail: text.slice(0, 200) },
+      { ok: false, error: mirrored.detail || "Discord送信失敗" },
       { status: 502 },
     );
   }
-  return NextResponse.json({ ok: true, preview: content.slice(0, 280) });
+  return NextResponse.json({ ok: true, preview: built.body.slice(0, 280) });
 }

@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import picksBoard from "@/data/picks_board.json";
-import { buildPicksMessage, toDiscordContent } from "@/lib/buildPicksMessage";
+import { buildPicksMessage } from "@/lib/buildPicksMessage";
 import {
   appendChatMessage,
   checkAdmin,
   checkInvite,
   checkOperator,
   clearChatMessages,
+  getChatMessageById,
+  getChatMetaValue,
+  patchChatMessageMeta,
   readChatFeed,
   sanitizeChatBody,
   sanitizeDisplayName,
+  setChatMetaValue,
   type ChatKind,
   type ChatRole,
 } from "@/lib/chatStore";
@@ -41,6 +45,8 @@ import { buildRaceChipsFromPicks, buildSingleRaceChip } from "@/lib/chatRaceUi";
 import { STADIUMS, jstDateKey } from "@/lib/stadiums";
 import { refreshPicksStatus } from "@/lib/refreshPicksStatus";
 import { enrichChatMessagesWithResults } from "@/lib/chatResultEnrich";
+import { todayDayPurchaseKey } from "@/lib/chatPurchase";
+import { sendDiscordMessage } from "@/lib/discordNotify";
 
 export const dynamic = "force-dynamic";
 
@@ -68,22 +74,9 @@ function rateLimited(
   );
 }
 
-/** Discord へ送るのは明示オプトイン時のみ（DISCORD_MIRROR_ENABLED=1 かつ mirrorDiscord=true）。 */
+/** Discord 送信（DISCORD_MIRROR_ENABLED=1 時）。 */
 async function mirrorDiscord(body: string): Promise<{ ok: boolean; detail?: string }> {
-  if (process.env.DISCORD_MIRROR_ENABLED?.trim() !== "1") {
-    return { ok: false, detail: "Discord連携は無効です（DISCORD_MIRROR_ENABLED）" };
-  }
-  const webhook = process.env.DISCORD_WEBHOOK_URL?.trim();
-  if (!webhook) return { ok: false, detail: "DISCORD_WEBHOOK_URL 未設定" };
-  const res = await fetch(webhook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: toDiscordContent(body) }),
-  });
-  if (!res.ok) {
-    return { ok: false, detail: `Discord HTTP ${res.status}` };
-  }
-  return { ok: true };
+  return sendDiscordMessage(body);
 }
 
 async function createAppRacePick(opts: {
@@ -188,6 +181,10 @@ async function createAppRacePick(opts: {
         races: [raceChip],
       },
     });
+    // 予想ボタン押下を Discord 通知
+    await mirrorDiscord(
+      `${placeName}${opts.raceNo}レース ${opts.ownerName}がAI予想を表示しました。`,
+    ).catch(() => null);
     return { ok: true, reply, adminLog };
   } catch {
     return {
@@ -257,15 +254,20 @@ export async function GET(req: NextRequest) {
     }).catch(() => null);
   }
   await maybeRunChatMaintenance().catch(() => null);
-  const [feed, live, presence, adminOversight] = await Promise.all([
+  const [feed, live, presence, adminOversight, dayPurchaseRaw] = await Promise.all([
     readChatFeed({ sessionId, isAdmin }),
     getChatLiveTargets({ refresh }),
     listPresence(sessionId).catch(() => []),
     isAdmin ? listAdminPredictionOversight() : Promise.resolve(null),
+    sessionId
+      ? getChatMetaValue(todayDayPurchaseKey(sessionId)).catch(() => null)
+      : Promise.resolve(null),
   ]);
   const messages = await enrichChatMessagesWithResults(feed.messages).catch(
     () => feed.messages,
   );
+  const dayPurchaseDecision =
+    dayPurchaseRaw === "yes" || dayPurchaseRaw === "no" ? dayPurchaseRaw : null;
   return NextResponse.json(
     {
       ok: true,
@@ -279,6 +281,7 @@ export async function GET(req: NextRequest) {
       // 管理人のみ。友達向けレスポンスには載せない
       adminOversight: isAdmin ? adminOversight : undefined,
       hasSession: Boolean(sessionId),
+      dayPurchaseDecision,
     },
     { headers: { "cache-control": "no-store" } },
   );
@@ -289,7 +292,14 @@ export async function POST(req: NextRequest) {
     invite?: string;
     operatorKey?: string;
     adminKey?: string;
-    kind?: ChatKind | "clear" | "leave" | "predict" | "enter";
+    kind?:
+      | ChatKind
+      | "clear"
+      | "leave"
+      | "predict"
+      | "enter"
+      | "purchase_confirm"
+      | "day_purchase_confirm";
     note?: string;
     text?: string;
     title?: string;
@@ -298,6 +308,8 @@ export async function POST(req: NextRequest) {
     mirrorDiscord?: boolean;
     placeNo?: number;
     raceNo?: number;
+    messageId?: string;
+    decision?: "yes" | "no" | string;
     /** 運営がボードを明示指定する場合（未指定なら data/picks_board.json） */
     picksBoard?: {
       active_date?: string;
@@ -429,6 +441,187 @@ export async function POST(req: NextRequest) {
   }
 
   await maybeRunChatMaintenance().catch(() => null);
+
+  // AI予想への「購入しますか？」Yes/No
+  if (kind === "purchase_confirm") {
+    if (!checkInvite(invite) && !isOperator) {
+      return rejectBadInvite();
+    }
+    const sessionId = cookieSession || "";
+    if (!sessionId) {
+      return NextResponse.json(
+        { ok: false, error: "先に入場してください" },
+        { status: 401 },
+      );
+    }
+    const decision = body.decision === "yes" ? "yes" : body.decision === "no" ? "no" : null;
+    if (!decision) {
+      return NextResponse.json({ ok: false, error: "decision は yes/no です" }, { status: 400 });
+    }
+    const messageId = String(body.messageId || "").trim();
+    if (!messageId) {
+      return NextResponse.json({ ok: false, error: "messageId が必要です" }, { status: 400 });
+    }
+    const gate = await allowAuthAttemptShared(`chat-purchase:${sessionId}`, {
+      limit: 40,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!gate.ok) {
+      return rateLimited(
+        "操作が多すぎます。しばらくしてから再度お試しください。",
+        gate.retryAfterSec,
+      );
+    }
+    const target = await getChatMessageById(messageId);
+    if (!target || target.meta?.mode !== "app_race_pick") {
+      return NextResponse.json({ ok: false, error: "対象の予想が見つかりません" }, { status: 404 });
+    }
+    if (target.meta?.owner_session_id !== sessionId) {
+      return NextResponse.json({ ok: false, error: "本人の予想のみ回答できます" }, { status: 403 });
+    }
+    if (target.meta?.purchaseDecision === "yes" || target.meta?.purchaseDecision === "no") {
+      return NextResponse.json({
+        ok: true,
+        already: true,
+        decision: target.meta.purchaseDecision,
+      });
+    }
+    const ownerName = sanitizeDisplayName(
+      body.authorName || target.meta?.owner_name || "メンバー",
+    );
+    const placeNo = Number(target.meta?.placeNo || 0);
+    const raceNo = Number(target.meta?.raceNo || 0);
+    const placeName = STADIUMS[placeNo] || `場${placeNo}`;
+    await patchChatMessageMeta(messageId, {
+      purchaseDecision: decision,
+      owner_name: ownerName,
+    });
+    let discordOk = false;
+    if (decision === "yes") {
+      const mirrored = await mirrorDiscord(
+        `${placeName}${raceNo}レース ${ownerName}が買いました。`,
+      );
+      discordOk = mirrored.ok;
+      await appendChatMessage({
+        kind: "note",
+        title: "購入確認",
+        body: `${placeName}${raceNo}R を購入しました（結果が出たら払戻をDiscordへ通知します）。`,
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: target.meta?.date || jstDateKey(),
+          mode: "purchase_ack",
+          placeNo,
+          raceNo,
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "yes",
+          discord: discordOk,
+        },
+      });
+    } else {
+      await appendChatMessage({
+        kind: "note",
+        title: "購入確認",
+        body: `${placeName}${raceNo}R は見送りました。`,
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: target.meta?.date || jstDateKey(),
+          mode: "purchase_ack",
+          placeNo,
+          raceNo,
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "no",
+        },
+      });
+    }
+    return NextResponse.json({ ok: true, decision, discord: { ok: discordOk } });
+  }
+
+  // 本日の本命買い目「購入しましたか？」
+  if (kind === "day_purchase_confirm") {
+    if (!checkInvite(invite) && !isOperator) {
+      return rejectBadInvite();
+    }
+    const sessionId = cookieSession || "";
+    if (!sessionId) {
+      return NextResponse.json(
+        { ok: false, error: "先に入場してください" },
+        { status: 401 },
+      );
+    }
+    const decision = body.decision === "yes" ? "yes" : body.decision === "no" ? "no" : null;
+    if (!decision) {
+      return NextResponse.json({ ok: false, error: "decision は yes/no です" }, { status: 400 });
+    }
+    const gate = await allowAuthAttemptShared(`chat-day-purchase:${sessionId}`, {
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!gate.ok) {
+      return rateLimited(
+        "操作が多すぎます。しばらくしてから再度お試しください。",
+        gate.retryAfterSec,
+      );
+    }
+    const metaKey = todayDayPurchaseKey(sessionId);
+    const existing = await getChatMetaValue(metaKey);
+    if (existing === "yes" || existing === "no") {
+      return NextResponse.json({ ok: true, already: true, decision: existing });
+    }
+    const ownerName = sanitizeDisplayName(body.authorName || "メンバー");
+    await setChatMetaValue(metaKey, decision);
+    let discordOk = false;
+    if (decision === "yes") {
+      const live = await getChatLiveTargets({ refresh: false }).catch(() => null);
+      const labels =
+        live?.targets
+          ?.slice(0, 8)
+          .map((t) => `${t.stadium_name}${t.race}R`)
+          .join(" / ") || "本日の本命対象";
+      const mirrored = await mirrorDiscord(
+        `本日の本命買い目を ${ownerName} が購入しました。（${labels}）`,
+      );
+      discordOk = mirrored.ok;
+      await appendChatMessage({
+        kind: "note",
+        title: "本日の買い目",
+        body: `本日の本命買い目を購入しました。\n${labels}`,
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: jstDateKey(),
+          mode: "day_purchase_ack",
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "yes",
+          discord: discordOk,
+        },
+      });
+    } else {
+      await appendChatMessage({
+        kind: "note",
+        title: "本日の買い目",
+        body: "本日の本命買い目は見送りました。",
+        author_name: "律丸ボート部",
+        author_role: "operator",
+        meta: {
+          date: jstDateKey(),
+          mode: "day_purchase_ack",
+          visibility: "private",
+          owner_session_id: sessionId,
+          owner_name: ownerName,
+          purchaseDecision: "no",
+        },
+      });
+    }
+    return NextResponse.json({ ok: true, decision, discord: { ok: discordOk } });
+  }
 
   // レース詳細のアプリ予想: 本文は本人だけ。共有チャットの本命配信とは別。
   if (kind === "predict") {

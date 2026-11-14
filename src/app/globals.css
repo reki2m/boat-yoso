@@ -1847,3 +1847,43 @@ th {
   background: var(--lane6);
   animation: lamp 1.2s ease-in-out infinite;
 }
+
+.chat-purchase-ask {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid rgba(120, 220, 255, 0.22);
+  border-radius: 8px;
+  background: linear-gradient(160deg, rgba(12, 36, 52, 0.9), rgba(4, 14, 24, 0.85));
+}
+
+.chat-purchase-ask-label {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #e8f6ff;
+}
+
+.chat-purchase-ask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.chat-purchase-yes {
+  min-width: 5.5rem;
+  border-color: rgba(72, 210, 140, 0.55) !important;
+  background: rgba(18, 64, 42, 0.85) !important;
+  color: #b8ffd4 !important;
+}
+
+.chat-purchase-no {
+  min-width: 5.5rem;
+}
+
+.chat-purchase-ask-done {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #9fd0ea;
+}
