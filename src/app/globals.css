@@ -1022,10 +1022,100 @@ th {
   font-weight: 700;
   font-size: 0.92rem;
   letter-spacing: 0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  flex-wrap: wrap;
 }
 
 .chat-target-chips {
   margin: 0;
+}
+
+.chat-target-stack {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.chat-target-item {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.chat-target-detail {
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 196, 90, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 196, 90, 0.08), transparent 55%),
+    rgba(2, 10, 18, 0.9);
+}
+
+.chat-target-detail > strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #ffe6a8;
+  font-size: 0.9rem;
+}
+
+.chat-target-tickets {
+  list-style: none;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.chat-target-tickets li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.chat-target-tickets span {
+  font-size: 0.78rem;
+  color: #9fd6f5;
+}
+
+.chat-target-tickets strong {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.chat-target-ticket-line {
+  margin: 0 0 0.45rem;
+  font-size: 0.92rem;
+}
+
+.chat-target-why {
+  margin-top: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chat-target-why > strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.86rem;
+  color: #ffe6a8;
+}
+
+.chat-target-why p {
+  margin: 0.25rem 0 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.chat-target-why ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.05rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.chat-target-why li {
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #d7ebf7;
 }
 
 .chat-predict-row .field {

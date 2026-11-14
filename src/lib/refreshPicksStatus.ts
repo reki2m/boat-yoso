@@ -13,6 +13,7 @@ export type LivePickRow = {
   label?: string;
   status?: string;
   why?: string;
+  reasons?: string[];
   skip_reason?: string | null;
   skip_detail?: string | null;
   exhibition_notes?: string[];
