@@ -372,6 +372,9 @@ export default function ChatPage() {
   const [targetPurchases, setTargetPurchases] = useState<Record<string, PurchaseLockState>>({});
   const [purchaseBusyId, setPurchaseBusyId] = useState("");
   const [targetPurchaseBusyKey, setTargetPurchaseBusyKey] = useState("");
+  /** 購入ロック操作のインラインエラー */
+  const [purchaseInlineError, setPurchaseInlineError] = useState("");
+  const [purchaseInlineErrorKey, setPurchaseInlineErrorKey] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -622,10 +625,45 @@ export default function ChatPage() {
   async function confirmPurchase(messageId: string, decision: PurchaseLockState) {
     const code = invite.trim();
     const name = displayName.trim();
-    if (!code || !name || !messageId) return;
+    if (!code || !name || !messageId) {
+      setPurchaseInlineErrorKey(messageId || "ai");
+      setPurchaseInlineError("先に入場と表示名を入れてください");
+      setError("先に入場と表示名を入れてください");
+      return;
+    }
     setPurchaseBusyId(messageId);
+    setPurchaseInlineErrorKey(messageId);
+    setPurchaseInlineError("");
     setError("");
     setStatus("");
+    // 楽観的にロック表示へ（Discord待ちで無反応に見えないように）
+    if (decision === "yes" || decision === "purchased" || decision === "no") {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                meta: {
+                  ...m.meta,
+                  purchaseDecision: decision,
+                  purchaseLockedExhibition:
+                    decision === "yes"
+                      ? m.meta?.purchaseLockedExhibition || "waiting"
+                      : m.meta?.purchaseLockedExhibition,
+                },
+              }
+            : m,
+        ),
+      );
+    } else if (decision === "skip") {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, meta: { ...m.meta, purchaseDecision: undefined } }
+            : m,
+        ),
+      );
+    }
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -642,11 +680,15 @@ export default function ChatPage() {
           authorName: name,
         }),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.error || "購入ロックに失敗しました");
+        const msg = json.error || "購入ロックに失敗しました";
+        setPurchaseInlineError(msg);
+        setError(msg);
+        await loadFeed(code, { quiet: true, refresh: false, name });
         return;
       }
+      setPurchaseInlineError("");
       setStatus(
         decision === "yes"
           ? "購入予定でロックしました"
@@ -658,7 +700,10 @@ export default function ChatPage() {
       );
       await loadFeed(code, { quiet: true, refresh: false, name });
     } catch {
-      setError("購入ロックに失敗しました");
+      const msg = "購入ロックに失敗しました（通信エラー）";
+      setPurchaseInlineError(msg);
+      setError(msg);
+      await loadFeed(code, { quiet: true, refresh: false, name }).catch(() => null);
     } finally {
       setPurchaseBusyId("");
     }
@@ -672,11 +717,27 @@ export default function ChatPage() {
     const code = invite.trim();
     const name = displayName.trim();
     const key = `${placeNo}-${raceNo}`;
-    if (!code || !name) return;
+    if (!code || !name) {
+      setPurchaseInlineErrorKey(key);
+      setPurchaseInlineError("先に入場と表示名を入れてください");
+      setError("先に入場と表示名を入れてください");
+      return;
+    }
     setTargetPurchaseBusyKey(key);
+    setPurchaseInlineErrorKey(key);
+    setPurchaseInlineError("");
     setError("");
     setStatus("");
+    // 楽観的更新：押した瞬間にロック色へ
+    setTargetPurchases((prev) => {
+      const next = { ...prev };
+      if (decision === "skip") delete next[key];
+      else next[key] = decision;
+      return next;
+    });
     try {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 12000);
       const res = await fetch("/api/chat", {
         method: "POST",
         credentials: "include",
@@ -692,18 +753,18 @@ export default function ChatPage() {
           decision,
           authorName: name,
         }),
+        signal: controller.signal,
       });
-      const json = await res.json();
+      window.clearTimeout(timer);
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.error || "本命対象の購入ロックに失敗しました");
+        const msg = json.error || "本命対象の購入ロックに失敗しました";
+        setPurchaseInlineError(msg);
+        setError(msg);
+        await loadFeed(code, { quiet: true, refresh: false, name });
         return;
       }
-      setTargetPurchases((prev) => {
-        const next = { ...prev };
-        if (decision === "skip") delete next[key];
-        else next[key] = decision;
-        return next;
-      });
+      setPurchaseInlineError("");
       setStatus(
         decision === "yes"
           ? "本命対象を購入予定でロックしました"
@@ -714,8 +775,14 @@ export default function ChatPage() {
               : "本命対象を見送りにしました",
       );
       await loadFeed(code, { quiet: true, refresh: false, name });
-    } catch {
-      setError("本命対象の購入ロックに失敗しました");
+    } catch (e) {
+      const aborted = e instanceof Error && e.name === "AbortError";
+      const msg = aborted
+        ? "応答が遅いです。再読み込みしてロック状態を確認してください"
+        : "本命対象の購入ロックに失敗しました（通信エラー）";
+      setPurchaseInlineError(msg);
+      setError(msg);
+      await loadFeed(code, { quiet: true, refresh: false, name }).catch(() => null);
     } finally {
       setTargetPurchaseBusyKey("");
     }
@@ -1289,6 +1356,12 @@ export default function ChatPage() {
                               <p className="chat-pick-empty">{ticketFallback}</p>
                             )}
                             <div className={`chat-purchase-ask ${lockTone}`}>
+                              {lockBusy ? (
+                                <p className="chat-purchase-ask-busy">反映中…</p>
+                              ) : null}
+                              {purchaseInlineError && purchaseInlineErrorKey === key ? (
+                                <p className="chat-purchase-ask-error">{purchaseInlineError}</p>
+                              ) : null}
                               {lock === "purchased" ? (
                                 <p className="chat-purchase-ask-done">購入済み（チャットに固定）</p>
                               ) : lock === "no" ? (
@@ -1699,6 +1772,12 @@ export default function ChatPage() {
                             <div
                               className={`chat-purchase-ask ${purchaseLockTone(m.meta.purchaseDecision)}`}
                             >
+                              {purchaseBusyId === m.id ? (
+                                <p className="chat-purchase-ask-busy">反映中…</p>
+                              ) : null}
+                              {purchaseInlineError && purchaseInlineErrorKey === m.id ? (
+                                <p className="chat-purchase-ask-error">{purchaseInlineError}</p>
+                              ) : null}
                               {m.meta.purchaseDecision === "purchased" ? (
                                 <p className="chat-purchase-ask-done">
                                   購入済み（チャットに固定・結果はDiscord通知）

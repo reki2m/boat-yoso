@@ -531,12 +531,10 @@ export async function POST(req: NextRequest) {
       owner_name: ownerName,
     });
 
-    let discordOk = false;
+    // Discord は待たない（不通時に YES が固まらないように）
+    let discordBody = "";
     if (decision === "yes") {
-      const mirrored = await mirrorDiscord(
-        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が購入予定でロックしました。`,
-      );
-      discordOk = mirrored.ok;
+      discordBody = `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が購入予定でロックしました。`;
       await appendChatMessage({
         kind: "note",
         title: "ロック中",
@@ -557,14 +555,10 @@ export async function POST(req: NextRequest) {
           owner_name: ownerName,
           purchaseDecision: "yes",
           purchaseLockedExhibition: lockedExhibition,
-          discord: discordOk,
         },
       });
     } else if (decision === "purchased") {
-      const mirrored = await mirrorDiscord(
-        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が買いました。`,
-      );
-      discordOk = mirrored.ok;
+      discordBody = `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が買いました。`;
       await appendChatMessage({
         kind: "note",
         title: "購入済み",
@@ -580,7 +574,6 @@ export async function POST(req: NextRequest) {
           owner_session_id: sessionId,
           owner_name: ownerName,
           purchaseDecision: "purchased",
-          discord: discordOk,
         },
       });
     } else if (decision === "skip") {
@@ -620,10 +613,10 @@ export async function POST(req: NextRequest) {
         },
       });
     }
+    if (discordBody) void mirrorDiscord(discordBody).catch(() => null);
     return NextResponse.json({
       ok: true,
       decision: nextDecision === "skip" ? null : nextDecision,
-      discord: { ok: discordOk },
     });
   }
 
@@ -664,7 +657,13 @@ export async function POST(req: NextRequest) {
     const metaKey = todayTargetPurchaseKey(sessionId, placeNo, raceNo);
     const ownerName = sanitizeDisplayName(body.authorName || "メンバー");
     const placeName = STADIUMS[placeNo] || `場${placeNo}`;
-    const live = await getChatLiveTargets({ refresh: false }).catch(() => null);
+    // 展示判定は短時間で打ち切り（遅いと YES が無反応に見える）
+    const live = await Promise.race([
+      getChatLiveTargets({ refresh: false }).catch(() => null),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), 1500);
+      }),
+    ]);
     const target = live?.targets?.find((t) => t.stadium === placeNo && t.race === raceNo);
     const exhibitDone = target?.status === "confirmed" || target?.status === "skipped";
 
@@ -691,12 +690,9 @@ export async function POST(req: NextRequest) {
     }
 
     await setChatMetaValue(metaKey, decision);
-    let discordOk = false;
+    let discordBody = "";
     if (decision === "yes") {
-      const mirrored = await mirrorDiscord(
-        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が本命対象を購入予定でロックしました。`,
-      );
-      discordOk = mirrored.ok;
+      discordBody = `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が本命対象を購入予定でロックしました。`;
       await appendChatMessage({
         kind: "note",
         title: "ロック中",
@@ -715,14 +711,10 @@ export async function POST(req: NextRequest) {
           owner_name: ownerName,
           purchaseDecision: "yes",
           purchaseLockedExhibition: exhibitDone ? "after" : "waiting",
-          discord: discordOk,
         },
       });
     } else if (decision === "purchased") {
-      const mirrored = await mirrorDiscord(
-        `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が本命対象を買いました。`,
-      );
-      discordOk = mirrored.ok;
+      discordBody = `${placeName}${raceNo}レース ${discordDisplayName(ownerName)}が本命対象を買いました。`;
       await appendChatMessage({
         kind: "note",
         title: "購入済み",
@@ -738,7 +730,6 @@ export async function POST(req: NextRequest) {
           owner_session_id: sessionId,
           owner_name: ownerName,
           purchaseDecision: "purchased",
-          discord: discordOk,
         },
       });
     } else {
@@ -760,11 +751,11 @@ export async function POST(req: NextRequest) {
         },
       });
     }
+    if (discordBody) void mirrorDiscord(discordBody).catch(() => null);
     return NextResponse.json({
       ok: true,
       decision,
       key: `${placeNo}-${raceNo}`,
-      discord: { ok: discordOk },
     });
   }
 
