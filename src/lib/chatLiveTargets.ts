@@ -8,6 +8,7 @@ import {
   skipReasonLabel,
   type LivePickRow,
 } from "@/lib/refreshPicksStatus";
+import { fetchDayResults, hasRaceResult, resultKey } from "@/lib/raceResults";
 import { jstDateKey } from "@/lib/stadiums";
 import picksBoard from "@/data/picks_board.json";
 
@@ -24,8 +25,13 @@ export type ChatLiveTarget = {
   skip_detail: string | null;
   why: string | null;
   reasons?: string[];
+  finishCombo?: string | null;
   live: ReturnType<typeof liveBroadcastUrls>;
 };
+
+/** 展示状態の短時間キャッシュ（毎回外部取得しない） */
+const STATUS_CACHE_MS = 45_000;
+let statusCache: { dateKey: string; at: number; picks: LivePickRow[] } | null = null;
 
 function mapBoardPicks(
   picks: Array<Record<string, unknown>>,
@@ -120,15 +126,33 @@ async function resolveTodayPicks(dateKey: string): Promise<LivePickRow[]> {
   return mapBoardPicks(board.picks || [], dateFallback).filter((p) => String(p.date) === dateKey);
 }
 
+/**
+ * 本日の本命対象。
+ * 流れ: 展示待ち → 展示確認済み購入OK →（結果が出たら）レース終了
+ * ポーリングでも状態が進むよう、展示判定は短時間キャッシュ付きで常に更新する。
+ */
 export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<{
   date: string;
   targets: ChatLiveTarget[];
 }> {
   const dateKey = jstDateKey();
-  let picks = dedupeRacePicks(await resolveTodayPicks(dateKey));
-  if (opts?.refresh && picks.length) {
-    picks = dedupeRacePicks(await refreshPicksStatus(picks));
+  const force = Boolean(opts?.refresh);
+  const boardPicks = dedupeRacePicks(await resolveTodayPicks(dateKey));
+
+  let picks = boardPicks;
+  const cacheHit =
+    statusCache &&
+    statusCache.dateKey === dateKey &&
+    Date.now() - statusCache.at < STATUS_CACHE_MS;
+
+  if (boardPicks.length && (force || !cacheHit)) {
+    picks = dedupeRacePicks(await refreshPicksStatus(boardPicks));
+    statusCache = { dateKey, at: Date.now(), picks };
+  } else if (cacheHit && statusCache) {
+    picks = statusCache.picks;
   }
+
+  const dayResults = await fetchDayResults(dateKey).catch(() => null);
 
   const targets: ChatLiveTarget[] = picks
     .filter((p) => p.stadium && p.race && p.date && /^\d{8}$/.test(String(p.date)))
@@ -136,7 +160,13 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
       const date = String(p.date);
       const stadium = Number(p.stadium);
       const race = Number(p.race);
-      const status = p.status || "provisional";
+      let status = p.status || "provisional";
+      const result = dayResults?.get(resultKey(stadium, race));
+      const finished = Boolean(result && hasRaceResult(result));
+      // 結果が出ていれば最優先でレース終了（展示待ちのまま残さない）
+      if (finished && status !== "skipped") {
+        status = "settled";
+      }
       const skip_detail =
         status === "skipped"
           ? p.skip_detail || skipReasonLabel(p.skip_reason)
@@ -146,10 +176,12 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
         skip_reason: p.skip_reason,
         skip_detail,
       });
+      const placeName = p.stadium_name || `場${stadium}`;
+      const finishCombo = finished ? result?.finishCombo || null : null;
       return {
         date,
         stadium,
-        stadium_name: p.stadium_name || `場${stadium}`,
+        stadium_name: placeName,
         race,
         tickets: p.tickets?.length ? p.tickets : ["1-2-3"],
         tickets_single: p.tickets_single,
@@ -157,15 +189,20 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
         label: p.label || null,
         status,
         skip_detail,
+        finishCombo,
         why:
           status === "skipped"
             ? phrase
-            : buyTargetExplain({
-                status,
-                why: p.why,
-                placeName: p.stadium_name || `場${stadium}`,
-                raceNo: race,
-              }),
+            : status === "settled"
+              ? `${placeName}${race}Rはレース終了${
+                  finishCombo ? `（着順 ${finishCombo}）` : ""
+                }。購入判断は展示後〜発走前です。`
+              : buyTargetExplain({
+                  status,
+                  why: p.why,
+                  placeName,
+                  raceNo: race,
+                }),
         reasons: p.reasons?.length ? p.reasons : undefined,
         live: liveBroadcastUrls(stadium, date, race),
       };
