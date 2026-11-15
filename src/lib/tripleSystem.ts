@@ -287,7 +287,7 @@ function buildWhyText(input: {
   }
   const top = input.active[0];
   if (!top) {
-    return `${place}は回収重視の本命条件に当てはまらないため見送りです。`;
+    return `${place}は本命条件に当てはまらないため、このレースは買わない判断です（スルー）。`;
   }
   const c1 = byCourse(input.racers, 1);
   const c2 = byCourse(input.racers, 2);
@@ -303,7 +303,11 @@ function buildWhyText(input: {
   void c2;
   void c4;
   void input.windSpeed;
-  return top.why || top.reasons.join("。") || `${place}は本命条件外。`;
+  return (
+    top.why ||
+    top.reasons.join("。") ||
+    `${place}は本命条件外のため、このレースは買わない判断です（スルー）。`
+  );
 }
 
 function betTypeOf(tickets: string[]): "trifecta" | "exacta" {
@@ -434,10 +438,11 @@ export function buildTriplePrediction(input: {
     })),
   });
 
-  let focus = "本命条件外のため見送り";
-  if (entryChanged) focus = "進入変更のためスキップ";
-  else if (!input.exhibition.ready) focus = "展示待ち（進入・スリット・周回タイム）";
-  else if (honmeiOnlyActive.length) focus = "本命採用（イン戦）";
+  // 文言は「買う／買わない」が一目で分かるようにする（曖昧な「見送り」単独は避ける）
+  let focus = "本命条件外 → このレースは買わない（スルー）";
+  if (entryChanged) focus = "進入変更 → このレースは買わない（スルー）";
+  else if (!input.exhibition.ready) focus = "展示待ち（進入・スリット・周回タイム）→ 展示後に買う／スルーを確定";
+  else if (honmeiOnlyActive.length) focus = "本命採用 → 買う対象（イン戦）";
 
   return {
     bands: honmeiOnlyBands,

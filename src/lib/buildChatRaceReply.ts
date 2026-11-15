@@ -177,13 +177,13 @@ export async function buildChatRaceReply(
         ]
           .filter(Boolean)
           .join("\n")
-      : "本命S: 条件外",
+      : "本命S: 条件外（本命Sは買わない）",
   );
   lines.push(
-    `押し目: ${combosOf(bands.oshi).join(" / ") || "見送り（検証ロジック）"}`,
+    `押し目: ${combosOf(bands.oshi).join(" / ") || "買わない（検証で本線見送り）"}`,
   );
   lines.push(
-    `穴: ${combosOf(bands.ana).join(" / ") || "見送り（検証ロジック）"}`,
+    `穴: ${combosOf(bands.ana).join(" / ") || "買わない（検証で本線見送り）"}`,
   );
 
   lines.push("", "【説明】");

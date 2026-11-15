@@ -20,19 +20,19 @@ export type LivePickRow = {
 };
 
 const SKIP_LABEL: Record<string, string> = {
-  entry_change: "進入変更だからスルー",
-  exhibition_pending: "展示待ち",
-  exhibition_fail: "展示が揃わないからスルー",
-  race_closed: "締切済みだからスルー",
-  unexpected: "想定外の展開だからスルー",
-  odds_overbet: "買われすぎだからスルー",
-  odds_missing_near_close: "締切間近でオッズが取れないからスルー",
+  entry_change: "進入変更のため、このレースは買わない（スルー）",
+  exhibition_pending: "展示待ち（展示後に買う／スルーを確定）",
+  exhibition_fail: "展示が揃わないため、このレースは買わない（スルー）",
+  race_closed: "締切済みのため、このレースは買わない（スルー）",
+  unexpected: "想定外の展開のため、このレースは買わない（スルー）",
+  odds_overbet: "買われすぎのため、このレースは買わない（スルー）",
+  odds_missing_near_close: "締切間近でオッズが取れないため、このレースは買わない（スルー）",
   odds_pending: "オッズ待ち",
 };
 
 export function skipReasonLabel(code: string | null | undefined): string {
-  if (!code) return "条件外だからスルー";
-  return SKIP_LABEL[code] || `${code}だからスルー`;
+  if (!code) return "本命条件外のため、このレースは買わない（スルー）";
+  return SKIP_LABEL[code] || `${code}のため、このレースは買わない（スルー）`;
 }
 
 /** チャット表示用の短い状態文 */
