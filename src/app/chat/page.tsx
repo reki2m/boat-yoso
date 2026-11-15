@@ -230,6 +230,20 @@ function raceKey(chip: Pick<RaceChipView, "placeNo" | "raceNo">): string {
   return `${chip.placeNo}:${chip.raceNo}`;
 }
 
+/** 曖昧な「見送り／条件外」を「買わない」と明示する */
+function clarifyBuyOrSkip(text: string): string {
+  const t = text.trim();
+  if (!t) return "";
+  if (/買わない|購入OK|買う対象|スルー推奨/.test(t)) return t;
+  if (/本命条件外のため見送り|本命条件外|条件外のため見送り|ため見送り/.test(t)) {
+    return `${t.replace(/のため見送り$/, "")} → このレースは買わない（スルー）`;
+  }
+  if (/^見送り$|本線では見送り/.test(t)) {
+    return `${t} → このレース／帯は買わない`;
+  }
+  return t;
+}
+
 /** meta.races.why が空の古い投稿向けに【説明】本文から拾う */
 function whyFallback(explainBlock: string, chip: RaceChipView): string {
   if (!explainBlock) return "";
@@ -237,11 +251,13 @@ function whyFallback(explainBlock: string, chip: RaceChipView): string {
   const lines = explainBlock.split("\n").map((l) => l.trim());
   for (const line of lines) {
     if (line.includes(label) || line.includes(`${chip.placeName}${chip.raceNo}R`)) {
-      return line.replace(/^[・･]\s*/, "").replace(/^.*?[—–-]\s*/, "").trim();
+      return clarifyBuyOrSkip(
+        line.replace(/^[・･]\s*/, "").replace(/^.*?[—–-]\s*/, "").trim(),
+      );
     }
   }
   // 単レース投稿なら説明ブロック全体
-  if (lines.length === 1) return lines[0].replace(/^[・･]\s*/, "");
+  if (lines.length === 1) return clarifyBuyOrSkip(lines[0].replace(/^[・･]\s*/, ""));
   return "";
 }
 
@@ -1909,7 +1925,7 @@ export default function ChatPage() {
                                     ) : (
                                       <p className="chat-pick-empty">
                                         {band.key === "honmeiS" || band.key === "honmeiSSingle"
-                                          ? "条件外"
+                                          ? "条件外（この帯は買わない）"
                                           : "—"}
                                       </p>
                                     )}
@@ -1991,11 +2007,15 @@ export default function ChatPage() {
                           <div className="chat-pick-block chat-pick-explain">
                             <div className="chat-pick-block-label">レース説明</div>
                             <p className="chat-pick-why">
-                              {selected.why?.trim() ||
-                                whyFallback(split?.explainBlock || "", selected) ||
-                                (selected.status === "skipped"
-                                  ? "条件外または進入変更のためスルー"
-                                  : "—")}
+                              {clarifyBuyOrSkip(
+                                selected.why?.trim() ||
+                                  whyFallback(split?.explainBlock || "", selected) ||
+                                  (selected.status === "skipped"
+                                    ? "本命条件外または進入変更のため、このレースは買わない（スルー）"
+                                    : selected.status === "confirmed"
+                                      ? "展示確認済み・購入OK"
+                                      : ""),
+                              ) || "—"}
                             </p>
                           </div>
 

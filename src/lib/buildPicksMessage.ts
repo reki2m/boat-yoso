@@ -89,7 +89,10 @@ export function buildPicksMessage(board: {
   if (skipped.length) {
     lines.push("【スルー】");
     for (const p of skipped.slice(0, 12)) {
-      const detail = p.skip_detail || skipReasonLabel(p.skip_reason) || "条件外";
+      const detail =
+        p.skip_detail ||
+        skipReasonLabel(p.skip_reason) ||
+        "本命条件外のため、このレースは買わない（スルー）";
       lines.push(`・${pickName(p)} ${p.race}R — ${detail}`);
     }
     lines.push("");

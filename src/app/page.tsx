@@ -687,7 +687,7 @@ export default function Home() {
                                           `本命S単点: ${(data.deepPicks.sSingleTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
                                           `本命S5点: ${(data.deepPicks.sTickets || []).map((t) => t.combo).join(" / ")}`,
                                         ].join("\n")
-                                      : "本命S: 条件外",
+                                      : "本命S: 条件外（本命Sは買わない）",
                                     `押し目: ${(data?.deepPicks?.oshiTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
                                     `穴: ${(data?.deepPicks?.anaTickets || []).map((t) => t.combo).join(" / ") || "—"}`,
                                   ].join("\n"),
@@ -1082,7 +1082,7 @@ export default function Home() {
                           ]
                             .filter(Boolean)
                             .join(" ／ ")
-                        : "条件外"}
+                        : "条件外（買わない）"}
                     </strong>
                     <div className="note" style={{ margin: "0.35rem 0 0" }}>
                       {data.deepPicks.sLabel || "単点と条件付き5点を併記"}
@@ -1094,7 +1094,7 @@ export default function Home() {
                     }`}
                   >
                     <span>
-                      押し目 · 見送り
+                      押し目 · 買わない
                       {data.deepPicks.oshiAxis != null
                         ? ` · 軸${data.deepPicks.oshiAxis}号`
                         : ""}
@@ -1114,7 +1114,7 @@ export default function Home() {
                     }`}
                   >
                     <span>
-                      穴 · 見送り
+                      穴 · 買わない
                       {data.deepPicks.anaAxis != null
                         ? ` · 軸${data.deepPicks.anaAxis}号`
                         : ""}
@@ -1387,7 +1387,7 @@ export default function Home() {
                       ok: Boolean(data.deepPicks?.oshiCount),
                       tickets:
                         data.deepPicks?.oshiTickets?.map((t) => t.combo) || [],
-                      note: "本線では見送り",
+                      note: "本線では買わない",
                     },
                     {
                       band: "ana",
@@ -1395,7 +1395,7 @@ export default function Home() {
                       ok: Boolean(data.deepPicks?.anaCount),
                       tickets:
                         data.deepPicks?.anaTickets?.map((t) => t.combo) || [],
-                      note: "本線では見送り",
+                      note: "本線では買わない",
                     },
                   ] as const
                 ).map((b) => (
