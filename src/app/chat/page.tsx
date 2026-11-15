@@ -15,6 +15,7 @@ import {
   summarizeChips,
   type RaceChipView,
 } from "@/lib/chatRaceDisplay";
+import { buyTargetExplain, looksLikeSkipExplain } from "@/lib/pickExplain";
 
 type ChatMessage = {
   id: string;
@@ -230,18 +231,20 @@ function raceKey(chip: Pick<RaceChipView, "placeNo" | "raceNo">): string {
   return `${chip.placeNo}:${chip.raceNo}`;
 }
 
-/** 曖昧な「見送り／条件外」を「買わない」と明示する */
-function clarifyBuyOrSkip(text: string): string {
+/** ステータスに合わせて説明文の買う／買わないを揃える */
+function clarifyBuyOrSkip(text: string, status?: string | null): string {
   const t = text.trim();
-  if (!t) return "";
-  if (/買わない|購入OK|買う対象|スルー推奨/.test(t)) return t;
-  if (/本命条件外のため見送り|本命条件外|条件外のため見送り|ため見送り/.test(t)) {
-    return `${t.replace(/のため見送り$/, "")} → このレースは買わない（スルー）`;
+  const st = status || "";
+  if (st === "skipped") {
+    if (!t) return "このレースは買わない（スルー）";
+    if (looksLikeSkipExplain(t) || /スルー|買わない/.test(t)) return t;
+    return `${t} → このレースは買わない（スルー）`;
   }
-  if (/^見送り$|本線では見送り/.test(t)) {
-    return `${t} → このレース／帯は買わない`;
-  }
-  return t;
+  // 購入対象なのに「条件外→買わない」が付いている古い投稿を直す
+  return buyTargetExplain({
+    status: st || "confirmed",
+    why: t,
+  });
 }
 
 /** meta.races.why が空の古い投稿向けに【説明】本文から拾う */
@@ -253,19 +256,28 @@ function whyFallback(explainBlock: string, chip: RaceChipView): string {
     if (line.includes(label) || line.includes(`${chip.placeName}${chip.raceNo}R`)) {
       return clarifyBuyOrSkip(
         line.replace(/^[・･]\s*/, "").replace(/^.*?[—–-]\s*/, "").trim(),
+        chip.status,
       );
     }
   }
   // 単レース投稿なら説明ブロック全体
-  if (lines.length === 1) return clarifyBuyOrSkip(lines[0].replace(/^[・･]\s*/, ""));
+  if (lines.length === 1) {
+    return clarifyBuyOrSkip(lines[0].replace(/^[・･]\s*/, ""), chip.status);
+  }
   return "";
 }
 
 function messageRaces(m: ChatMessage): RaceChipView[] {
-  if (Array.isArray(m.meta?.races) && m.meta!.races!.length) return m.meta!.races!;
+  const sanitize = (chip: RaceChipView): RaceChipView => ({
+    ...chip,
+    why: clarifyBuyOrSkip(chip.why || "", chip.status) || chip.why,
+  });
+  if (Array.isArray(m.meta?.races) && m.meta!.races!.length) {
+    return m.meta!.races!.map(sanitize);
+  }
   if (m.meta?.placeNo && m.meta?.raceNo) {
     return [
-      {
+      sanitize({
         placeNo: m.meta.placeNo,
         placeName: STADIUMS[m.meta.placeNo] || `場${m.meta.placeNo}`,
         raceNo: m.meta.raceNo,
@@ -276,7 +288,7 @@ function messageRaces(m: ChatMessage): RaceChipView[] {
         confidenceLabel: m.meta.confidenceLabel,
         status: undefined,
         exhibition: "unknown",
-      },
+      }),
     ];
   }
   return [];
@@ -2011,10 +2023,13 @@ export default function ChatPage() {
                                 selected.why?.trim() ||
                                   whyFallback(split?.explainBlock || "", selected) ||
                                   (selected.status === "skipped"
-                                    ? "本命条件外または進入変更のため、このレースは買わない（スルー）"
+                                    ? "進入変更などのため、このレースは買わない（スルー）"
                                     : selected.status === "confirmed"
                                       ? "展示確認済み・購入OK"
-                                      : ""),
+                                      : selected.status === "provisional"
+                                        ? "本日の本命購入対象（展示待ち）"
+                                        : ""),
+                                selected.status,
                               ) || "—"}
                             </p>
                           </div>

@@ -1,3 +1,4 @@
+import { buyTargetExplain } from "@/lib/pickExplain";
 import { skipReasonLabel } from "@/lib/refreshPicksStatus";
 import { formatTickets, statusLabel } from "@/lib/chatRaceUi";
 
@@ -106,13 +107,21 @@ export function buildPicksMessage(board: {
   if (explainable.length) {
     lines.push("【説明】");
     for (const p of explainable.slice(0, 12)) {
+      const status = p.status || "provisional";
       const why =
-        (typeof p.why === "string" && p.why.trim()) ||
-        p.skip_detail ||
-        skipReasonLabel(p.skip_reason) ||
-        "";
+        status === "skipped"
+          ? p.skip_detail ||
+            skipReasonLabel(p.skip_reason) ||
+            String(p.why || "").trim() ||
+            "このレースは買わない（スルー）"
+          : buyTargetExplain({
+              status,
+              why: p.why,
+              placeName: pickName(p),
+              raceNo: p.race,
+            });
       if (!why) continue;
-      lines.push(`・${pickName(p)} ${p.race}R — ${why.slice(0, 140)}`);
+      lines.push(`・${pickName(p)} ${p.race}R — ${why.slice(0, 160)}`);
     }
     lines.push("");
   }

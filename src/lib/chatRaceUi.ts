@@ -1,3 +1,4 @@
+import { buyTargetExplain } from "@/lib/pickExplain";
 import { STADIUMS } from "@/lib/stadiums";
 import type { ChatRaceChip } from "@/lib/chatStore";
 
@@ -93,19 +94,29 @@ export function buildRaceChipsFromPicks(picks: PickLike[]): ChatRaceChip[] {
     const raceNo = Number(p.race || 0);
     if (!placeNo || !raceNo) continue;
     const placeName = p.stadium_name || STADIUMS[placeNo] || `場${placeNo}`;
-    const why =
+    const status = p.status || "provisional";
+    const rawWhy =
       typeof p.why === "string" && p.why.trim()
         ? p.why.trim()
         : typeof p.skip_detail === "string" && p.skip_detail.trim()
           ? p.skip_detail.trim()
           : undefined;
+    const why =
+      status === "skipped"
+        ? rawWhy
+        : buyTargetExplain({
+            status,
+            why: rawWhy,
+            placeName,
+            raceNo,
+          });
     out.push({
       placeNo,
       placeName,
       raceNo,
       label: raceChipLabel(placeName, raceNo),
       tickets: Array.isArray(p.tickets) ? p.tickets.map(String) : [],
-      status: p.status || "provisional",
+      status,
       why,
       exhibition: exhibitionFromStatus(p.status),
     });
