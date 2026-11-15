@@ -1,6 +1,8 @@
 import { fetchKyoteiRaceBundle } from "@/lib/kyotei";
+import { safeExhibitionWhy } from "@/lib/pickExplain";
 import { buildTriplePrediction } from "@/lib/tripleSystem";
 import { recordExhibitionIncidents } from "@/lib/exhibitionIncidents";
+import { STADIUMS } from "@/lib/stadiums";
 
 export type LivePickRow = {
   date?: string;
@@ -85,6 +87,7 @@ export async function refreshPicksStatus(picks: LivePickRow[]): Promise<LivePick
       let why = pick.why;
       const lockedTickets = pick.tickets?.length ? [...pick.tickets] : ["1-2-3"];
 
+      const placeName = pick.stadium_name || STADIUMS[stadium] || `場${stadium}`;
       if (triple.skipped || exhibition.entryChanged) {
         status = "skipped";
         skipReason = triple.skipReason || "entry_change";
@@ -94,17 +97,38 @@ export async function refreshPicksStatus(picks: LivePickRow[]): Promise<LivePick
         skipDetail = changes
           ? `${skipReasonLabel(skipReason)}（${changes}）`
           : skipReasonLabel(skipReason);
-        why = triple.focus || skipDetail;
+        why = safeExhibitionWhy({
+          status: "skipped",
+          tripleFocus: triple.focus || skipDetail,
+          pickWhy: pick.why,
+          placeName,
+          raceNo: race,
+        });
       } else if (!exhibition.ready) {
         status = "provisional";
         skipReason = "exhibition_pending";
         skipDetail = exhibition.reason || "展示待ち";
-        why = exhibition.reason;
+        // 展示待ちでも「条件外→買わない」で朝の本命説明を消さない
+        why = safeExhibitionWhy({
+          status: "provisional",
+          pickWhy: pick.why,
+          tripleFocus: exhibition.reason,
+          placeName,
+          raceNo: race,
+        });
       } else {
         status = "confirmed";
         skipReason = null;
         skipDetail = null;
-        why = triple.focus || pick.why;
+        // 朝の本命Sボードが選んだレースは購入対象のまま。
+        // triple.focus の「本命条件外」は別ルール再判定なので説明に使わない。
+        why = safeExhibitionWhy({
+          status: "confirmed",
+          pickWhy: pick.why,
+          tripleFocus: triple.focus,
+          placeName,
+          raceNo: race,
+        });
       }
 
       const notes = [

@@ -1,6 +1,7 @@
 import { liveBroadcastUrls } from "@/lib/liveBroadcast";
 import { generateHonmeiDayBoard } from "@/lib/generateHonmeiDayBoard";
 import { loadPicksBoardForDate } from "@/lib/loadPicksBoard";
+import { buyTargetExplain } from "@/lib/pickExplain";
 import {
   pickStatusPhrase,
   refreshPicksStatus,
@@ -156,7 +157,15 @@ export async function getChatLiveTargets(opts?: { refresh?: boolean }): Promise<
         label: p.label || null,
         status,
         skip_detail,
-        why: status === "skipped" ? phrase : p.why || null,
+        why:
+          status === "skipped"
+            ? phrase
+            : buyTargetExplain({
+                status,
+                why: p.why,
+                placeName: p.stadium_name || `場${stadium}`,
+                raceNo: race,
+              }),
         reasons: p.reasons?.length ? p.reasons : undefined,
         live: liveBroadcastUrls(stadium, date, race),
       };
