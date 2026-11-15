@@ -61,6 +61,7 @@ type ChatLiveTarget = {
   skip_detail: string | null;
   why: string | null;
   reasons?: string[];
+  finishCombo?: string | null;
   live: {
     mediaTop: string;
     beforeInfo: string;
@@ -179,6 +180,7 @@ function kindLabel(m: ChatMessage): string {
 
 function targetToneClass(status: string): string {
   if (status === "skipped") return "skipped";
+  if (status === "settled") return "result";
   if (status === "confirmed") return "waiting buyok";
   if (status === "provisional" || status === "programs_unavailable") return "waiting";
   return "";
@@ -186,6 +188,7 @@ function targetToneClass(status: string): string {
 
 function targetBadge(status: string): string {
   if (status === "skipped") return "スルー";
+  if (status === "settled") return "レース終了";
   if (status === "confirmed") return "展示確認済み購入OK";
   if (status === "provisional" || status === "programs_unavailable") return "展示待ち";
   return "";
@@ -199,7 +202,7 @@ function purchaseLockTone(lock: PurchaseLockState | null | undefined): string {
 }
 
 function targetExhibitDone(status: string): boolean {
-  return status === "confirmed" || status === "skipped";
+  return status === "confirmed" || status === "skipped" || status === "settled";
 }
 
 function aiExhibitDone(m: ChatMessage): boolean {
@@ -1398,7 +1401,9 @@ export default function ChatPage() {
               <div className="chat-honmei-targets">
                 <span className="chat-honmei-targets-label">
                   本日の本命対象
-                  <em className="chat-pick-hint">押すと買い目・理由</em>
+                  <em className="chat-pick-hint">
+                    展示待ち→購入OK→レース終了 / 押すと買い目・理由
+                  </em>
                 </span>
                 <div className="chat-target-stack">
                   {[...new Map(targets.map((t) => [`${t.stadium}-${t.race}`, t])).values()]
@@ -1585,6 +1590,12 @@ export default function ChatPage() {
                                 <p className="chat-purchase-ask-done">購入済み（チャットに固定）</p>
                               ) : lock === "no" ? (
                                 <p className="chat-purchase-ask-done">見送り</p>
+                              ) : t.status === "settled" ? (
+                                <p className="chat-purchase-ask-done">
+                                  レース終了
+                                  {t.finishCombo ? `（着順 ${t.finishCombo}）` : ""}
+                                  。購入判断は展示後〜発走前です。
+                                </p>
                               ) : lock === "yes" && exhibitDone ? (
                                 <>
                                   <p className="chat-purchase-ask-label">

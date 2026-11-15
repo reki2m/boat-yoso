@@ -188,11 +188,12 @@ export function enrichWaitingWithExhibitionConfirmed(
   messages: ChatMessage[],
   liveTargets?: Array<{ stadium: number; race: number; status: string }>,
 ): ChatMessage[] {
-  const finals = new Map<string, "confirmed" | "skipped">();
+  const finals = new Map<string, "confirmed" | "skipped" | "settled">();
 
   for (const t of liveTargets || []) {
     const key = raceKeyOf(t.stadium, t.race);
     if (t.status === "skipped") finals.set(key, "skipped");
+    else if (t.status === "settled") finals.set(key, "settled");
     else if (t.status === "confirmed") finals.set(key, "confirmed");
   }
 
@@ -200,8 +201,12 @@ export function enrichWaitingWithExhibitionConfirmed(
     for (const chip of m.meta?.races || []) {
       const key = raceKeyOf(chip.placeNo, chip.raceNo);
       if (chip.status === "skipped") finals.set(key, "skipped");
-      else if (chip.status === "confirmed" || chip.exhibition === "after") {
-        if (finals.get(key) !== "skipped") finals.set(key, "confirmed");
+      else if (chip.settled || chip.status === "settled" || chip.finishCombo) {
+        if (finals.get(key) !== "skipped") finals.set(key, "settled");
+      } else if (chip.status === "confirmed" || chip.exhibition === "after") {
+        if (finals.get(key) !== "skipped" && finals.get(key) !== "settled") {
+          finals.set(key, "confirmed");
+        }
       }
     }
   }
@@ -216,10 +221,20 @@ export function enrichWaitingWithExhibitionConfirmed(
     let changed = false;
     const next = races.map((chip) => {
       if (chip.settled || chip.status === "settled" || chip.finishCombo) return chip;
-      if (chip.status === "confirmed" || chip.status === "skipped") return chip;
+      if (chip.status === "skipped") return chip;
       const fin = finals.get(raceKeyOf(chip.placeNo, chip.raceNo));
       if (!fin) return chip;
+      // すでに confirmed なら settled 以外では上書きしない
+      if (chip.status === "confirmed" && fin === "confirmed") return chip;
       changed = true;
+      if (fin === "settled") {
+        return {
+          ...chip,
+          status: "settled",
+          settled: true,
+          exhibition: "after" as const,
+        };
+      }
       return {
         ...chip,
         status: fin,
